@@ -1,0 +1,71 @@
+<?php
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$thumbnail = $this->plugin('thumbnail');
+$this->htmlElement('body')->appendAttribute('class', 'item resource browse');
+
+$filterLocale = (bool) $this->siteSetting('filter_locale_values');
+$lang = $this->lang();
+$valueLang = $filterLocale ? [$lang, ''] : null;
+
+$query = $this->params()->fromQuery();
+$itemSetShow = isset($itemSet);
+if ($itemSetShow):
+    $this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css', 'Omeka'));
+    /*$this->htmlElement('body')->appendAttribute('class', 'item-set');*/
+    $query['item_set_id'] = $itemSet->id();
+endif;
+?>
+
+<?php if ($itemSetShow): ?>
+    <?php echo $this->pageTitle($itemSet->displayTitle(null, $valueLang), 2); ?>
+    <!-- Commented out for CDASH Causes big blank areas. 
+    <h3><?php echo $translate('Item Set'); ?></h3>
+    <div class="metadata">
+        <?php /*echo $this->resourcePageBlocks($itemSet)->getBlocks(); */ ?>
+    </div> -->
+    <div class="item-set-items">
+    <?php echo '<h3>' . $escape($translate('Folder Contents')) . '</h3>'; ?>
+<?php else: ?>
+    <?php echo $this->pageTitle($translate('Items'), 2); ?>
+    <?php echo $this->hyperlink($translate('Advanced search'), $this->url('site/resource', ['controller' => 'item', 'action' => 'search'], ['query' => $query], true), ['class' => 'advanced-search']); echo('<br><br>') ; ?>
+<?php endif; ?>
+
+
+
+<!-- Commented for CDASH -->
+<!-- div class="browse-controls" -->
+    <?php //echo $this->pagination(); ?>
+    <?php //echo $this->hyperlink($translate('Advanced search'), $this->url('site/resource', ['controller' => 'item', 'action' => 'search'], ['query' => $query], true), ['class' => 'advanced-search']); echo('<br><br>') ; ?>
+    <?php //echo $this->browse()->renderSortSelector('items'); ?>
+<!-- /div -->
+<!-- -->
+
+<?php echo $this->searchFilters(); ?>
+
+
+<?php $this->trigger('view.browse.before'); ?>
+<ul class="resource-list">
+<?php
+$headingTerm = $this->siteSetting('browse_heading_property_term');
+$bodyTerm = $this->siteSetting('browse_body_property_term');
+foreach ($items as $item):
+    $heading = $headingTerm ? $item->value($headingTerm, ['default' => $translate('[Untitled]'), 'lang' => $valueLang]) : $item->displayTitle(null, $valueLang);
+    $body = $bodyTerm ? $item->value($bodyTerm, ['lang' => $valueLang]) : $item->displayDescription(null, $valueLang);
+?>
+    <li class="item resource">
+        <?php
+        $linkContent = sprintf('%s<span class="resource-name">%s</span>',
+            $thumbnail($item, 'square'),
+            $escape($heading));
+        echo $item->linkRaw($linkContent, null, ['class' => 'resource-link']);
+        ?>
+        <?php if ($body): ?>
+        <div class="description"><?php echo $escape($body); ?></div>
+        <?php endif; ?>
+    </li>
+<?php endforeach; ?>
+</ul>
+<?php echo ($itemSetShow) ? '</div>' : ''; ?>
+<?php $this->trigger('view.browse.after'); ?>
+<?php echo $this->pagination(); ?>

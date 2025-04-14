@@ -1,0 +1,36 @@
+<?php
+$translate = $this->plugin('translate');
+$this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css', 'Omeka'));
+$this->htmlElement('body')->appendAttribute('class', 'item resource show');
+$filterLocale = (bool) $this->siteSetting('filter_locale_values');
+$lang = $this->lang();
+$valueLang = $filterLocale ? [$lang, ''] : null;
+?>
+
+<?php if ($item->value('cdash:placeItem')->type() == 'resource'):?>
+<?php    echo $this->pageTitle($item->value('cdash:placeItem')->valueResource()->displayTitle() . " - " . $item->value('dcterms:type'), 2); ?>
+<?php else: ?>
+<?php      echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
+<?php endif; ?>
+
+<!-- CDASH Custom: remove this item heading 
+<h3><?php echo $translate('Item'); ?></h3>
+-->
+<?php $this->trigger('view.show.before'); ?>
+<?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
+<?php $this->trigger('view.show.after'); ?>
+
+<!-- The default behavior for the media-embed block is to attach a hyperlink to the image
+    that references the original tif file.  This CDASH modification removes that.  
+    WIth this mod, the user has access to the right-click menu for saving the thumbnail or
+    opening it in a new window. 
+    This is also where we might put some code that achieves a zoom function on each image.-->
+<script>
+images = document.getElementsByClassName("media-render file")
+for (let i = 0; i < images.length; i++) {
+    anchors = images[i].getElementsByTagName('a')
+    for (let j = 0; j < anchors.length; j++) {
+         anchors[j].removeAttribute("href");
+       }
+}
+</script>

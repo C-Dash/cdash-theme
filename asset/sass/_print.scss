@@ -1,0 +1,174 @@
+
+/*! Source: https://github.com/h5bp/html5-boilerplate/blob/master/src/css/main.css */
+
+// ==========================================================================
+// Print styles.
+// Inlined to avoid the additional HTTP request: h5bp.com/r
+// ==========================================================================
+
+
+
+    map {
+        display: none !important;
+    }
+
+    map-frame {
+        display: none !important;
+    }
+    
+    #banner,
+    #nav-menu {
+        display: none !important;
+    }
+
+    header {
+        display: none !important;
+    }
+
+    
+    .site-title {
+        display: none !important;
+    }
+
+    main-header {
+        display: none !important;
+    }
+
+    show-footer {
+        display: none !important;
+    }
+/*
+    *,
+    *:before,
+    *:after {
+      color: #000 !important; // Black prints faster: h5bp.com/s
+      text-shadow: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+*/
+    a,
+    a:visited {
+      text-decoration: underline;
+    }
+  /*
+    a[href]:after {
+      content: " (" attr(href) ")";
+    }
+  
+    abbr[title]:after {
+      content: " (" attr(title) ")";
+    }
+  
+    // Don't show links that are fragment identifiers,
+    // or use the `javascript:` pseudo protocol
+    a[href^="#"]:after,
+    a[href^="javascript:"]:after {
+      content: "";
+    }
+  */
+
+    pre,
+    blockquote {
+      border: 1px solid #999;
+      page-break-inside: avoid;
+    }
+  
+    thead {
+      display: table-header-group; // h5bp.com/t
+    }
+  
+    tr,
+    img {
+      page-break-inside: avoid;
+    }
+  
+    img {
+      max-width: 100% !important;
+    }
+  
+    p,
+    h2,
+    h3 {
+      orphans: 3;
+      widows: 3;
+    }
+  
+    h2,
+    h3 {
+      page-break-after: avoid;
+    }
+  
+
+
+    /*/ Bootstrap specific changes start
+  
+    // Bootstrap components */
+    .navbar {
+      display: none;
+    }
+ 
+    .label {
+      border: 1px solid #000;
+    }
+  /*
+    .table {
+      border-collapse: collapse !important;
+
+      td,
+      th {
+        background-color: #fff !important;
+      }
+    }
+    .table-bordered {
+      th,
+      td {
+        border: 1px solid #ddd !important;
+      }
+    }
+*/
+/*  */
+#content {
+  background-color: green;
+
+}
+
+.property dt {
+  margin-bottom: 0;
+  font-size: 1 * $base-font-size;
+  font-weight: bold;
+/*
+  &:first-child {
+      margin-top: 0;
+  }
+*/
+}
+
+.property value-content {
+  margin-bottom: 0;
+  font-size: .75 * $base-font-size;
+  font-weight: bold;
+  
+}
+
+.resource-link img {
+  height: 30px;
+  width: 30px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  /*grid-auto-rows: minmax(100px, auto);*/
+  grid-gap: 2px;
+}
+
+dt {
+  float: left;
+  clear: left;
+  width: 8.5em;
+  }
+dd {
+  margin: 0 0 0 9em;
+   padding: 0 0 0.2em 0;
+  }

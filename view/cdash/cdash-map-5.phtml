@@ -1,0 +1,633 @@
+<!-- This phtml provides the map and search pane for the CDASH Split Theme 
+     This is very much a first draft of my first attempt to hack an Omeka theme.
+     There are many opportunities to refactor this code to take advantage of 
+      modularization, comply with the conventions and conveniences of Zend / Laminas 
+    Feel free to use this and th shoot me feedback if you cae to point out ways that 
+    this can work better.  I do intend to clen this up and to document it for sharing 
+    during Fall / WInter 2020.
+  Paul Cote, paulbcote@gmail.com
+-->
+
+
+<div id="drawmap" style="height: 100%;"></div>
+
+<?php //$infodot = $this->assetUrl('img/infodot.png'); ?>
+
+
+<script type="text/javascript">
+
+function isIE() {
+  ua = navigator.userAgent;
+  /* MSIE used to detect old browsers and Trident used to newer ones*/
+  var is_ie = ua.indexOf("MSIE ") > -1 || ua.indexOf("Trident/") > -1;
+  
+  return is_ie; 
+}
+/* Create an alert to show if the browser is IE or not */
+if (isIE()){
+    alert('CDASH Map will not display in Internet Explorer (latest update in 2013).  Please use a modern browser.');
+}else{
+    //alert('It is NOT InternetExplorer');
+}
+
+// Provides contnt for the CDASH Split map  form. 
+$(document).ready(function(){
+
+ 
+//To slide-toggle the map control pannel 
+    $("#mapControlclick").click(function(){
+       $("#mapControlPanel").slideToggle("slow");
+    });
+
+// Set up a dictionary of basemap layers.  The keys of this dictionary are referred to by the 
+// mapchoice radio buttons.
+
+
+/* let camBase = L.esri.tiledMapLayer({
+     url:'https://gis.cambridgema.gov/arcgis/rest/services/CDDBasemap/MapServer',
+     // only necessary for old versions of ArcGIS Server
+            useCors: false,
+            maxZoom: 20,
+            attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDDBasemap/MapServert">Cambridge GIS</a>'
+   }); */
+
+
+   let camBase = L.esri.Vector.vectorTileLayer(
+        'https://tiles.arcgis.com/tiles/WnzC35krSYGuYov4/arcgis/rest/services/CDDVectorBasemap/VectorTileServer'
+)
+
+let camAddBase = L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer',
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer">Cambridge GIS</a>'
+});
+
+let cam2021 =  L.esri.dynamicMapLayer({
+  //url: 'https://gis.cambridgema.gov/arcgis/rest/services/gpvHistorical/MapServer',
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [11],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/11">Cambridge GIS</a>'
+});
+
+let cam2018 =  L.esri.dynamicMapLayer({
+  //url: 'https://gis.cambridgema.gov/arcgis/rest/services/OrthosCambridge/MapServer',
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [10],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/10">Cambridge GIS</a>'
+});
+
+let cam1947 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [4],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/4">Cambridge GIS</a>'
+});
+
+let cam2010 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [7],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/7">Cambridge GIS</a>'
+});
+
+let cam1995 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [5],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/5">Cambridge GIS</a>'
+});
+
+
+let cam1978 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [2],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/2">Cambridge GIS</a>'
+});
+
+let cam1969 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [3],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/3">Cambridge GIS</a>'
+});
+
+let bromley1916 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [1],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/1">Cambridge GIS</a>'
+});
+
+
+let chase1865 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [0],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/0">Cambridge GIS</a>'
+});
+
+let bluesky2023 =  L.esri.dynamicMapLayer({
+  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  layers: [12],
+  useCors: false,
+  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/12">Cambridge GIS</a>'
+});
+
+
+let massGIS = L.esri.tiledMapLayer({
+     url: 'https://tiles.arcgis.com/tiles/hGdibHYSPO59RG1h/arcgis/rest/services/MassGIS_Basemap_Detailed_Features/MapServer',
+     // only necessary for old versions of ArcGIS Server
+//            useCors: true,
+            maxZoom: 20,
+            attribution: '<a href="https://www.mass.gov/service-details/massgis-base-map">MassGIS</a>'
+   });
+
+
+// OverlayMap layers are defined here
+// Now Fetch markers for all cdash locations
+  let allMarkers = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    maxClusterRadius: function (mapZoom) {
+              if (mapZoom > 17) {
+                 return 18;
+               } else {
+                 return 32;
+               }
+            },
+            iconCreateFunction: function(cluster) {
+                var clusterSize = "small";
+                var iconsize = 35
+                if (cluster.getChildCount() >= 3) {
+                    clusterSize = "medium";
+                    iconsize = 40
+                  }
+                return new L.DivIcon({
+                    html: '<div><span>' + cluster.getChildCount() + '</span></div>',
+                    className: 'marker-cluster marker-cluster-' + clusterSize,
+                    iconSize: new L.Point(iconsize, iconsize)
+                });
+            }
+  });
+    queryMarkers(allMarkers);
+
+
+    let parcelStyle = {
+  fillColor: 'blue',
+  weight: 1,
+  opacity: 0.5,
+  color: 'black',
+  //dashArray: '3',
+  fillOpacity: 0,
+  zIndex: 500
+ };
+
+ let chcNeighborhoodsStyle = {
+  fillColor: 'pink',
+  weight: 1,
+  opacity: 0.5,
+  color: 'pink',
+  //dashArray: '3',
+  fillOpacity: 0,
+  zIndex: 500
+ };
+
+
+
+    //let parcelsUrl = "<?php echo $this->assetUrl('json/parcels2020.geojson') ?>";
+   //console.log("Parcels are at" + parcelsUrl);
+
+
+const parcels =  L.esri.featureLayer({
+    url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/13',
+      style: parcelStyle
+  });
+
+ 
+  parcels.bindPopup(function (layer) {
+   return L.Util.template('Map-lot <a href="https://www.cambridgema.gov/assess/PropertyDatabase/{ML}" target="_parcel"> {ML}</a>', layer.feature.properties);
+  
+  });
+
+
+  
+  let chcNeighborhoods_url = "<?php echo $this->assetUrl('json/chcNeighborhoods.geojson') ?>";
+
+   let chcNeighborhoods = new L.GeoJSON.AJAX(chcNeighborhoods_url,{
+       onEachFeature: function (feature, layer) {
+          layer.bindPopup("CHC Survey Area:<br><b>" + feature.properties.Name + "</b>")
+       },
+       style: {color: 'orange'},
+      });
+
+      let neighborhoods = new L.GeoJSON.AJAX("https://data.cambridgema.gov/api/geospatial/k3pi-9823?date=20231108&accessType=DOWNLOAD&method=export&format=GeoJSON",{onEachFeature: function (feature, layer) {
+        layer.bindPopup("CDD Neighborhood: <br><b>" + feature.properties.name + "</b>");},
+        style: {color: 'green'},
+      });
+
+
+  let natRegister = new L.GeoJSON.AJAX("https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/master/Historical/National_Register_of_Historic_Places/HISTORICAL_NationalRegisterHistoricPlaces.geojson",{onEachFeature: function (feature, layer) {
+        layer.bindPopup("Nationaly Registerd Historic Place: <br>" + feature.properties.LabelName);
+   }});
+
+   natRegister.getAttribution = function() { return '<a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_NationalRegisterHistoricPlaces">Cambridge GIS </a>'; };
+
+   var histMarkerIcon = L.icon({
+          iconUrl:  "<?php echo $this->assetUrl('img/blue_oval.png') ?>",
+           iconSize: [26,20],
+           iconAnchor: [13,10]
+        });
+
+  let histMarkers = new L.GeoJSON.AJAX("https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/master/Historical/Historical_Markers/HISTORICAL_HistoricalMarkers.geojson",{onEachFeature: function (feature, layer) {
+        layer.bindPopup("Cambridge Historic Marker:<br>" +feature.properties.Name);
+        layer.setIcon(histMarkerIcon);
+   }});
+
+   histMarkers.getAttribution = function() { return '<a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_HistoricalMarkers">Cambridge GIS </a>'; };
+
+   let macrisPtJsonUrl = "<?php echo $this->assetUrl('json/cam_macris_pts.geojson') ?>";
+   //console.log('my macrispoints are at ' + macrisPtJsonUrl);
+
+   var redDiskIcon = L.icon({
+          iconUrl:  "<?php echo $this->assetUrl('img/reddisk_15px.png') ?>",
+           iconSize: [8,8],
+           iconAnchor: [4,4]
+        });
+
+   let macrisPoints = new L.GeoJSON.AJAX(macrisPtJsonUrl,{onEachFeature: function (feature, layer) {
+        layer.bindPopup(feature.properties.HISTORIC_N + "<br><a href='http://mhc-macris.net/details?mhcid=" + feature.properties.MHCN + "'target = '_macris'>View MACRIS Record</a>");
+        layer.setIcon(redDiskIcon);
+   }});
+
+   macrisPoints.getAttribution = function() { return '<a href="https://docs.digital.mass.gov/dataset/massgis-data-mhc-historic-inventory">MA Historical Commission </a>'; };
+
+let cam1930 = L.tileLayer('https://mapwarper.net/mosaics/tile/546/{z}/{x}/{y}.png', {
+            maxZoom: 20,
+            attribution: '<a href="https://mapwarper.net/layers/546">MapWarper.org</a>'
+        });
+
+let bromley1894 = L.tileLayer('https://mapwarper.net/mosaics/tile/920/{z}/{x}/{y}.png', {
+     // only necessary for old versions of ArcGIS Server
+            maxZoom: 20,
+            attribution: '<a href="https://mapwarper.net/layers/920">MapJunction / MapWarper</a>'
+        });
+
+let hopkins1873 = L.tileLayer('https://s3.us-east-2.wasabisys.com/urbanatlases/39999059015550/tiles/{z}/{x}/{y}.png',          {
+            maxZoom: 20,
+            attribution: '<a href="https://collections.leventhalmap.org/search/commonwealth:tt44pw432">Leventhal Map Center</a>'
+        });
+
+// And this dictionary oe overlay map layers.
+  let overlayMaps = {
+    'allMarkers': allMarkers,
+    'histMarkers': histMarkers,
+    'natRegister': natRegister,
+    'camBase': camBase,
+    'camAddBase': camAddBase,
+    'bluesky2023': bluesky2023,
+    'cam2021': cam2021,
+    'cam2018': cam2018,
+    'cam2010': cam2010,
+    'massGIS': massGIS,
+    'cam1969': cam1969,
+    'cam1978': cam1978,
+    'cam1995': cam1995,
+    'cam1947': cam1947,
+    'cam1930': cam1930,
+    'bromley1916': bromley1916,
+    'bromley1894': bromley1894,
+    'hopkins1873': hopkins1873,
+    'chase1865': chase1865,
+    'macrisPoints': macrisPoints,
+    'parcels': parcels,
+    'chcNeighborhoods': chcNeighborhoods,
+    'neighborhoods': neighborhoods
+  };
+  
+
+// Map State information may be saved in the browser's session cache.
+// If it is set, use it to check the map layer options.  If not, set up the defaults.
+
+//let mapCenter = [42.368, -71.09];  // East Cambridge
+//let mapZoom = 14.3;
+
+let mapCenter = [42.377, -71.11];  // Full Cambridge
+let mapZoom = 13.45;
+
+let current_basemap_key = 'camAddBase';
+
+
+// Does browser support storage?
+
+if (typeof(Storage) == "undefined") {
+    alert("Your browser does not seem to support sessionStorage.  Try upgrading it.");
+} else {  // Browser supports storage. 
+
+
+    if (sessionStorage.getItem("zoom") != null) {
+      mapZoom = sessionStorage.getItem("zoom");
+      console.log("Recovered saved zoom: " + mapZoom);
+    } else {
+      console.log("Initializing stored Map Zoom: " + mapZoom);
+      sessionStorage.setItem("zoom", mapZoom );
+    };
+
+// If this is the first time the map is drawn, use the default zoom
+
+
+    if (sessionStorage.getItem("mapLon") == null)  {
+      console.log("Initializing stored map center :" + mapCenter);
+      sessionStorage.setItem("mapLat", mapCenter[0] );
+      sessionStorage.setItem("mapLon", mapCenter[1] );
+    } else {  
+      mapLat = sessionStorage.getItem("mapLat");
+      mapLon = sessionStorage.getItem("mapLon");
+      mapCenter = [mapLat, mapLon];
+      console.log("Retrieved stored  center location " + mapLat + " " + mapLon);
+    };
+
+    if (sessionStorage.getItem("layer_panel_pos") == null)  {
+      sessionStorage.setItem("layer_panel_pos", "up" );
+      console.log("No saved Layer Panel position.  Set to Up.");
+    } else {
+      let current_layer_panel_pos = sessionStorage.getItem("layer_panel_pos");
+      console.log("Saved Layer Panel position:" + current_layer_panel_pos);
+    };
+
+
+
+  } //Browser supports storage
+
+   //this stuff is here as an experiment.
+ const mapDiv = document.getElementById("drawmap");
+//const map = L.map(mapDiv).setView([51.505, -0.09], 13);
+const map = L.map(mapDiv , { center: mapCenter, zoom: mapZoom, maxZoom: 19 });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+//Sorry for the extreme comments.  I needed them at the time. 
+//This block of code, to END, is the better logic for saving the map state in sessionStorage.
+//Read the overlayChecks object out of storage if it exists.  If not, set formValues to an empty object. 
+let overlayStates = JSON.parse(sessionStorage.getItem('overlayStates')) || {'allMarkers': true, 'camBase': true};
+
+// added 20230108
+//This seems to make $checkboxes into a list of all the checkbox objects in the document that are within a 
+//Div with ID="overlayBoxes. This should happen once per session.  No state is saved here. 
+//let $layerPickers = $("#overlayBoxes :checkbox, #baseMapButtons :radio");
+let $layerPickers = $("#overlay-menu :checkbox, #basemap-menu :radio");
+
+//This function populates the overlayStates hash based on the state of the checkboxes in the DOM
+// the function is called when a checkbox changes.
+function storeLayerStates(){
+  $layerPickers.each(function(){
+    //compare first to see which box has changed
+    prevState = overlayStates[this.id];
+    if (prevState != this.checked) {  //The state has changed
+      console.log("The box for  " + this.id + "state is now " + this.checked)
+        if (this.checked) {
+          console.log("Adding layer " +  this.id);
+          map.addLayer(overlayMaps[this.id]);
+        } else {
+          map.removeLayer(overlayMaps[this.id]);
+        }
+    }  
+    overlayStates[this.id] = this.checked;
+  });
+  //Here is where the persistent container, overlayStates is populated with a JSON version of the 
+  //hash of teh same name. 
+  sessionStorage.setItem("overlayStates", JSON.stringify(overlayStates));
+}
+
+//Listen for a change among any of the boxes.  Anytime one of them changes
+//The updatestorage function reads the check status of each box, updates formValues
+//Stringify's the hash and writes that into the formValues bucket of the browser storage.  
+// It is interesting that they did not just write out the function inside of here...
+$layerPickers.on("change", function(){
+  storeLayerStates();
+});
+
+//Everytime page loads, set the checked status from each entry in overlayStates (which is presumed to exist) 
+//and updates the checked property of the corresponding checkbox in the DOM.  This has to ve called after the 
+// map has been put on the screen.  
+function drawOverlays(){
+  $.each(overlayStates, function(key, value) {
+    $("#" + key).prop('checked', value);
+    //let attribution = overlayMaps[key].getAttribution;
+    //$("#" + key + "_attribution").prop('innerHTML', 
+    //   "<a href='" + attribution + "' target='cdash_metadata'> <img src=<?//php echo $infodot?>></a><br>");
+    if (value) {  // checkbox is checked for layer.  Draw it!
+          console.log("Adding Overlay " +  this.id);
+          map.addLayer(overlayMaps[key]);
+  }
+});
+
+} //END of overlayState code.
+
+
+
+const resizeObserver = new ResizeObserver(() => {
+  map.invalidateSize();
+});
+
+resizeObserver.observe(mapDiv);
+
+// Now we're ready to draw the map. 
+//var map = L.map('drawmap', { center: mapCenter, zoom: mapZoom, maxZoom: 19 });
+map.addLayer(overlayMaps.massGIS);
+overlayMaps.massGIS.setZIndex(0);
+
+drawOverlays();  //reads the checkboxes and adds the layers to the map accordingly. 
+//drawBaseMaps(); 
+
+// If map is moved, save extent info into browser cache
+map.on('zoomend', function() {
+    var newZoom = map.getZoom();
+    if (typeof(Storage) !== "undefined") {
+        sessionStorage.setItem("zoom", newZoom );
+        console.log("Zoom level is now. " + newZoom);
+       } else {
+        console.log("Can't save zoom. No browser storage support");
+       }
+    });
+    
+    map.on('moveend', function() {
+      let newCenter = [map.getCenter().lat, map.getCenter().lng];
+      //let newCenter = map.getCenter();
+      //console.log("After move, map center is" + newCenter );
+       if (typeof(Storage) !== "undefined") {
+         sessionStorage.setItem("mapLat", map.getCenter().lat );
+         sessionStorage.setItem("mapLon", map.getCenter().lng );
+       } else {
+          console.log("Can't save new center. No browser storage support");
+       }
+    });
+
+
+// The following reads the marker data that Omeka writes into the html
+// div with class = .mapping-marker-popup-content.  The presence of this 
+// div indicates that the Omeka Item in the right-hand window includes a marker
+// which wil be moved to the center of the map and featured with a special marker. 
+
+  var featuredIcon = L.icon({
+          iconUrl:  "<?php echo $this->assetUrl('img/redcircle.png') ?>",
+           iconSize: [22,22],
+           iconAnchor: [11,11]
+        });
+
+
+    let markerCenter = [];
+    let featuredMarkers = new L.FeatureGroup();
+    if ($('.mapping-marker-popup-content').length === 0) {
+      console.log("No coordinates in featured page.  Preserve previous location");
+      if (sessionStorage.getItem("mkrLat") != null)  {  // Previous location has been stored.  Draw Featured Marker.
+        // make a subroutine out of this
+        var mkrPos = new L.LatLng(sessionStorage.getItem("mkrLat"), sessionStorage.getItem("mkrLon"));
+        var featuredMarker = new L.Marker(mkrPos);
+        console.log("got omeka marker at " + mkrPos)
+        //featuredMarker.bindPopup(popup[0]);
+        featuredMarker.setIcon(featuredIcon);
+        featuredMarker.setZIndexOffset(2000);
+        featuredMarkers.addLayer(featuredMarker);
+      }
+
+
+    }else {   // New featured page has a location.
+
+    $('.mapping-marker-popup-content').each(function() {
+        var popup = $(this).clone().show();
+        var mkrPos = new L.LatLng(popup.data('marker-lat'), popup.data('marker-lng'));
+        markerCenter = [popup.data('marker-lat'), popup.data('marker-lng')];
+        // remember this location since omeka items or pages don't have locations  
+        if (typeof(Storage) !== "undefined") {
+          sessionStorage.setItem("mkrLat", popup.data('marker-lat'));
+          sessionStorage.setItem("mkrLon", popup.data('marker-lng'));
+        } else {
+          console.log("Can't save new center. No browser storage support");
+        }
+
+        var featuredMarker = new L.Marker(mkrPos);
+        console.log("got omeka marker at " + mkrPos)
+        featuredMarker.bindPopup(popup[0]);
+        featuredMarker.setIcon(featuredIcon);
+        featuredMarker.setZIndexOffset(2000);
+        featuredMarkers.addLayer(featuredMarker);
+   });
+  }
+
+   map.addLayer(featuredMarkers);
+   featuredMarkers.bringToFront();
+  
+
+// Here is some stuff from modules\Mapping\asset\js\mapping-show.js
+// Centers map on featured marker if it exists.  Otherwise does nothing. 
+// THis runs each time the page reloads. 
+
+
+var setView = function() {
+    if (markerCenter.length === 2) {      //If there is an Omeka marker present.
+        map.panTo(markerCenter, mapZoom); //Pan to the marker and keep the current zoom.
+    } else {
+      //map.panTo(mapCenter, mapZoom);
+        } 
+    };
+
+setView();
+
+// End insertion from modules\Mapping\asset\js\mapping-show.js
+
+
+//This function uses a call to a php script that queries omeka's mysql database.
+//The result is a list of all of the CDASH Location items with their titles, 
+//coordinates and Item ID.  Maybe this should be done through the Omeka API or 
+//Doctrine or something.  
+function queryMarkers(markerGroup) {
+  $.ajax({
+         url : "<? echo $this->assetUrl('php/placemarkers.php') ?>",
+         type: "POST",
+         dataType: 'json',
+         //data: form.serialize(),
+        success:function(response) {
+        if(response.success == true ) {
+            console.log("Query succeeded.  SQL: " + response.sql + "<br> Searchterm: " + response.searchterm );
+            //printTable(response.resp)
+
+            pushMarkers(response.resp, markerGroup);
+            return (response.resp);
+          } 
+        //if(response.success == false ) {
+        //    msg.html("Query failed with:");
+        //   }
+        if(response.error == true ) {
+            console.log("Query failed SQL:" + response.sql + "<br> Searchterm: " + response.searchterm );
+          }else{console.log("No apparent error with markerquery: " + this.url);};
+        
+        }, //Ajax options
+
+        error:function(xhr,textStatus,errorThrown){
+            var str = "ERROR : SERVER error " + xhr + " " + 
+                       textStatus + " " + errorThrown ;
+             console.log(str);
+             //console.log("Help im a rock");
+          } // error callback function block
+        }); // ajax call ends
+} //closes querymarkers function
+
+
+var sepiaBalloon = L.icon({
+  iconUrl: "<?php echo $this->assetUrl('img/sepia_marker_hollow2.png') ?>",
+   iconSize: [30,30],
+   iconAnchor: [14,26]
+});
+
+var sepiaBalloon_halo_y = L.icon({
+  iconUrl: "<?php echo $this->assetUrl('img/sepia_marker_hollow_yello_halo.png') ?>",
+   iconSize: [28,28],
+   iconAnchor: [14,26]
+});
+
+
+// Takes the result from the SQL query and makes a marker for each.
+function pushMarkers(json_response, markerGroup){
+  var cambMarkerList = [];
+  for (i = 0; i < json_response.length; i++) {
+    var row = json_response[i];
+    var title = row['title'] ;
+    var item_id =  row['item_id'];
+    //For Dev
+    //var item_url = "http://192.168.99.101/omeka-s/s/cdash/item/" + item_id;
+    // for Prod
+    var item_url = "/s/cdash/item/" + item_id;
+    var marker = L.marker(L.latLng(row['lat'], row['lng']), { title: title });
+    marker.id = row['item_id'];
+    marker.item_url = "/s/cdash/item/" + item_id;
+    //marker.item_url = "http://192.168.99.101/omeka-s/s/cdash/item/" + item_id;
+    marker.title = row['title'];
+    marker.setIcon(sepiaBalloon);
+    if (row['placetype'] != "Address") {
+      marker.setIcon(sepiaBalloon_halo_y);
+    }
+    //marker.setZIndexOffset(1000);
+
+  // 'click' the new marker to call onMarkerClick function (Loads page )
+    marker.on('click', onMarkerClick);
+    cambMarkerList.push(marker);
+  }
+    //console.log('start clustering: ' + window.performance.now());
+    markerGroup.addLayers(cambMarkerList);
+    console.log('pushed cambridge markers')
+} // closes pushmarkers function
+
+
+
+
+function onMarkerClick(e) {   
+  window.location.replace(e.target.item_url);
+  //$cdash_item_php = $webroot . "/omeka-s/themes/cdash-ajax/view/omeka/site/index/cdash-map-5.phtml";
+  //document.getElementById("item").innerHTML = "Hi!  I'm the content for " + e.target.item_url
+  //include $cdash_item_php;
+}
+
+}); // $(document).ready(function() ends
+</script>
+

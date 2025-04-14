@@ -1,0 +1,221 @@
+<?php
+$escape = $this->plugin('escapeHtml');
+$siteTitle = $site->title();
+$this->htmlElement('html')->setAttribute('lang', $this->lang());
+$this->headMeta()->setCharset('utf-8');
+$this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1');
+$this->headTitle($siteTitle)->setSeparator(' · ');
+$this->headTitle()->append($this->setting('installation_title', 'Omeka S'));
+$this->headLink()->prependStylesheet($this->assetUrl('css/style.css'),$media = 'screen');
+$this->headLink()->prependStylesheet($this->assetUrl('css/print1.css'),$media = 'print');
+$this->headLink()->prependStylesheet($this->assetUrl('css/iconfonts.css', 'Omeka'));
+$this->headLink()->prependStylesheet('//fonts.googleapis.com/css?family=Open+Sans:400,400italic,600,600italic,700italic,700');
+$this->headScript()->prependFile($this->assetUrl('js/default.js'));
+$this->headScript()->prependFile($this->assetUrl('js/global.js', 'Omeka'));
+$this->headScript()->prependFile($this->assetUrl('vendor/jquery/jquery.min.js', 'Omeka'));
+
+
+// frm mapping module
+$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'));
+$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.css', 'Mapping'));
+
+$this->headScript()->appendFile($this->assetUrl('node_modules/leaflet/dist/leaflet.js', 'Mapping'));
+$this->headScript()->appendFile($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.js', 'Mapping'));
+$this->headScript()->appendFile($this->assetUrl('node_modules/leaflet-providers/leaflet-providers.js', 'Mapping'));
+
+//$this->headScript()->appendFile($this->assetUrl('js/mapping-show.js', 'Mapping'));
+$this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Mapping'));
+// end from mapping module 
+
+
+
+
+// For CDASH Map
+//$this->headScript()->appendFile($this->assetUrl('vendor/leaflet'));
+$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.css'));
+$this->headLink()->appendStylesheet($this->assetUrl('css//MarkerCluster.Default.css'));
+
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.markercluster/leaflet.markercluster-src.js'));
+$this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-v3.0.12/esri-leaflet.js'));
+$this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-vector-v4.2.3/esri-leaflet-vector.js'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.ajax.js'));
+
+// End of CDASH includes
+
+
+$this->jsTranslate();
+$banner = $this->themeSettingAssetUrl('banner');
+$bannerHeight = $this->themeSetting('banner_height');
+$bannerHeightMobile = $this->themeSetting('banner_height_mobile');
+$bannerPosition = ($this->themeSetting('banner_position')) ? str_replace('_','-', $this->themeSetting('banner_position')) : 'center';
+$this->trigger('view.layout');
+$userBar = $this->userBar();
+?>
+<?php echo $this->doctype(); ?>
+<?php echo $this->htmlElement('html'); ?>
+    <head>
+        <?php echo $this->headMeta(); ?>
+        <?php echo $this->headTitle(); ?>
+        <?php echo $this->headLink(); ?>
+        <?php echo $this->headStyle(); ?>
+        <?php echo $this->headScript(); ?>
+        
+        <style>
+            <?php if ($accentColor = $this->themeSetting('accent_color')): ?>
+            a:link,
+            a:visited {
+                color: <?php echo $accentColor; ?>
+            }
+            
+            a:active,
+            a:hover {
+                color: <?php echo $accentColor; ?>;
+                opacity: .75;
+            }
+            <?php endif; ?>
+
+            .banner {
+                height: <?php echo ($bannerHeight !== '') ? $bannerHeight: 'auto'  ?>;
+                align-items: <?php echo $bannerPosition; ?>;
+            }
+            <?php if ($bannerHeightMobile !== ''): ?>
+                @media screen and (max-width:640px) {
+                    .banner {
+                        height: <?php echo $bannerHeightMobile; ?>;
+                    }
+                }
+            <?php endif; ?>
+        </style>
+    </head>
+
+
+<?php echo $this->htmlElement('body'); ?>
+<?php //echo 'Hello'; ?>
+  <!-- was: div id="grid-container" -->
+  <main>
+
+  <main-header>
+  <div id="top">
+        <div id="banner">
+            <header>
+            <h1>
+                <a href="<?php echo $site->url(); ?>" class="site-title">
+                <?php if ($this->themeSetting('banner')): ?>
+                    <img src="<?php echo $this->themeSettingAssetUrl('banner'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
+                <?php else: ?>
+                    <!-- Image taken from theme's asset/images folder -->
+                    <img src="<?php echo $this->assetUrl('img/banner/c_dash_banner_manila_long.jpg'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
+                    <?php //echo $escape($siteTitle); ?>
+                <?php endif; ?>
+                </a>
+            </h1>
+                </header>
+        </div> <!-- close banner-->
+
+
+        <div id="navmenu">
+            <nav>
+              <?php
+              echo $site->publicNav()->menu()->renderMenu(null, [
+                'maxDepth' => $this->themeSetting('nav_depth') - 1
+               ]);
+              ?>
+
+              </nav>
+
+              <!--div class="left"  id="advanced_search"> <a style="color: #EAE7D8; margin-top: 4px;" href="/omeka-s/s/cdash/item/search?property%5B0%5D%5Btext%5D=Detail&property%5B0%5D%5Bjoiner%5D=and&property%5B0%5D%5Bproperty%5D=1&property%5B0%5D%5Btype%5D=in&sort_by=cdash:streetSort&sort_order=asc&property%5B0%5D%5Bjoiner%5D=and&property%5B0%5D%5Bproperty%5D=1&property%5B0%5D%5Btype%5D=in&resource_template_id%5B%5D=13">Advanced Search</a> </div -->
+              <div id="search" class="left" >
+                    <!-- ?php echo $this->partial('common/places-form'); ? -->
+                    <?php echo $this->partial('common/search-form'); ?>
+              </div> 
+              </nav> <!-- closes nav -->
+              </div> <!-- closes navmenu -->
+
+    </div><!-- Close top -->
+
+    </main-header> 
+
+
+    <map>
+      <map-frame>
+    <!-- div id="cdash-map" -->
+      <!-- div id="cdmap-frame" -->
+      <?php echo $this->partial('cdash/cdash-map-5'); ?>
+      <?php /*
+          $webroot = $_SERVER['DOCUMENT_ROOT'];
+           $cdash_map_php = $webroot . "/omeka-s/themes/cdash_phoenix/view/omeka/site/index/cdash-map-5.phtml";
+           include $cdash_map_php;
+           */
+      ?>
+      <!--/div --> <!-- Closes map-frame -->
+      </map-frame>
+
+      <map-tools>
+<!-- div id="cdmap-tools" -->
+<div id="layer-panel-flip"><p>Hide Layer Menu<p></div>
+      <div id="layer-panel">
+          <div id="overlay-menu">
+            <?php echo $this->partial('cdash/map-tools/overlay-menu.phtml'); ?>
+            </div>
+          <div id="basemap-menu">
+            <?php echo $this->partial('cdash/map-tools/basemap-menu.phtml'); ?>
+          </div>
+        </div> <!-- Layer Panel --> 
+ 
+<!-- /div --> <!-- closes map-tools -->
+<!-- /div --> <!-- close cdash_map div --> 
+</map-tools>
+</map>
+
+<!--tab-bar>
+   <h2>I'm A Tab-Bar!</h2> 
+</tab-bar -->
+
+    <show-window>
+        <div id="showresult" >
+            <div id="detail">    
+                <div id="content" role="main">
+                    <?php echo $this->content; ?>
+                </div>
+                <?php if (!empty($userBar)): ?>
+                        <?php echo $userBar; ?>
+                        <script type="text/javascript">
+                            document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML += '<span class="admin"><a href="<?php echo $this->assetUrl('php/update_doc_geo.php')?>" target = "pdix">PDIX</a></span>'
+                        </script>
+                    <?php endif; ?>
+            </div> 
+        </div>
+
+    <div id='print-footer'><p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p></div>
+    <show-footer>
+       <div><b>&lt;&lt;</b> Drag to Expand / Shrink.</div>  
+       <div class="left">Powered by Omeka-S</div>
+    </show-footer> 
+</show-window>
+    </main> 
+    <!-- /div --> <!-- closes main  was: grid container --> 
+    </body>
+    <script type="text/javascript">
+    $(document).ready( function() {
+        if (sessionStorage.getItem("layer_panel_pos") == "down") {
+            $("#layer-panel").slideToggle("slow");
+            $("#layer-panel-flip").text('Show Layer Menu');
+        }
+
+        let showresultwidth = document.getElementById('showresult').clientWidth;
+        console.log("Result window width: " + showresultwidth);
+        $("#layer-panel-flip").click(function(){
+            //$("#layer-panel-flip").text(($("#layer-panel-flip").text() == 'Hide Layer Menu') ? 'Show Layer Menu' : 'Hide Layer Menu').fadeIn();
+            $("#layer-panel").slideToggle("slow");
+            if (sessionStorage.getItem("layer_panel_pos") == "up") {
+                sessionStorage.setItem("layer_panel_pos", "down");
+                $("#layer-panel-flip").text('Show Layer Menu');
+            } else {
+                sessionStorage.setItem("layer_panel_pos", "up");
+                $("#layer-panel-flip").text('Hide Layer Menu'); 
+            }
+            console.log("New layer panel poisition saved:" + sessionStorage.getItem("layer_panel_pos")  )
+        });
+});
+</script>
+</html>

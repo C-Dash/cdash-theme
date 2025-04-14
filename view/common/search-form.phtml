@@ -1,0 +1,56 @@
+<?php
+   $translate = $this->plugin('translate');
+// This is the CDASH custom search bar.  It appears on the navigation bar of the 
+// CDASH layout
+
+// This is all commented out because we know that there are no item sets or site pages involved.
+// $searchType = $this->siteSetting('search_type', 'sitewide');
+// switch ($searchType) {
+//     case 'cross-site':
+//         $searchAction = $this->url('site/cross-site-search', ['action' => 'results'], true);
+//         break;
+//     case 'sitewide':
+//     default:
+//         //$searchAction = $this->url('site/resource', ['controller' => 'index', 'action' => 'search'], true);
+
+         $searchAction = $this->url('site/resource', ['controller' => 'item', 'action' => 'browse'], true);
+// }
+
+$searchValue = $this->escapeHtml($this->params()->fromQuery('property[0][text]', ''));
+?>
+
+<script>
+function foo(string) {
+   //alert("Submit button clicked! we got: " + string);
+   document.getElementById('alt-term').value = string;
+   return true;
+}
+</script>
+
+<!-- Here we build a query predominantly of hard-coded values in hidden form fields. -->
+<!-- for more info, see the Omeka developer API Docs                                 -->
+
+<form action="<?php echo $this->escapeHtml($searchAction); ?>" id="search-form">
+    <input id="searchterm" type="text" name="property[0][text]" value="<?php echo $searchValue; ?>" 
+        placeholder="<?php echo $translate('Place Name or Address Contains'); ?>"
+        aria-label="<?php echo $translate('Place Name or Address Contains'); ?>">
+     
+     <!-- Make sure that the Sort_By field is listed  in th Item Browse --> 
+     <input type="hidden"  name="sort_by" data-name="sort_by" value="cdash:streetSort">
+     <input type="hidden"  name="sort_order" data-name="sort_order" value="asc">
+     <!-- in the next line the value should be resource_template.id where label = 'CDASH Place'-->
+     <input type="hidden"  name='resource_template_id[]' value='4'>
+     <input type="hidden"  name='property[0][joiner]' value='and' >
+     <input type="hidden"  name='property[0][property]' value='290' >
+     <input type="hidden"  name='property[0][type]' value='in'>
+     
+ 
+     <!-- input type="hidden"  name='property[1][joiner]' value='or' >
+     <input type="hidden"  name='property[1][property]' value='281' >
+     <input type="hidden"  name='property[1][type]' value='in'>
+     <input id="alt-term" type="hidden"  name='property[1][text]' value="" -->
+
+
+     <button class="fa fa-camera-retro" onclick="foo(getElementById('searchterm').value)" type="submit"><?php echo $translate('CDASHSearch'); ?></button>
+</form>
+

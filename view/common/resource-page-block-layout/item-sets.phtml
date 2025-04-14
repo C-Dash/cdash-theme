@@ -1,0 +1,19 @@
+<?php
+$filterLocale = (bool) $this->siteSetting('filter_locale_values');
+$lang = $this->lang();
+$valueLang = $filterLocale ? [$lang, ''] : null;
+?>
+<?php if ($itemSets): ?>
+<dl class="item-sets">
+    <div class="property">
+        <dt><?php echo $this->translate('Folder:'); ?></dt>
+        <?php foreach ($itemSets as $itemSet): ?>
+        <dd class="value">
+            <a href="<?php echo $this->escapeHtml($itemSet->url()); ?>"><?php echo $itemSet->displayTitle(null, $valueLang); ?></a>
+        </dd>
+        <?php endforeach; ?>
+    </div>
+</dl>
+<?php endif; ?>
+<!-- CDASH: Added this rule -->
+<br><hr style="text-align:center; margin-left: auto; margin-right: auto;width: 85%; border: 0; background-color: black; height: 1px;"> <br>

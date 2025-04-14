@@ -1,0 +1,45 @@
+// Susy
+
+
+
+//$susy: (
+//    columns:                            susy-repeat(12),
+//    container:                          1184px,
+//    gutters:                            0.1,
+//    global-box-sizing:                  border-box
+//);
+
+// Colors
+//$gray:                                  #ababab;
+
+$gray:                                  #a7a09a;
+$bold:                                  darken($gray, 20%);
+$light:                                 lighten($gray, 20%);
+$bg:                                    lighten($gray, 30%);
+$link:                                  #920b0b;
+//$link:                                  green;
+$page:                                  #EAE7D8;
+$darkgray:                               #60655F;
+
+// Typography
+
+$base-font-size:                        15px; //20px;
+$base-line-height:                      18px; //30px;
+
+// Units
+
+$spacing-s:                             .25 * $base-line-height;
+$spacing-m:                             .5 * $base-line-height;
+$spacing-l:                             $base-line-height;
+
+// Mixins
+
+
+$max_width: 1600px;
+
+@mixin container {
+    //max-width: 1180px;
+    max-width: $max_width;
+    margin-left: auto;
+    margin-right: auto;
+}

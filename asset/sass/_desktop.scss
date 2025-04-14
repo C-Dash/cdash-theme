@@ -1,0 +1,724 @@
+
+html, body { 
+    background-color: $gray;
+    //margin: $spacing-s auto;
+    //height:   100%;
+    
+    }
+    .leaflet-popup{
+        max-width: 250px;
+        white-space: normal;
+    }
+
+    #grid-container {
+        display: grid;
+        height: 100vh;
+        width: 100%;
+        grid-template:
+        "top top" 
+        "cdash-map showresult" ;
+        grid-template-columns: 40vw 1fr;
+        grid-template-rows: 176px 1fr;
+    }
+    
+    map {
+        border-left: 3px solid $gray;
+        border-bottom: 3px solid $gray;
+    }
+    #top {
+        height: 176px;
+        grid-area: top;
+        display: grid;
+        grid-template:
+        "banner"
+        "navmenu" ;
+        /* grid-template-rows: 140px 36px; */
+        
+    }
+#navmenu {
+    grid-area: navmenu;
+    display: flex;
+    height: 30px;
+}
+
+#banner { 
+    height: 140px;
+    width: 100%;
+    grid-area: banner; 
+    overflow: hidden;
+}
+
+#banner img {
+    height: 140px;
+    min-width:100%;
+    max-width:none;
+    /*margin:0 -100%; */
+} 
+
+.left {
+    margin-left: auto;
+}
+
+//////////////////////
+
+/* #cdash-map { */
+    // grid-area: cdash-map;
+    /*border: 3px dotted blue; */
+    /*width: 40vw;*/
+    /*resize: horizontal;*/
+    /*min-width: 20vw;
+    max-width: 50vw; */
+    /*height: 100%;*/
+    /*overflow-x: auto; */
+/*     display: grid;
+    grid-template:
+    "cdmap-frame" 1fr
+    "cdmap-tools" 300px ; */
+    /* } */
+
+#cdmap-frame {
+    /* grid-area: cdmap-frame; */
+    border: 3px dotted rgb(202, 178, 126);
+}
+
+#drawmap {
+    background-color:rgb(231, 226, 214);
+    /*height: 100%;*/
+}
+
+#cdmap-tools {
+    background-color:rgb(233, 227, 204);
+    /*border: 3px dotted rgb(202, 178, 126);*/
+    grid-area: cdmap-tools;
+    /*overflow: auto; */
+    /* resize: vertical; */
+    /*min-width: 120px; */
+    /*max-width: 50vw;*/ 
+    /*overflow-x: visible ; */
+    overflow-y: scroll ;
+    height: 300px;
+    display: grid;
+    grid-template:
+    "overlay-menu  basemap-menu " 1fr 1fr;
+    padding-left: 20px;
+}
+
+#layer-panel-flip {
+    text-align: right;
+    margin-right: 15px;
+    cursor: n-resize;
+  }
+  
+  /*
+  #layer-panel {
+    height: 300px;
+    display: grid;
+    grid-template:
+    "overlay-menu basemap-menu";
+  }
+
+*/
+
+#layer-panel {
+    display: grid;
+    background-color: $page;
+    grid-area: layer-panel;
+    overflow-y: auto;
+    /*overflow-x: hidden ;*/
+    grid-template-columns: 
+     "overlay-menu" 1fr
+    "basemap-menu" 1fr; 
+
+    /*grid-template-columns: "overlay-menu basemap-menu" 1fr  */
+}
+
+#overlay-menu {
+    grid-area: overlay-menu;
+    grid-column: 2;
+    /*border: 3px dotted rgb(238, 234, 21);*/
+    height: 100%;
+    padding: 1px 4px 1px 4px;
+}
+
+#basemap-menu {
+    grid-area: basemap-menu;
+    grid-column: 1;
+    /*border: 3px dotted rgb(6, 240, 248);*/
+    height: 100%;
+    padding: 1px 4px 1px 4px;
+    /*overflow-x: visible;*/
+
+}
+
+
+#showresult {    
+    //border: 3px solid rgb(194, 171, 124);
+    width: 100%; 
+    height: 100%;
+    background-color: $page;
+    /*padding-left: 4px;
+    padding-right: 8px; */
+    overflow-y: scroll;
+    overflow-x:hidden; 
+    border-left: 3px solid $gray;
+  grid-area: showresult;
+    display: grid;
+    grid-template:
+    "content" 1fr
+     "user-bar" 50px; 
+}
+
+/* #detail {
+    grid-area: detail;
+    overflow: auto;
+} */
+
+#user-bar {
+    grid-area: user-bar;
+    width: 100%;
+}
+
+
+
+#overlayBoxes {
+    grid-area: overlayBoxes;
+} 
+#baseMapButtons {
+    grid-area: baseMapButtons;
+
+}
+
+#content {
+    grid-area: content;
+    width: 100%;
+    height: 100%;
+    margin: 10px;
+    padding-right: 30px;
+}
+
+
+#content {
+/*CDASH experiments to zoom in on image */
+    .media-embeds  { 
+        /*pointer-events: none;*/
+        
+    }
+
+    .media-render img {
+        width: 100%;
+        padding-bottom: 25px;
+        /*pointer-events: None;*/
+        cursor:pointer;
+        /*margin-right: 60px;*/
+    }
+
+    .property dt {
+        margin-bottom: 0;
+        font-size: 1 * $base-font-size;
+        font-weight: bold;
+        width: 8.5em ;  
+
+        &:first-child {
+            margin-top: 0;
+        }
+    }
+
+    .property value-content {
+        margin-bottom: 0;
+        font-size: .75 * $base-font-size;
+        font-weight: bold;
+        
+    }
+
+    .resource-link img {
+        height: 35px;
+        width: 30px;
+        margin-right: 4px;
+    }
+    dl {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        /*grid-auto-rows: minmax(100px, auto);*/
+        grid-gap: 2px;
+    }
+
+    dt {
+        float: left;
+        clear: left;
+        width: 8.5em;
+        }
+     dd {
+        margin: 0 0 0 9em;
+         padding: 0 0 0.2em 0;
+        }
+
+    table {
+        /*display: grid;
+        grid-template-columns: repeat(2, 1fr);*/
+        /*grid-auto-rows: minmax(100px, auto);*/
+        /*grid-gap: 2px;*/
+        width: 100%;
+
+    }
+
+    tbody, thead{
+        display: block;
+        display: grid;
+        width: 100%;
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+} /*End nested #content styles
+
+//#cdash_map.scrolls {
+//    position: static;
+//    width: 50%;
+    //background-color: black;
+//    //color: red;
+ //   height: 100%;
+//}
+//#cdash_map.fixed {
+//    position: fixed;
+//    top: (1.75 * $spacing-l);  // same height as menu bar
+ //   width: 50%;
+    //background-color: red;
+    //color: black;
+//    height: 100%;
+//}
+*/
+
+#cdash_map #map {
+    //margin: $spacing-s;
+    //margin-top: $spacing-m;
+    //width: 50%;
+    /*height: 600px;*/
+    //grid-area: map;
+}
+
+/*#baseMapButtons, #overlayBoxes {
+    //overflow-y: auto; 
+    //overflow-x: hidden;
+    padding-left: 8px;
+    padding-right: 4px;
+    //overflow-x: visible;
+   }
+*/
+//#content {
+//    //padding: 0 (2 * gutter()) $spacing-l;
+//    padding: 0 gutter() $spacing-l;
+    //width: 60%;
+//    float: right;
+//    width: span(6 of 12 last);
+    //height: 100%;
+    //overflow: auto;
+//}
+
+
+// ADDED for CDASH
+
+
+/////////////////////////////////////
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+
+  }
+  
+  .tooltip .tooltiptext {
+    visibility: hidden;
+    display: inline-block;
+    /*width: 250px; */
+    background-color: lightblue;
+    color: black;
+    text-align: center;
+    border-radius: 6px;
+    border-width: 1px;
+    padding: 5px 0;
+    border-bottom: 1px dotted black;
+    /* Position the tooltip */
+    position: absolute; 
+    top: -12px;
+    width: 200px;
+    /*top: 5px;*/
+    /*left: 80%;
+    /*margin-left: -150px; *//* Use half of the width (120/2 = 60), to center the tooltip */
+  }
+  
+#overlay-menu {
+    .tooltip .tooltiptext {
+        right: 80%;
+    }
+}
+
+#basemap-menu {
+    .tooltip .tooltiptext {
+        left: 80%;
+    }
+}
+
+  .tooltip:hover .tooltiptext {
+    visibility: visible;
+    overflow-x: visible;
+    /*z-index: 1;*/
+  }
+
+  
+
+/////////////////////////////////////
+
+p {
+    display: block;
+    margin-block-start: $spacing-m;
+    margin-block-end: $spacing-m;
+    margin-inline-start: 0px;
+    margin-inline-end: 0px;
+}
+
+table {
+    margin: $spacing-l 0;
+    border-collapse: collapse;
+}
+
+th,
+td {
+    text-align: left;
+    padding: $spacing-s $spacing-m;
+    padding-bottom: $spacing-s - 1px;
+    border-bottom: 1px solid $gray;
+}
+
+/* @group ----- Header ----- */
+
+#banner {
+    background-color: $darkgray;
+}
+
+#header {
+    //position: relative;
+    //padding: $spacing-s 0 0;
+    //margin-bottom: 2 * $spacing-l;
+    //background-color: $page;
+    background-color: $darkgray;
+    //position: fixed;
+}
+
+#header > * {
+    //padding: 0 (2 * gutter());
+    padding: 0 0 0 0;
+}
+
+//#header.fixed {
+//    position: fixed;
+ //   width: 1328px;
+//    top: -115px;
+
+//}
+
+
+
+
+#header > h1 {
+    //margin: $spacing-s auto;
+    padding: 0 0 0 0;
+    line-height: 34px;
+}
+
+/* @end */
+
+/* @group ----- Footer ----- */
+
+//#footer {
+    //padding: 0 $spacing-l $spacing-l;
+    //height: (1.5 * $spacing-l);
+    //width: 50%;
+    //added for cdash split
+    //position: fixed; 
+    //bottom: 100vh;
+    //clear: left;
+//}
+
+/* @end */
+
+/* @group ----- Navigation ----- */
+
+#menubar {
+    background-color: #60655F;
+    height: (1.5 * $spacing-l);
+    //@include container;
+}
+
+#navmenu {
+
+    background-color: $darkgray;
+}
+
+//nav {
+    //margin: 0 auto;
+    //dhanges for cdash_split
+    //position: static;
+    //position: relative;
+    //width: 75%;
+    //width: span(8 of 12 last);
+    //float: left;
+    //padding: 0 calc(0.5 * $spacing-l);
+    //background-color: $page;
+//}
+
+nav {
+ a:link, a:visited, a:hover {
+    color: $page;
+}}
+
+nav:before {
+    content: "";
+    border: 0;
+    display: none;
+}
+
+nav ul a {
+    padding: 0;
+}
+
+nav ul li {
+    position: static;
+}
+
+// Original
+nav.closed ul,
+nav ul ul li {
+    height: auto;
+    overflow: visible;
+}
+
+nav ul a:hover {
+    background-color: transparent;
+}
+
+nav ul li,
+nav > ul li:last-child,
+nav > ul ul:hover > li {
+    border: 0;
+}
+
+nav ul.navigation {
+    margin-left: -$spacing-s;
+    //position: static;
+    display: flex;
+    align-items: flex-end;
+    // these two added for CDASH Split
+    margin-block-start: 0.25em;
+    margin-block-end: 0px;
+    list-style-type: none;
+
+    li ul:before {
+        display: none;
+    }
+
+    & > li:not(:last-child) {
+        margin-right: $spacing-m;
+    }
+
+    & > li > ul {
+        position: absolute;
+        top: 100%;
+        left: -9999px;
+        //background-color: #fff;
+        padding: 0;
+        // for cdash split
+        list-style-type: none;
+        list-style: none;
+        width: 100%;
+        padding: ($spacing-m - 1px) 0 ($spacing-s - 1px);
+        display: flex;
+        flex-direction: row;
+        flex-flow: row wrap;
+        z-index: 1;
+    }
+
+    & > li:hover > ul {
+        @include container;
+        padding: $spacing-m calc(0.5 * $spacing-l) ;
+        left: 0;
+        right: 0;
+        border-bottom: 0;
+        //border-color: $light;
+
+        &:after {
+            content: "";
+            left: -9999px;
+            right: -9999px;
+            background-color: #fff;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            border-bottom: 1px solid $light;
+            border-top: 1px solid $light;
+            z-index: -1;
+        }
+    }
+
+    & > li > ul > li {
+        width: 25%;
+        font-size: .75 * $base-font-size;
+        font-weight: bold;
+        padding-bottom: $spacing-l;
+    }
+
+    & > li > ul > li ul {
+        font-weight: normal;
+        padding: 0;
+        list-style-type: none;
+        height: auto;
+    }
+}
+
+nav > ul > li > a {
+    margin: $spacing-l;
+    color: $page;
+}
+
+/* All top-level nav items with siblings are parent items and get an arrow. */
+nav > ul > li > a:not(:only-child):after {
+    font-family: "Font Awesome 5 Free";
+    content: "\f107";
+    display: inline-block;
+    margin-left: $spacing-s;
+}
+
+nav > ul li:hover ul li {
+    height: auto;
+    padding: 0;
+}
+
+/* Second and Third level items */
+nav > ul > li > ul > li a,
+nav > ul > li > ul > li > ul > li a {
+    padding-left: 0;
+}
+
+.sub-menu ul {
+    border-bottom: 1px solid $light;
+    padding-bottom: ($spacing-m - 1px);
+}
+
+.sub-menu li {
+    display: inline-block;
+    border: 0;
+    padding: 0;
+    margin-right: $spacing-m;
+
+    &:first-of-type {
+        border: 0;
+        padding: 0;
+    }
+}
+
+#search-form{
+    width: 300px;
+}
+
+#search {
+    //display: inline-block;
+    //width: span(3 of 12 last);
+    //left: 75%;
+    //width: 25%;
+    //changes for cdash_split
+    //position: relative;
+    //float: right;
+    //padding: 2px;
+    background-color: $darkgray;
+    //border: 0;
+    //border-left: 1px solid $light;
+    //padding: $spacing-s;
+    //padding: 0 (2 * gutter()) $spacing-l;
+    //margin-right: 4 * gutter();
+    //background-color: $page;
+    //margin: $spacing-s;
+    //margin-right: auto;
+ 
+
+
+}
+
+#search form input[type="text"],
+#search form button[type="submit"] {
+    //height: $base-line-height;
+    height: 100%;
+    //font-size: .75 * $base-font-size;
+    //line-height: $base-line-height;
+}
+
+
+
+/* @end */
+
+/* @group ----- Resource List ----- */
+
+ul.resource-list .resource img {
+    width: 4 * $spacing-l;
+    height: auto;
+    float: right;
+    /*margin-left: $spacing-m;*/
+}
+
+/*ul.resource-list .resource img ~ * {
+    width: calc(100% - #{4.5 * $spacing-l});
+}*/
+
+/* @end */
+
+/* @group ----- Item Set ----- */
+
+body.item-set.item #content {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-end;
+
+    & > h2,
+    & > h3 {
+        width: 100%;
+    }
+}
+
+body.item-set .metadata {
+    width: span(4 of 12 alpha);
+    border-left: 5px solid $light;
+    padding-left: gutter();
+    margin-right: gutter();
+}
+
+body.item-set .metadata h4:first-of-type {
+    margin-top: 0;
+}
+
+body.item-set #content .metadata ~ * {
+    width: span(8 of 12 omega);
+    border-left: 1px solid $light;
+    padding-left: gutter();
+}
+
+body.item-set .item-set-items h3 {
+    margin-top: 0;
+}
+
+body.item-set .metadata ~ nav.pagination:first-of-type {
+    margin-bottom: 0;
+}
+
+
+/* @end */
+
+/* @group ----- Page and blocks ----- */
+
+.preview-block {
+    clear: both;
+}
+
+ul.preview.resource-list li:first-of-type {
+    border-top: 1px solid $light;
+    padding-top: ($spacing-l - 1px);
+}
+
+/* @end */
