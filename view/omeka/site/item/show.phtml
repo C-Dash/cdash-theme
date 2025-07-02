@@ -6,13 +6,7 @@ $filterLocale = (bool) $this->siteSetting('filter_locale_values');
 $lang = $this->lang();
 $valueLang = $filterLocale ? [$lang, ''] : null;
 ?>
-
-<?php if ($item->value('cdash:placeItem')->type() == 'resource'):?>
-<?php    echo $this->pageTitle($item->value('cdash:placeItem')->valueResource()->displayTitle() . " - " . $item->value('dcterms:type'), 2); ?>
-<?php else: ?>
-<?php      echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
-<?php endif; ?>
-
+<?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
 <!-- CDASH Custom: remove this item heading 
 <h3><?php echo $translate('Item'); ?></h3>
 -->
@@ -23,8 +17,7 @@ $valueLang = $filterLocale ? [$lang, ''] : null;
 <!-- The default behavior for the media-embed block is to attach a hyperlink to the image
     that references the original tif file.  This CDASH modification removes that.  
     WIth this mod, the user has access to the right-click menu for saving the thumbnail or
-    opening it in a new window. 
-    This is also where we might put some code that achieves a zoom function on each image.-->
+    opening it in a new window. -->
 <script>
 images = document.getElementsByClassName("media-render file")
 for (let i = 0; i < images.length; i++) {

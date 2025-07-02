@@ -36,13 +36,13 @@ foreach ($resourcePropertiesAll as $type => $resourceProperties) {
         'label' => $labelMap[$type],
         'options' => [sprintf('%s:', $type) => sprintf('%s: All', $labelMap[$type])],
     ];
-    foreach ($resourceProperties as $resourceProperty) {
-        $key = sprintf('%s:%s', $type, $resourceProperty['id_concat']);
-        $value = $resourceProperty['property_alternate_label']
-            ? $this->translate($resourceProperty['property_alternate_label'])
-            : $this->translate($resourceProperty['property_label']);
-        $valueOptions[$type]['options'][$key] = sprintf('%s: %s', $labelMap[$type], $value);
-    }
+    //foreach ($resourceProperties as $resourceProperty) {
+    //    $key = sprintf('%s:%s', $type, $resourceProperty['id_concat']);
+    //    $value = $resourceProperty['property_alternate_label']
+    //        ? $this->translate($resourceProperty['property_alternate_label'])
+    //        : $this->translate($resourceProperty['property_label']);
+    //    $valueOptions[$type]['options'][$key] = sprintf('%s: %s', $labelMap[$type], $value);
+   // }
 }
 $resourcePropertiesSelect->setValueOptions($valueOptions);
 ?>
@@ -83,15 +83,7 @@ $caption = sprintf(
     <tbody>
         <?php foreach ($values as $value): ?>
         <tr class="linked-resource">
-            <td>
-                <?php /* echo $value['val']->resource()->linkPretty('square', null, null, null, ($filterLocale ? $lang : null)); */ ?>
-                <?php if ($value['val']->resource()->value('cdash:placeItem')->type() == 'resource'):?>
-                <?php   echo $value['val']->resource()->linkRaw($this->thumbnail($value['val']->resource(), 'medium') . $value['val']->resource()->value('cdash:placeItem')->valueResource()->displayTitle() . " - " . $value['val']->resource()->value('dcterms:type'), null, ['class' => 'resource-link']); ?>
-                <?php else: ?>
-                <?php      echo "This is not a Place Item!"; ?>
-                <?php endif; ?>
-            
-            </td>
+            <td><?php echo $value['val']->resource()->linkPretty('square', null, null, null, ($filterLocale ? $lang : null)); ?></td>
             <?php /* Commentd this out for CDASH class is boring 
             <td>
                 <?php if ($value['val']->resource()->resourceClass()): ?>
