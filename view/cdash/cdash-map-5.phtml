@@ -57,83 +57,83 @@ $(document).ready(function(){
 )
 
 let camAddBase = L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer',
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer">Cambridge GIS</a>'
 });
 
 let cam2021 =  L.esri.dynamicMapLayer({
-  //url: 'https://gis.cambridgema.gov/arcgis/rest/services/gpvHistorical/MapServer',
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  //url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/gpvHistorical/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [11],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/11">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/11">Cambridge GIS</a>'
 });
 
 let cam2018 =  L.esri.dynamicMapLayer({
-  //url: 'https://gis.cambridgema.gov/arcgis/rest/services/OrthosCambridge/MapServer',
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  //url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/OrthosCambridge/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [10],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/10">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/10">Cambridge GIS</a>'
 });
 
 let cam1947 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [4],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/4">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/4">Cambridge GIS</a>'
 });
 
 let cam2010 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [7],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/7">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/7">Cambridge GIS</a>'
 });
 
 let cam1995 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [5],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/5">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/5">Cambridge GIS</a>'
 });
 
 
 let cam1978 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [2],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/2">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/2">Cambridge GIS</a>'
 });
 
 let cam1969 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [3],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/3">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/3">Cambridge GIS</a>'
 });
 
 let bromley1916 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [1],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/1">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/1">Cambridge GIS</a>'
 });
 
 
 let chase1865 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [0],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/0">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/0">Cambridge GIS</a>'
 });
 
 let bluesky2023 =  L.esri.dynamicMapLayer({
-  url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
+  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
   layers: [12],
   useCors: false,
-  attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/12">Cambridge GIS</a>'
+  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/12">Cambridge GIS</a>'
 });
 
 
@@ -201,7 +201,7 @@ let massGIS = L.esri.tiledMapLayer({
 
 
 const parcels =  L.esri.featureLayer({
-    url: 'https://gis.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/13',
+    url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/13',
       style: parcelStyle
   });
 
@@ -229,7 +229,7 @@ const parcels =  L.esri.featureLayer({
 
 
   let natRegister = new L.GeoJSON.AJAX("https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/master/Historical/National_Register_of_Historic_Places/HISTORICAL_NationalRegisterHistoricPlaces.geojson",{onEachFeature: function (feature, layer) {
-        layer.bindPopup("Nationaly Registerd Historic Place: <br>" + feature.properties.LabelName);
+        layer.bindPopup("Nationally Registered Historic Place: <br>" + feature.properties.LabelName, { minWidth: 500, maxWidth: 700 });
    }});
 
    natRegister.getAttribution = function() { return '<a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_NationalRegisterHistoricPlaces">Cambridge GIS </a>'; };

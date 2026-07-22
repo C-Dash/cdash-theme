@@ -28,6 +28,7 @@ if ($this->status()->isSiteRequest()) {
         and ($propertyData['property']->term() != 'dcterms:alternative')
         and ($propertyData['property']->term() != 'cdash:streetAddress')
         and ($propertyData['property']->term() != 'cdash:Folder')
+        and ($propertyData['property']->term() != 'cdash:houseNum')
        ): ?>
 
     <div class="property">

@@ -180,7 +180,7 @@ $userBar = $this->userBar();
                 <?php if (!empty($userBar)): ?>
                         <?php echo $userBar; ?>
                         <script type="text/javascript">
-                            document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML += '<span class="admin"><a href="<?php echo $this->assetUrl('php/update_doc_geo.php')?>" target = "pdix">PDIX</a></span>'
+                            document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML += '<span class="admin"><a href="<?php echo $this->assetUrl('php/geosync.php')?>" target = "geosync">GeoSync</a> </span> <span class="admin"><a href="<?php echo $this->assetUrl('php/geoaudit.php')?>" target = "geoaudit">GeoAudit</a>                           </span>'
                         </script>
                     <?php endif; ?>
             </div> 

@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(///wsl.localhost/docker-desktop/mnt/docker-desktop-disk/data/docker/volumes/cdash-persist/_data/themes/cdash_4.1.1/asset/php/**)",
+      "Read(///wsl.localhost/docker-desktop/mnt/docker-desktop-disk/data/docker/volumes/cdash-persist/_data/themes/**)",
+      "Read(///wsl.localhost/docker-desktop/mnt/docker-desktop-disk/data/docker/volumes/cdash-persist/_data/themes/cdash_4.1.1/**)",
+      "Read(///wsl.localhost/docker-desktop/mnt/docker-desktop-disk/data/docker/volumes/cdash-persist/_data/themes/cdash_4.1.1/view/mapping/index/**)",
+      "Read(///wsl.localhost/docker-desktop/mnt/docker-desktop-disk/data/docker/volumes/cdash-persist/_data/themes/cdash_4.1.1/asset/**)"
+    ]
+  }
+}
