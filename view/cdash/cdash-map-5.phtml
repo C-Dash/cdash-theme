@@ -39,115 +39,20 @@ $(document).ready(function(){
        $("#mapControlPanel").slideToggle("slow");
     });
 
-// Set up a dictionary of basemap layers.  The keys of this dictionary are referred to by the 
-// mapchoice radio buttons.
+// Layer definitions live in view/cdash/layer-registry.php -- one entry per layer,
+// shared with the overlay and basemap menus so the two can never drift apart.
+// asset/js/cdash-layer-factory.js turns each descriptor into a Leaflet layer.
+<?php $cdashLayers = require __DIR__ . '/layer-registry.php'; ?>
+const CDASH_LAYERS = <?php echo json_encode($cdashLayers, JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 
+// Marker links are built from whichever site is actually rendering, rather than
+// a hardcoded "/s/cdash". 4.1.1 hardcoded the slug, so renaming a site silently
+// pointed its markers at a different site.
+const CDASH_SITE_URL = <?php echo json_encode($this->currentSite()->url(), JSON_HEX_TAG | JSON_HEX_AMP); ?>;
 
-/* let camBase = L.esri.tiledMapLayer({
-     url:'https://gis.cambridgema.gov/arcgis/rest/services/CDDBasemap/MapServer',
-     // only necessary for old versions of ArcGIS Server
-            useCors: false,
-            maxZoom: 20,
-            attribution: '<a href="https://gis.cambridgema.gov/arcgis/rest/services/CDDBasemap/MapServert">Cambridge GIS</a>'
-   }); */
-
-
-   let camBase = L.esri.Vector.vectorTileLayer(
-        'https://tiles.arcgis.com/tiles/WnzC35krSYGuYov4/arcgis/rest/services/CDDVectorBasemap/VectorTileServer'
-)
-
-let camAddBase = L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer',
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/gpvAddress/MapServer">Cambridge GIS</a>'
-});
-
-let cam2021 =  L.esri.dynamicMapLayer({
-  //url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/gpvHistorical/MapServer',
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [11],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/11">Cambridge GIS</a>'
-});
-
-let cam2018 =  L.esri.dynamicMapLayer({
-  //url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/OrthosCambridge/MapServer',
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [10],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/10">Cambridge GIS</a>'
-});
-
-let cam1947 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [4],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/4">Cambridge GIS</a>'
-});
-
-let cam2010 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [7],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/7">Cambridge GIS</a>'
-});
-
-let cam1995 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [5],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/5">Cambridge GIS</a>'
-});
-
-
-let cam1978 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [2],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/2">Cambridge GIS</a>'
-});
-
-let cam1969 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [3],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/3">Cambridge GIS</a>'
-});
-
-let bromley1916 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [1],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/1">Cambridge GIS</a>'
-});
-
-
-let chase1865 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [0],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/0">Cambridge GIS</a>'
-});
-
-let bluesky2023 =  L.esri.dynamicMapLayer({
-  url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer',
-  layers: [12],
-  useCors: false,
-  attribution: '<a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/12">Cambridge GIS</a>'
-});
-
-
-let massGIS = L.esri.tiledMapLayer({
-     url: 'https://tiles.arcgis.com/tiles/hGdibHYSPO59RG1h/arcgis/rest/services/MassGIS_Basemap_Detailed_Features/MapServer',
-     // only necessary for old versions of ArcGIS Server
-//            useCors: true,
-            maxZoom: 20,
-            attribution: '<a href="https://www.mass.gov/service-details/massgis-base-map">MassGIS</a>'
-   });
-
-
-// OverlayMap layers are defined here
-// Now Fetch markers for all cdash locations
+// The marker cluster is the one layer the factory cannot build by itself: its
+// contents arrive asynchronously from placemarkers.php, so it is constructed
+// here and handed to the factory below as a prebuilt layer.
   let allMarkers = L.markerClusterGroup({
     showCoverageOnHover: false,
     maxClusterRadius: function (mapZoom) {
@@ -173,138 +78,9 @@ let massGIS = L.esri.tiledMapLayer({
   });
     queryMarkers(allMarkers);
 
+// Every other layer is built from the registry.
+  let overlayMaps = cdashBuildLayers(CDASH_LAYERS, { allMarkers: allMarkers });
 
-    let parcelStyle = {
-  fillColor: 'blue',
-  weight: 1,
-  opacity: 0.5,
-  color: 'black',
-  //dashArray: '3',
-  fillOpacity: 0,
-  zIndex: 500
- };
-
- let chcNeighborhoodsStyle = {
-  fillColor: 'pink',
-  weight: 1,
-  opacity: 0.5,
-  color: 'pink',
-  //dashArray: '3',
-  fillOpacity: 0,
-  zIndex: 500
- };
-
-
-
-    //let parcelsUrl = "<?php echo $this->assetUrl('json/parcels2020.geojson') ?>";
-   //console.log("Parcels are at" + parcelsUrl);
-
-
-const parcels =  L.esri.featureLayer({
-    url: 'https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer/13',
-      style: parcelStyle
-  });
-
- 
-  parcels.bindPopup(function (layer) {
-   return L.Util.template('Map-lot <a href="https://www.cambridgema.gov/assess/PropertyDatabase/{ML}" target="_parcel"> {ML}</a>', layer.feature.properties);
-  
-  });
-
-
-  
-  let chcNeighborhoods_url = "<?php echo $this->assetUrl('json/chcNeighborhoods.geojson') ?>";
-
-   let chcNeighborhoods = new L.GeoJSON.AJAX(chcNeighborhoods_url,{
-       onEachFeature: function (feature, layer) {
-          layer.bindPopup("CHC Survey Area:<br><b>" + feature.properties.Name + "</b>")
-       },
-       style: {color: 'orange'},
-      });
-
-      let neighborhoods = new L.GeoJSON.AJAX("https://data.cambridgema.gov/api/geospatial/k3pi-9823?date=20231108&accessType=DOWNLOAD&method=export&format=GeoJSON",{onEachFeature: function (feature, layer) {
-        layer.bindPopup("CDD Neighborhood: <br><b>" + feature.properties.name + "</b>");},
-        style: {color: 'green'},
-      });
-
-
-  let natRegister = new L.GeoJSON.AJAX("https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/master/Historical/National_Register_of_Historic_Places/HISTORICAL_NationalRegisterHistoricPlaces.geojson",{onEachFeature: function (feature, layer) {
-        layer.bindPopup("Nationally Registered Historic Place: <br>" + feature.properties.LabelName, { minWidth: 500, maxWidth: 700 });
-   }});
-
-   natRegister.getAttribution = function() { return '<a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_NationalRegisterHistoricPlaces">Cambridge GIS </a>'; };
-
-   var histMarkerIcon = L.icon({
-          iconUrl:  "<?php echo $this->assetUrl('img/blue_oval.png') ?>",
-           iconSize: [26,20],
-           iconAnchor: [13,10]
-        });
-
-  let histMarkers = new L.GeoJSON.AJAX("https://raw.githubusercontent.com/cambridgegis/cambridgegis_data/master/Historical/Historical_Markers/HISTORICAL_HistoricalMarkers.geojson",{onEachFeature: function (feature, layer) {
-        layer.bindPopup("Cambridge Historic Marker:<br>" +feature.properties.Name);
-        layer.setIcon(histMarkerIcon);
-   }});
-
-   histMarkers.getAttribution = function() { return '<a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_HistoricalMarkers">Cambridge GIS </a>'; };
-
-   let macrisPtJsonUrl = "<?php echo $this->assetUrl('json/cam_macris_pts.geojson') ?>";
-   //console.log('my macrispoints are at ' + macrisPtJsonUrl);
-
-   var redDiskIcon = L.icon({
-          iconUrl:  "<?php echo $this->assetUrl('img/reddisk_15px.png') ?>",
-           iconSize: [8,8],
-           iconAnchor: [4,4]
-        });
-
-   let macrisPoints = new L.GeoJSON.AJAX(macrisPtJsonUrl,{onEachFeature: function (feature, layer) {
-        layer.bindPopup(feature.properties.HISTORIC_N + "<br><a href='http://mhc-macris.net/details?mhcid=" + feature.properties.MHCN + "'target = '_macris'>View MACRIS Record</a>");
-        layer.setIcon(redDiskIcon);
-   }});
-
-   macrisPoints.getAttribution = function() { return '<a href="https://docs.digital.mass.gov/dataset/massgis-data-mhc-historic-inventory">MA Historical Commission </a>'; };
-
-let cam1930 = L.tileLayer('https://mapwarper.net/mosaics/tile/546/{z}/{x}/{y}.png', {
-            maxZoom: 20,
-            attribution: '<a href="https://mapwarper.net/layers/546">MapWarper.org</a>'
-        });
-
-let bromley1894 = L.tileLayer('https://mapwarper.net/mosaics/tile/920/{z}/{x}/{y}.png', {
-     // only necessary for old versions of ArcGIS Server
-            maxZoom: 20,
-            attribution: '<a href="https://mapwarper.net/layers/920">MapJunction / MapWarper</a>'
-        });
-
-let hopkins1873 = L.tileLayer('https://s3.us-east-2.wasabisys.com/urbanatlases/39999059015550/tiles/{z}/{x}/{y}.png',          {
-            maxZoom: 20,
-            attribution: '<a href="https://collections.leventhalmap.org/search/commonwealth:tt44pw432">Leventhal Map Center</a>'
-        });
-
-// And this dictionary oe overlay map layers.
-  let overlayMaps = {
-    'allMarkers': allMarkers,
-    'histMarkers': histMarkers,
-    'natRegister': natRegister,
-    'camBase': camBase,
-    'camAddBase': camAddBase,
-    'bluesky2023': bluesky2023,
-    'cam2021': cam2021,
-    'cam2018': cam2018,
-    'cam2010': cam2010,
-    'massGIS': massGIS,
-    'cam1969': cam1969,
-    'cam1978': cam1978,
-    'cam1995': cam1995,
-    'cam1947': cam1947,
-    'cam1930': cam1930,
-    'bromley1916': bromley1916,
-    'bromley1894': bromley1894,
-    'hopkins1873': hopkins1873,
-    'chase1865': chase1865,
-    'macrisPoints': macrisPoints,
-    'parcels': parcels,
-    'chcNeighborhoods': chcNeighborhoods,
-    'neighborhoods': neighborhoods
-  };
   
 
 // Map State information may be saved in the browser's session cache.
@@ -543,7 +319,7 @@ setView();
 //Doctrine or something.  
 function queryMarkers(markerGroup) {
   $.ajax({
-         url : "<? echo $this->assetUrl('php/placemarkers.php') ?>",
+         url : "<?php echo $this->assetUrl('php/placemarkers.php') ?>",
          type: "POST",
          dataType: 'json',
          //data: form.serialize(),
@@ -594,14 +370,9 @@ function pushMarkers(json_response, markerGroup){
     var row = json_response[i];
     var title = row['title'] ;
     var item_id =  row['item_id'];
-    //For Dev
-    //var item_url = "http://192.168.99.101/omeka-s/s/cdash/item/" + item_id;
-    // for Prod
-    var item_url = "/s/cdash/item/" + item_id;
     var marker = L.marker(L.latLng(row['lat'], row['lng']), { title: title });
     marker.id = row['item_id'];
-    marker.item_url = "/s/cdash/item/" + item_id;
-    //marker.item_url = "http://192.168.99.101/omeka-s/s/cdash/item/" + item_id;
+    marker.item_url = CDASH_SITE_URL + "/item/" + item_id;
     marker.title = row['title'];
     marker.setIcon(sepiaBalloon);
     if (row['placetype'] != "Address") {

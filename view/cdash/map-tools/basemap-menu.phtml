@@ -1,81 +1,32 @@
-<?php $infodot = $this->assetUrl('img/infodot.png'); ?>
-  
-  <p><b>Base Maps</b></p>
-  <input type="radio" name="mapchoice" id="camBase"  >
-  <label for="camBase">Cambridge Basemap</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDDBasemap/MapServer/">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="bluesky2023"  >
-  <label for="bluesky2023">Cambridge 2023 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam2021"  >
-  <label for="cam21">Cambridge 2021 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam2018"  >
-  <label for="camPhoto">Cambridge 2018 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam2010"  >
-  <label for="cam2010">Cambridge 2010 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam1995"  >
-  <label for="cam1995">Cambridge 1995 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam1978"  >
-  <label for="cam1978">Cambridge 1978 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam1969"  >
-  <label for="cam1969">Cambridge 1969 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
-  <input type="radio" name="mapchoice" id="cam1947"  >
-  <label for="cam1947">Cambridge 1947 Photo</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span></div>
-  <br>
+<?php
+/**
+ * Basemap radios, generated from view/cdash/layer-registry.php.
+ * Add a layer there, not here.
+ *
+ * Generating these fixes two long-standing typos in the 4.1.1 hand-written
+ * markup: the cam2021 and cam2018 labels pointed at ids "cam21" and "camPhoto",
+ * neither of which exists, so clicking those two labels did nothing.
+ */
+$escape  = $this->plugin('escapeHtml');
+$infodot = $this->assetUrl('img/infodot.png');
+$layers  = require __DIR__ . '/../layer-registry.php';
+?>
 
-  <input type="radio" name="mapchoice" id="cam1930"  >
-  <label for="cam1930">1930 Bromley </label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://mapwarper.net/layers/546">MapWarper.org</a></a></span></div>
+<p><b>Base Maps</b></p>
+
+<?php foreach ($layers as $layer): ?>
+    <?php if ($layer['group'] !== 'basemap' || !empty($layer['hidden'])) continue; ?>
+  <input type="radio" name="mapchoice" id="<?php echo $escape($layer['key']); ?>">
+  <label for="<?php echo $escape($layer['key']); ?>"><?php echo $escape($layer['label']); ?></label>
+    <?php if (!empty($layer['source'])): ?>
+  <div class="tooltip"><img src="<?php echo $escape($infodot); ?>" alt="">
+    <span class="tooltiptext">
+        <?php if (!empty($layer['sourceUrl'])): ?>
+      Shared by <a href="<?php echo $escape($layer['sourceUrl']); ?>" target="Cdash_Link"><?php echo $escape($layer['source']); ?></a>
+        <?php else: ?>
+        <?php echo $escape($layer['source']); ?>
+        <?php endif; ?>
+    </span></div>
+    <?php endif; ?>
   <br>
-
-  <input type="radio" name="mapchoice" id="bromley1916"  >
-  <label for="bromley1916">1916 Bromley</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="">Cambridge GIS</a></span></div>
-  <br>
-
-  <input type="radio" id="bromley1894" name="mapchoice">
-  <label for="bromley1894">1894 Bromley</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://mapjunction.com/VIEWER/17810" target="Cdash_Link">MapJunction</a>, <a href="https://mapwarper.net/layers/920" target="Cdash_Link">MapWarper</a></span></div>
-
-<br>
-  <input type="radio" id="hopkins1873" name="mapchoice">
-  <label for="hopkins1873">1873 Hopkins</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://collections.leventhalmap.org/search/commonwealth:tt44pw432" target="Cdash_Link">Leventhal Map and Education Center </a> at Boston Public Library</span></div>
-  <br>
-  <input type="radio" id="chase1865" name="mapchoice">
-  <label for="chase1865">1865 J.G. Chase</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://gisserver.cambridgema.gov/arcgis/rest/services/CDASH/MapServer">Cambridge GIS</a></span>
-  </div>
-
-
-
-<!-- /div -->  <!-- Closes basemaps column -->
+<?php endforeach; ?>

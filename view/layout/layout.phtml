@@ -40,6 +40,10 @@ $this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-v3.0.12/esr
 $this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-vector-v4.2.3/esri-leaflet-vector.js'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.ajax.js'));
 
+// Builds Leaflet layers from view/cdash/layer-registry.php. Must load after the
+// Leaflet plugins above, since it calls into L.esri and L.GeoJSON.AJAX.
+$this->headScript()->appendFile($this->assetUrl('js/cdash-layer-factory.js'));
+
 // End of CDASH includes
 
 

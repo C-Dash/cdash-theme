@@ -1,43 +1,29 @@
-<?php $infodot = $this->assetUrl('img/infodot.png'); ?>
+<?php
+/**
+ * Overlay checkboxes, generated from view/cdash/layer-registry.php.
+ * Add a layer there, not here.
+ */
+$escape  = $this->plugin('escapeHtml');
+$infodot = $this->assetUrl('img/infodot.png');
+$layers  = require __DIR__ . '/../layer-registry.php';
+?>
 
 <p><b>Map Overlays</b> <br>
-  <span style="color: red; size: smaller;">Click features on map for more information.</span></p>
-  <input type="checkbox" id="allMarkers">
-  <label for="allMarkers">All CDASH locations </label>
- <br>
-  <input type="checkbox" id="histMarkers">
-  <label for="histMarkers">Historical Markers</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_NationalRegisterHistoricPlaces" target="Cdash_Link">Cambridge GIS</a></span></div>
+  <span class="cdash-layer-hint">Click features on map for more information.</span></p>
 
-
+<?php foreach ($layers as $layer): ?>
+    <?php if ($layer['group'] !== 'overlay' || !empty($layer['hidden'])) continue; ?>
+  <input type="checkbox" id="<?php echo $escape($layer['key']); ?>">
+  <label for="<?php echo $escape($layer['key']); ?>"><?php echo $escape($layer['label']); ?></label>
+    <?php if (!empty($layer['source'])): ?>
+  <div class="tooltip"><img src="<?php echo $escape($infodot); ?>" alt="">
+    <span class="tooltiptext">
+        <?php if (!empty($layer['sourceUrl'])): ?>
+      Shared by <a href="<?php echo $escape($layer['sourceUrl']); ?>" target="Cdash_Link"><?php echo $escape($layer['source']); ?></a>
+        <?php else: ?>
+        <?php echo $escape($layer['source']); ?>
+        <?php endif; ?>
+    </span></div>
+    <?php endif; ?>
   <br>
-  <input type="checkbox" id="parcels">
-  <label for="parcels">Property Parcels</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://data.cambridgema.gov/Assessing/Assessing-Parcels/rst6-227j" target="Cdash_Link">Cambridge GIS</a></span></div>
-
-
-  <br>
-  <input type="checkbox" id="macrisPoints">
-  <label for="macrisPoints">MACRIS Points</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://docs.digital.mass.gov/dataset/massgis-data-mhc-historic-inventory" target="Cdash_Link">Massachusetts Cultural Resources Information System</a></span></div>
-
-  <br>
-  <input type="checkbox" id="natRegister">
-  <label for="natRegister">Nat. Register of Historic Places</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Historical/HISTORICAL_HistoricalMarkers" target="Cdash_Link">Cambridge GIS</a></span></div>
-
-  <br>
-  <input type="checkbox" id="neighborhoods">
-  <label for="neighborhoods">CDD Neighborhoods</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Shared by <a href="https://www.cambridgema.gov/GIS/gisdatadictionary/Boundary/BOUNDARY_CDDNeighborhoods" target="Cdash_Link">Cambridge GIS</a></span></div>
-
-  <br>
-  <input type="checkbox" id="chcNeighborhoods">
-  <label for="chcNeighborhoods">CHC Survey Areas</label>
-  <div class="tooltip"><img src=<?php echo $infodot; ?>> 
-  <span class="tooltiptext">Created by CDASH Project</span></div>
+<?php endforeach; ?>
