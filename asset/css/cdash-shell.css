@@ -1,0 +1,476 @@
+/* ============================================================================
+   CDASH 5 application shell.
+   Ported from the offline prototype at dash-dev-offline/layout/src/cdash_lyt_2.
+
+   Loaded AFTER style.css so the overrides at the bottom win. style.css is
+   generated from asset/sass -- do not hand-edit it; put shell rules here.
+
+   The 4.1.1 layout was built on custom elements (<map>, <show-window>,
+   <main-header>). Those elements are gone from layout.phtml, so the rules
+   targeting them in style.css no longer match anything and are inert. The
+   rules that DO still bite are the ones on real elements and on ids the new
+   markup keeps -- #banner, #navmenu, #showresult, #content, #drawmap -- and
+   those are neutralised in the "Overrides" section at the end.
+   ============================================================================ */
+
+/* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
+@property --cdash-banner-h {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 15%;
+}
+
+@property --cdash-split {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --cdash-pullout-w {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+:root {
+  --cdash-map-hue: 220;
+  --cdash-map-sat: 70%;
+  --cdash-browse-hue: 42;
+  --cdash-browse-sat: 65%;
+
+  --cdash-map-boundary: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 35%);
+  --cdash-map-bg:       hsl(var(--cdash-map-hue) var(--cdash-map-sat) 90%);
+  --cdash-browse-boundary: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 40%);
+  --cdash-browse-bg:       hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 90%);
+
+  /* Pull-outs: lighter than their pane's own background, plus a subtle
+     transparency so the pane content underneath faintly shows through. */
+  --cdash-map-pullout-bg:    hsl(var(--cdash-map-hue) var(--cdash-map-sat) 97% / 0.85);
+  --cdash-browse-pullout-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 97% / 0.85);
+
+  /* The prototype used a 20px placeholder nav. The real nav carries a menu and
+     a search form, so the shell sizes that row to its content instead. */
+  --cdash-nav-h: auto;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---- Outer shell: Banner / Nav Bar / Pane Container ---- */
+.cdash-app-shell {
+  display: grid;
+  grid-template-rows: var(--cdash-banner-h, 15%) var(--cdash-nav-h) 1fr;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: lightgray;
+  transition: --cdash-banner-h 400ms ease-in;
+}
+
+.cdash-banner {
+  overflow: hidden;
+}
+
+.cdash-banner-content {
+  height: 100%;
+  transition: transform 400ms ease-in;
+}
+
+.cdash-app-shell.cdash-banner-collapsed {
+  --cdash-banner-h: 0%;
+}
+
+.cdash-app-shell.cdash-banner-collapsed .cdash-banner-content {
+  transform: translateY(-100%);
+}
+
+.cdash-navbar {
+  overflow: hidden;
+}
+
+/* ---- Pane Container ----
+   container-type:size lives on this element only; the actual grid (and its
+   template-switching based on the container query) lives on the nested
+   .cdash-pane-grid child, not on this element itself. Restyling
+   grid-template-columns on the very element hosting container-type:size,
+   based on that element's own aspect-ratio query, is unreliable (observed:
+   Chrome kept the base grid-template-columns while grid-template-rows from
+   the same @container rule correctly applied) -- separating "query host"
+   from "the grid that switches" sidesteps it. */
+.cdash-pane-container {
+  container-type: size;
+  container-name: panes;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cdash-pane-grid {
+  display: grid;
+  height: 100%;
+  width: 100%;
+
+  /* wide-case (default): Map | Divider | Browse */
+  grid-template-columns: var(--cdash-split, 50%) 2px 1fr;
+  grid-template-rows: 1fr;
+}
+
+.cdash-pane-grid.cdash-animating {
+  transition: --cdash-split 300ms ease-out;
+}
+
+.cdash-pane {
+  overflow: hidden;
+  position: relative;
+  border: 3px solid transparent;
+}
+
+/* Outer wrapper clips at the pane's actual size and carries no padding of
+   its own -- with box-sizing:border-box, padding can't compress a box
+   below its own total any more than a border can, so padding must live on
+   the inner wrapper instead, or a collapsed 8px pane would force this box
+   to grow past its parent and spill content into neighbouring panes. */
+.cdash-pane-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  /* Establishes a stacking context so pane CONTENT can never paint over the
+     pull-out drawers. Leaflet stacks its own panes at z-index 200-700 and its
+     controls at 800-1000; .cdash-pane is position:relative with z-index:auto,
+     which is NOT a stacking context, so without this those values compete
+     directly against .cdash-pullout (z-index 2) in the same context and bury
+     the Layers drawer completely. Isolating the content here beats raising the
+     drawer to some larger magic number, because it holds for any future pane
+     content rather than only for Leaflet's current values.
+     The prototype never hit this: its map pane held a placeholder heading. */
+  position: relative;
+  z-index: 0;
+}
+
+.cdash-pane-content-inner {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.cdash-map-pane {
+  grid-column: 1;
+  grid-row: 1;
+  border-color: var(--cdash-map-boundary);
+  background: var(--cdash-map-bg);
+  border-right-width: 6px;
+}
+
+.cdash-browse-pane {
+  grid-column: 3;
+  grid-row: 1;
+  border-color: var(--cdash-browse-boundary);
+  background: var(--cdash-browse-bg);
+  border-left-width: 6px;
+}
+
+/* Collapsed panes are pinned to a fixed pixel width/height (COLLAPSED_PX in
+   cdash-layout.js) -- the far-side 3px border plus content making up the
+   rest, no divider-side border. border-box can't shrink a box below its own
+   border width, so the border on the divider-facing side must drop to 0 to
+   actually fit within that budget. */
+.cdash-map-pane.cdash-pane-collapsed {
+  border-right-width: 0;
+}
+
+.cdash-browse-pane.cdash-pane-collapsed {
+  border-left-width: 0;
+}
+
+.cdash-pane-divider {
+  grid-column: 2;
+  grid-row: 1;
+  cursor: col-resize;
+  touch-action: none;
+  background: #999;
+  /* Panes are position:relative (positioned elements always paint above
+     static ones), and a collapsed pane's border can't shrink below its own
+     width even at a 0% track -- so without this the collapsed pane's
+     leftover border band paints over the divider and eats its pointer
+     events. Elevate the divider so it always wins. */
+  position: relative;
+  z-index: 1;
+}
+
+.cdash-pane-divider:hover {
+  background: #666;
+}
+
+/* The 6px visual divider is too small a touch target on a phone. Widen the
+   hit area with a transparent overlay while leaving the stripe itself 6px. */
+.cdash-pane-divider::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  right: -8px;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider::after {
+  left: 0;
+  right: 0;
+  top: -8px;
+  bottom: -8px;
+}
+
+/* ---- Pull-out drawers (Layers on the Map pane, Filters on the Browse
+   pane) -- always horizontal (sized/dragged along the pane's own width)
+   regardless of wide/tall orientation, so unlike the divider/panes above,
+   these need no @container tall-case override; their axis never flips. ---- */
+.cdash-pullout {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--cdash-pullout-w, 0%);
+  max-width: 95%;
+  /* No overflow:hidden here -- .cdash-pullout-handle deliberately protrudes
+     outside this box so it stays grabbable when collapsed, and
+     overflow:hidden would clip that protruding part out of hit-testing, not
+     just out of view. .cdash-pullout-content clips its own overflow. */
+  z-index: 2;
+}
+
+.cdash-pullout-layers {
+  left: 0;
+  border-right: 2px solid #ccc;
+  background: var(--cdash-map-pullout-bg);
+}
+
+.cdash-pullout-filters {
+  right: 0;
+  border-left: 2px solid #ccc;
+  background: var(--cdash-browse-pullout-bg);
+}
+
+.cdash-pullout.cdash-pullout-animating {
+  transition: --cdash-pullout-w 300ms ease-out;
+}
+
+/* Same outer-clips/inner-pads split as .cdash-pane-content, and for the
+   same reason: this outer wrapper must be able to shrink to the drawer's
+   actual collapsed width without its own padding forcing it wider. */
+.cdash-pullout-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cdash-pullout-content-inner {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.cdash-pullout-handle {
+  position: absolute;
+  top: 50%;
+  width: 32px;
+  height: 110px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: #ddd;
+  color: #333;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  z-index: 3;
+}
+
+.cdash-pullout-layers .cdash-pullout-handle {
+  right: -32px;
+  border-radius: 0 8px 8px 0;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.cdash-pullout-filters .cdash-pullout-handle {
+  left: -32px;
+  border-radius: 8px 0 0 8px;
+}
+
+.cdash-pullout-handle-disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* ---- Tall-case: Pane Container's own aspect ratio is <= 1 ---- */
+@container panes (aspect-ratio <= 1) {
+  .cdash-pane-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--cdash-split, 50%) 2px 1fr;
+  }
+
+  .cdash-map-pane {
+    grid-column: 1;
+    grid-row: 1;
+    border-right-width: 3px;
+    border-bottom-width: 6px;
+  }
+
+  .cdash-pane-divider {
+    grid-column: 1;
+    grid-row: 2;
+    cursor: row-resize;
+  }
+
+  .cdash-browse-pane {
+    grid-column: 1;
+    grid-row: 3;
+    border-left-width: 3px;
+    border-top-width: 6px;
+  }
+
+  /* Divider-facing side is now bottom (map) / top (browse) instead of
+     right/left, so the collapsed budget needs the border zeroed there
+     instead -- and the wide-case side restored to its normal 3px. */
+  .cdash-map-pane.cdash-pane-collapsed {
+    border-right-width: 3px;
+    border-bottom-width: 0;
+  }
+
+  .cdash-browse-pane.cdash-pane-collapsed {
+    border-left-width: 3px;
+    border-top-width: 0;
+  }
+}
+
+/* Redundant JS-mirrored cursor hint (kept in sync with the container query above) */
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider {
+  cursor: row-resize;
+}
+
+/* ============================================================================
+   Overrides for 4.1.1 rules that still match the new markup.
+
+   Each of these exists because style.css sized an element for the old
+   fixed-pixel grid. Inside the shell, the grid owns the sizing and these
+   fixed heights would fight it.
+   ============================================================================ */
+
+/* Was height:140px inside a 176px #top row. The banner row is now a grid
+   track, so the banner and its image fill whatever the track gives them. */
+#banner {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+#banner img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+  min-width: 0;
+  max-width: none;
+}
+
+#banner h1 {
+  height: 100%;
+  margin: 0;
+}
+
+#banner .site-title {
+  display: block;
+  height: 100%;
+}
+
+/* Was height:30px with a grid-area from the old #top grid. */
+#navmenu {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: 30px;
+  width: 100%;
+}
+
+/* The map fills its pane; #drawmap keeps its 4.1.1 background so the pane
+   does not flash white before tiles arrive. */
+#drawmap {
+  width: 100%;
+  height: 100%;
+}
+
+/* Was a grid with a "user-bar" track and its own left border. The pane
+   supplies the border now, and this is the browse pane's single scroll
+   container -- .cdash-pane-content above it is overflow:hidden precisely so
+   there is exactly one scroller here rather than two nested ones. */
+#showresult {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: none;
+  background-color: #EAE7D8;
+}
+
+/* Was grid-area:content with margin:10px, which no longer has a grid to sit
+   in. Padding rather than margin so it cannot collapse out of the scroller. */
+#content {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 10px 30px 10px 10px;
+}
+
+/* Stacked inside the Layers drawer rather than side by side in the old
+   #layer-panel grid. */
+#overlay-menu,
+#basemap-menu {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cdash-layer-hint {
+  color: red;
+  font-size: smaller;
+}
+
+/* Print: the shell's viewport-locked, overflow-hidden boxes would otherwise
+   clip everything to one page. Let the document flow normally on paper. */
+@media print {
+  html, body {
+    height: auto;
+    overflow: visible;
+  }
+
+  .cdash-app-shell,
+  .cdash-pane-container,
+  .cdash-pane-grid,
+  .cdash-pane,
+  .cdash-pane-content,
+  #showresult {
+    display: block;
+    height: auto;
+    width: auto;
+    overflow: visible;
+    border: none;
+  }
+
+  .cdash-map-pane,
+  .cdash-pane-divider,
+  .cdash-pullout,
+  .cdash-navbar {
+    display: none;
+  }
+}

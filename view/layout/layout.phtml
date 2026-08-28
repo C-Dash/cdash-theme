@@ -44,6 +44,23 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.ajax.js'));
 // Leaflet plugins above, since it calls into L.esri and L.GeoJSON.AJAX.
 $this->headScript()->appendFile($this->assetUrl('js/cdash-layer-factory.js'));
 
+// Application shell: pane splitter, banner collapse, and the Layers/Filters
+// drawers. cdash-layout.js registers Alpine components on the alpine:init
+// event, so it must be parsed BEFORE Alpine boots -- hence defer on both,
+// which preserves document order, rather than Alpine's usual plain script tag.
+// media 'all', not 'screen' -- this stylesheet carries its own @media print
+// block to unlock the shell's viewport-locked boxes for paper.
+$this->headLink()->appendStylesheet($this->assetUrl('css/cdash-shell.css'), 'all');
+$this->headScript()->appendFile($this->assetUrl('js/cdash-layout.js'), 'text/javascript', ['defer' => true]);
+$this->headScript()->appendFile($this->assetUrl('vendor/alpine/alpine.min.js'), 'text/javascript', ['defer' => true]);
+
+// The Filters drawer renders common/advanced-search, which registers these two
+// assets itself -- but it does so during body render, by which point the head
+// has already been emitted and the registration is silently dropped. Declaring
+// them here is what actually gets them onto the page.
+$this->headLink()->appendStylesheet($this->assetUrl('css/advanced-search.css', 'Omeka'));
+$this->headScript()->appendFile($this->assetUrl('js/advanced-search.js', 'Omeka'));
+
 // End of CDASH includes
 
 
@@ -94,132 +111,110 @@ $userBar = $this->userBar();
 
 
 <?php echo $this->htmlElement('body'); ?>
-<?php //echo 'Hello'; ?>
-  <!-- was: div id="grid-container" -->
-  <main>
 
-  <main-header>
-  <div id="top">
-        <div id="banner">
-            <header>
-            <h1>
-                <a href="<?php echo $site->url(); ?>" class="site-title">
-                <?php if ($this->themeSetting('banner')): ?>
-                    <img src="<?php echo $this->themeSettingAssetUrl('banner'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
-                <?php else: ?>
-                    <!-- Image taken from theme's asset/images folder -->
-                    <img src="<?php echo $this->assetUrl('img/banner/c_dash_banner_manila_long.jpg'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
-                    <?php //echo $escape($siteTitle); ?>
-                <?php endif; ?>
-                </a>
-            </h1>
-                </header>
-        </div> <!-- close banner-->
+<div class="cdash-app-shell" x-data="appShell"
+     :class="{ 'cdash-banner-collapsed': bannerCollapsed }">
 
+  <header class="cdash-banner">
+    <div class="cdash-banner-content">
+      <div id="banner">
+        <h1>
+          <a href="<?php echo $site->url(); ?>" class="site-title">
+            <?php if ($this->themeSetting('banner')): ?>
+              <img src="<?php echo $this->themeSettingAssetUrl('banner'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
+            <?php else: ?>
+              <img src="<?php echo $this->assetUrl('img/banner/c_dash_banner_manila_long.jpg'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
+            <?php endif; ?>
+          </a>
+        </h1>
+      </div>
+    </div>
+  </header>
 
-        <div id="navmenu">
-            <nav>
-              <?php
-              echo $site->publicNav()->menu()->renderMenu(null, [
-                'maxDepth' => $this->themeSetting('nav_depth') - 1
-               ]);
-              ?>
-
-              </nav>
-
-              <!--div class="left"  id="advanced_search"> <a style="color: #EAE7D8; margin-top: 4px;" href="/omeka-s/s/cdash/item/search?property%5B0%5D%5Btext%5D=Detail&property%5B0%5D%5Bjoiner%5D=and&property%5B0%5D%5Bproperty%5D=1&property%5B0%5D%5Btype%5D=in&sort_by=cdash:streetSort&sort_order=asc&property%5B0%5D%5Bjoiner%5D=and&property%5B0%5D%5Bproperty%5D=1&property%5B0%5D%5Btype%5D=in&resource_template_id%5B%5D=13">Advanced Search</a> </div -->
-              <div id="search" class="left" >
-                    <!-- ?php echo $this->partial('common/places-form'); ? -->
-                    <?php echo $this->partial('common/search-form'); ?>
-              </div> 
-              </nav> <!-- closes nav -->
-              </div> <!-- closes navmenu -->
-
-    </div><!-- Close top -->
-
-    </main-header> 
-
-
-    <map>
-      <map-frame>
-    <!-- div id="cdash-map" -->
-      <!-- div id="cdmap-frame" -->
-      <?php echo $this->partial('cdash/cdash-map-5'); ?>
-      <?php /*
-          $webroot = $_SERVER['DOCUMENT_ROOT'];
-           $cdash_map_php = $webroot . "/omeka-s/themes/cdash_phoenix/view/omeka/site/index/cdash-map-5.phtml";
-           include $cdash_map_php;
-           */
+  <div class="cdash-navbar">
+    <nav id="navmenu">
+      <?php
+      echo $site->publicNav()->menu()->renderMenu(null, [
+          'maxDepth' => $this->themeSetting('nav_depth') - 1
+      ]);
       ?>
-      <!--/div --> <!-- Closes map-frame -->
-      </map-frame>
+      <div id="search" class="left">
+        <?php echo $this->partial('common/search-form'); ?>
+      </div>
+    </nav>
+  </div>
 
-      <map-tools>
-<!-- div id="cdmap-tools" -->
-<div id="layer-panel-flip"><p>Hide Layer Menu<p></div>
-      <div id="layer-panel">
-          <div id="overlay-menu">
-            <?php echo $this->partial('cdash/map-tools/overlay-menu.phtml'); ?>
-            </div>
-          <div id="basemap-menu">
-            <?php echo $this->partial('cdash/map-tools/basemap-menu.phtml'); ?>
-          </div>
-        </div> <!-- Layer Panel --> 
- 
-<!-- /div --> <!-- closes map-tools -->
-<!-- /div --> <!-- close cdash_map div --> 
-</map-tools>
-</map>
+  <div class="cdash-pane-container" x-data="paneResizer">
+    <div class="cdash-pane-grid" :class="{ 'cdash-is-tall': orientation === 'tall' }">
 
-<!--tab-bar>
-   <h2>I'm A Tab-Bar!</h2> 
-</tab-bar -->
-
-    <show-window>
-        <div id="showresult" >
-            <div id="detail">    
-                <div id="content" role="main">
-                    <?php echo $this->content; ?>
-                </div>
-                <?php if (!empty($userBar)): ?>
-                        <?php echo $userBar; ?>
-                        <script type="text/javascript">
-                            document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML += '<span class="admin"><a href="<?php echo $this->assetUrl('php/geosync.php')?>" target = "geosync">GeoSync</a> </span> <span class="admin"><a href="<?php echo $this->assetUrl('php/geoaudit.php')?>" target = "geoaudit">GeoAudit</a>                           </span>'
-                        </script>
-                    <?php endif; ?>
-            </div> 
+      <section class="cdash-pane cdash-map-pane"
+               :class="{ 'cdash-pane-collapsed': mapCollapsed }">
+        <div class="cdash-pane-content">
+          <?php echo $this->partial('cdash/cdash-map-5'); ?>
         </div>
 
-    <div id='print-footer'><p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p></div>
-    <show-footer>
-       <div><b>&lt;&lt;</b> Drag to Expand / Shrink.</div>  
-       <div class="left">Powered by Omeka-S</div>
-    </show-footer> 
-</show-window>
-    </main> 
-    <!-- /div --> <!-- closes main  was: grid container --> 
-    </body>
-    <script type="text/javascript">
-    $(document).ready( function() {
-        if (sessionStorage.getItem("layer_panel_pos") == "down") {
-            $("#layer-panel").slideToggle("slow");
-            $("#layer-panel-flip").text('Show Layer Menu');
-        }
+        <div class="cdash-pullout cdash-pullout-layers" x-data="pullOut('start')"
+             x-effect="$data.parentCollapsed = mapCollapsed">
+          <div class="cdash-pullout-content">
+            <div class="cdash-pullout-content-inner">
+              <div id="overlay-menu">
+                <?php echo $this->partial('cdash/map-tools/overlay-menu.phtml'); ?>
+              </div>
+              <div id="basemap-menu">
+                <?php echo $this->partial('cdash/map-tools/basemap-menu.phtml'); ?>
+              </div>
+            </div>
+          </div>
+          <div class="cdash-pullout-handle"
+               :class="{ 'cdash-pullout-handle-disabled': parentCollapsed }"
+               x-on:pointerdown="parentCollapsed ? null : onHandlePointerDown">Layers</div>
+        </div>
+      </section>
 
-        let showresultwidth = document.getElementById('showresult').clientWidth;
-        console.log("Result window width: " + showresultwidth);
-        $("#layer-panel-flip").click(function(){
-            //$("#layer-panel-flip").text(($("#layer-panel-flip").text() == 'Hide Layer Menu') ? 'Show Layer Menu' : 'Hide Layer Menu').fadeIn();
-            $("#layer-panel").slideToggle("slow");
-            if (sessionStorage.getItem("layer_panel_pos") == "up") {
-                sessionStorage.setItem("layer_panel_pos", "down");
-                $("#layer-panel-flip").text('Show Layer Menu');
-            } else {
-                sessionStorage.setItem("layer_panel_pos", "up");
-                $("#layer-panel-flip").text('Hide Layer Menu'); 
-            }
-            console.log("New layer panel poisition saved:" + sessionStorage.getItem("layer_panel_pos")  )
-        });
-});
-</script>
+      <div class="cdash-pane-divider" x-on:pointerdown="onDividerPointerDown"></div>
+
+      <section class="cdash-pane cdash-browse-pane"
+               :class="{ 'cdash-pane-collapsed': browseCollapsed }">
+        <div class="cdash-pane-content">
+          <div id="showresult">
+            <div id="content" role="main">
+              <?php echo $this->content; ?>
+            </div>
+
+            <div id="print-footer">
+              <p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p>
+            </div>
+
+            <?php if (!empty($userBar)): ?>
+              <?php echo $userBar; ?>
+              <script type="text/javascript">
+                document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML +=
+                  '<span class="admin"><a href="<?php echo $this->assetUrl('php/geosync.php'); ?>" target="geosync">GeoSync</a></span> <span class="admin"><a href="<?php echo $this->assetUrl('php/geoaudit.php'); ?>" target="geoaudit">GeoAudit</a></span>';
+              </script>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <div class="cdash-pullout cdash-pullout-filters" x-data="pullOut('end')"
+             x-effect="$data.parentCollapsed = browseCollapsed">
+          <div class="cdash-pullout-content">
+            <div class="cdash-pullout-content-inner">
+              <form action="<?php echo $escape($site->url() . '/item'); ?>" method="GET">
+                <?php echo $this->partial('common/advanced-search', ['resourceType' => 'item']); ?>
+                <button type="submit"><?php echo $this->translate('Search'); ?></button>
+              </form>
+            </div>
+          </div>
+          <div class="cdash-pullout-handle"
+               :class="{ 'cdash-pullout-handle-disabled': parentCollapsed }"
+               x-on:pointerdown="parentCollapsed ? null : onHandlePointerDown">Filters</div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
 </html>

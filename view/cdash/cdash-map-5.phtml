@@ -33,12 +33,6 @@ if (isIE()){
 // Provides contnt for the CDASH Split map  form. 
 $(document).ready(function(){
 
- 
-//To slide-toggle the map control pannel 
-    $("#mapControlclick").click(function(){
-       $("#mapControlPanel").slideToggle("slow");
-    });
-
 // Layer definitions live in view/cdash/layer-registry.php -- one entry per layer,
 // shared with the overlay and basemap menus so the two can never drift apart.
 // asset/js/cdash-layer-factory.js turns each descriptor into a Leaflet layer.
@@ -124,15 +118,9 @@ if (typeof(Storage) == "undefined") {
       console.log("Retrieved stored  center location " + mapLat + " " + mapLon);
     };
 
-    if (sessionStorage.getItem("layer_panel_pos") == null)  {
-      sessionStorage.setItem("layer_panel_pos", "up" );
-      console.log("No saved Layer Panel position.  Set to Up.");
-    } else {
-      let current_layer_panel_pos = sessionStorage.getItem("layer_panel_pos");
-      console.log("Saved Layer Panel position:" + current_layer_panel_pos);
-    };
-
-
+    // The layer_panel_pos key that used to live here tracked the 4.1.1
+    // slide-toggle panel, which the Layers drawer replaces. The drawer keeps
+    // its own open/closed state in Alpine, so nothing needs storing.
 
   } //Browser supports storage
 
