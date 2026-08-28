@@ -2,3 +2,8 @@
 /node_modules/
 .sass-cache
 .DS_Store
+
+# Windows Mark-of-the-Web alternate data streams. These get materialized as
+# real files when an NTFS tree is copied into WSL, and two of them were
+# committed by accident in 9c8a068.
+*Zone.Identifier
