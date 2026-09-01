@@ -54,6 +54,11 @@ $this->headLink()->appendStylesheet($this->assetUrl('css/cdash-shell.css'), 'all
 $this->headScript()->appendFile($this->assetUrl('js/cdash-layout.js'), 'text/javascript', ['defer' => true]);
 $this->headScript()->appendFile($this->assetUrl('vendor/alpine/alpine.min.js'), 'text/javascript', ['defer' => true]);
 
+// htmx swaps the browse pane in place instead of reloading the document, which
+// is what lets the map survive navigation. Deferred: it processes hx-* on
+// DOMContentLoaded, so it does not need to run before the body parses.
+$this->headScript()->appendFile($this->assetUrl('vendor/htmx/htmx.min.js'), 'text/javascript', ['defer' => true]);
+
 // The Filters drawer renders common/advanced-search, which registers these two
 // assets itself -- but it does so during body render, by which point the head
 // has already been emitted and the registration is silently dropped. Declaring
@@ -112,8 +117,33 @@ $userBar = $this->userBar();
 
 <?php echo $this->htmlElement('body'); ?>
 
+<?php
+/**
+ * hx-boost sits on the whole shell, not just the browse pane, so that nav
+ * links, the search form and the Filters form all swap the browse pane too
+ * rather than reloading the document and destroying the map.
+ *
+ * hx-select pulls #content out of the full page Omeka returns; everything
+ * else in the response -- including the map partial and its inline script --
+ * is discarded, which is exactly why the map is never rebuilt. It does mean
+ * the server renders the whole layout each time and we throw most of it away.
+ * That is the cost of keeping Omeka's normal server-rendered routes rather
+ * than inventing a fragment endpoint, and it is cheap next to re-running
+ * every layer constructor and the full marker query on every click.
+ *
+ * Links carrying target/download (all the external CDASH links do) are
+ * skipped by htmx and behave normally. With JS off, nothing is boosted and
+ * every link is an ordinary full-page navigation -- which matters on a
+ * public government site.
+ */
+?>
 <div class="cdash-app-shell" x-data="appShell"
-     :class="{ 'cdash-banner-collapsed': bannerCollapsed }">
+     :class="{ 'cdash-banner-collapsed': bannerCollapsed }"
+     hx-boost="true"
+     hx-target="#content"
+     hx-select="#content"
+     hx-swap="outerHTML scroll:#showresult:top"
+     hx-push-url="true">
 
   <header class="cdash-banner">
     <div class="cdash-banner-content">
@@ -176,6 +206,23 @@ $userBar = $this->userBar();
       <section class="cdash-pane cdash-browse-pane"
                :class="{ 'cdash-pane-collapsed': browseCollapsed }">
         <div class="cdash-pane-content">
+          <?php
+          /**
+           * Marker clicks navigate by setting this anchor's href and clicking
+           * it, rather than calling htmx.ajax() directly.
+           *
+           * htmx.ajax() has no history option, so going that route would mean
+           * hand-rolling pushState plus a popstate handler alongside the one
+           * hx-boost already runs -- two history mechanisms writing the same
+           * stack, and htmx's restore cache would not know about entries we
+           * pushed ourselves, so Back would swap in stale or empty content.
+           * Routing the click through a real boosted anchor keeps history
+           * entirely htmx's job, so a marker click and a link click produce
+           * identical history behaviour.
+           */
+          ?>
+          <a id="cdash-marker-link" href="#" hidden aria-hidden="true" tabindex="-1"></a>
+
           <div id="showresult">
             <div id="content" role="main">
               <?php echo $this->content; ?>

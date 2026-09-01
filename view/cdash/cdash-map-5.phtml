@@ -228,10 +228,15 @@ map.on('zoomend', function() {
     });
 
 
-// The following reads the marker data that Omeka writes into the html
-// div with class = .mapping-marker-popup-content.  The presence of this 
-// div indicates that the Omeka Item in the right-hand window includes a marker
-// which wil be moved to the center of the map and featured with a special marker. 
+// ---------------------------------------------------------------------------
+// Featured marker: the red dot for whatever the browse pane is showing.
+//
+// The Mapping module writes coordinates into the item's HTML as a
+// .mapping-marker-popup-content div. In 4.1.1 this ran once, at page load,
+// because every marker click reloaded the document. The browse pane is now
+// swapped in place, so there is no reload to hang it on -- this is a function
+// called both on first load and after every swap.
+// ---------------------------------------------------------------------------
 
   var featuredIcon = L.icon({
           iconUrl:  "<?php echo $this->assetUrl('img/redcircle.png') ?>",
@@ -239,66 +244,79 @@ map.on('zoomend', function() {
            iconAnchor: [11,11]
         });
 
+  let featuredMarkers = new L.FeatureGroup();
+  map.addLayer(featuredMarkers);
 
-    let markerCenter = [];
-    let featuredMarkers = new L.FeatureGroup();
-    if ($('.mapping-marker-popup-content').length === 0) {
-      console.log("No coordinates in featured page.  Preserve previous location");
-      if (sessionStorage.getItem("mkrLat") != null)  {  // Previous location has been stored.  Draw Featured Marker.
-        // make a subroutine out of this
-        var mkrPos = new L.LatLng(sessionStorage.getItem("mkrLat"), sessionStorage.getItem("mkrLon"));
-        var featuredMarker = new L.Marker(mkrPos);
-        console.log("got omeka marker at " + mkrPos)
-        //featuredMarker.bindPopup(popup[0]);
-        featuredMarker.setIcon(featuredIcon);
-        featuredMarker.setZIndexOffset(2000);
-        featuredMarkers.addLayer(featuredMarker);
-      }
+function updateFeaturedMarker() {
+  var $popups = $('#content .mapping-marker-popup-content');
 
-
-    }else {   // New featured page has a location.
-
-    $('.mapping-marker-popup-content').each(function() {
-        var popup = $(this).clone().show();
-        var mkrPos = new L.LatLng(popup.data('marker-lat'), popup.data('marker-lng'));
-        markerCenter = [popup.data('marker-lat'), popup.data('marker-lng')];
-        // remember this location since omeka items or pages don't have locations  
-        if (typeof(Storage) !== "undefined") {
-          sessionStorage.setItem("mkrLat", popup.data('marker-lat'));
-          sessionStorage.setItem("mkrLon", popup.data('marker-lng'));
-        } else {
-          console.log("Can't save new center. No browser storage support");
-        }
-
-        var featuredMarker = new L.Marker(mkrPos);
-        console.log("got omeka marker at " + mkrPos)
-        featuredMarker.bindPopup(popup[0]);
-        featuredMarker.setIcon(featuredIcon);
-        featuredMarker.setZIndexOffset(2000);
-        featuredMarkers.addLayer(featuredMarker);
-   });
+  if ($popups.length === 0) {
+    // A site page, or an item with no location. Leave the previous marker
+    // alone. 4.1.1 needed mkrLat/mkrLon in sessionStorage to rebuild it after
+    // the reload wiped the map; nothing wipes it now, so the marker simply
+    // stays where it is and those two keys are gone.
+    console.log("No coordinates in this page. Keeping the previous featured marker.");
+    return;
   }
 
-   map.addLayer(featuredMarkers);
-   featuredMarkers.bringToFront();
-  
+  featuredMarkers.clearLayers();
+  var markerCenter = null;
 
-// Here is some stuff from modules\Mapping\asset\js\mapping-show.js
-// Centers map on featured marker if it exists.  Otherwise does nothing. 
-// THis runs each time the page reloads. 
+  $popups.each(function() {
+      var popup = $(this).clone().show();
+      var lat = popup.data('marker-lat');
+      var lng = popup.data('marker-lng');
+      markerCenter = [lat, lng];
 
+      var featuredMarker = new L.Marker(new L.LatLng(lat, lng));
+      featuredMarker.bindPopup(popup[0]);
+      featuredMarker.setIcon(featuredIcon);
+      featuredMarker.setZIndexOffset(2000);
+      featuredMarkers.addLayer(featuredMarker);
+  });
 
-var setView = function() {
-    if (markerCenter.length === 2) {      //If there is an Omeka marker present.
-        map.panTo(markerCenter, mapZoom); //Pan to the marker and keep the current zoom.
-    } else {
-      //map.panTo(mapCenter, mapZoom);
-        } 
-    };
+  if (markerCenter) {
+    // 4.1.1 called panTo(center, mapZoom). panTo's second argument is an
+    // options object, not a zoom level, so the zoom was never actually
+    // applied -- panning at the current zoom is what it always did.
+    map.panTo(markerCenter);
+  }
 
-setView();
+  featuredMarkers.bringToFront();
+}
 
-// End insertion from modules\Mapping\asset\js\mapping-show.js
+// ---------------------------------------------------------------------------
+// Fixups applied to swapped-in content.
+//
+// This lived as an inline <script> at the bottom of item/show.phtml. htmx does
+// execute scripts inside swapped content, so it would probably still have
+// fired -- but relying on that is relying on swap semantics for something that
+// is really just a DOM fixup. Calling it explicitly makes the order certain
+// and puts every post-swap concern in one place.
+// ---------------------------------------------------------------------------
+function applyContentFixups() {
+  // The media-embed block wraps each image in a link to the original TIFF.
+  // Removing the href leaves the right-click menu usable for saving or opening
+  // the thumbnail, which is what CDASH wants.
+  var images = document.querySelectorAll("#content .media-render.file a, #content .media-render a");
+  images.forEach(function (anchor) {
+    anchor.removeAttribute("href");
+  });
+}
+
+function refreshFromBrowsePane() {
+  updateFeaturedMarker();
+  applyContentFixups();
+}
+
+refreshFromBrowsePane();
+
+// Every browse-pane swap -- marker click, boosted link, search, Back/Forward.
+// htmx fires afterSwap on the swap target's parent, so listening on body
+// catches all of them.
+document.body.addEventListener('htmx:afterSwap', function (evt) {
+  refreshFromBrowsePane();
+});
 
 
 //This function uses a call to a php script that queries omeka's mysql database.
@@ -380,11 +398,21 @@ function pushMarkers(json_response, markerGroup){
 
 
 
-function onMarkerClick(e) {   
-  window.location.replace(e.target.item_url);
-  //$cdash_item_php = $webroot . "/omeka-s/themes/cdash-ajax/view/omeka/site/index/cdash-map-5.phtml";
-  //document.getElementById("item").innerHTML = "Hi!  I'm the content for " + e.target.item_url
-  //include $cdash_item_php;
+// This single line is what the whole persistent-map change turns on. 4.1.1
+// called window.location.replace(), which tore down the document and rebuilt
+// the map -- every layer constructor re-run and the full marker query re-issued
+// -- just to show a different item in the other pane. Driving the boosted
+// anchor instead swaps only #content, and the map is never touched.
+// See the comment on #cdash-marker-link in layout.phtml for why this goes
+// through an anchor rather than htmx.ajax().
+function onMarkerClick(e) {
+  var link = document.getElementById('cdash-marker-link');
+  if (!link) {          // No htmx/shell (or JS partly failed) -- navigate the old way.
+    window.location.assign(e.target.item_url);
+    return;
+  }
+  link.setAttribute('href', e.target.item_url);
+  link.click();
 }
 
 }); // $(document).ready(function() ends

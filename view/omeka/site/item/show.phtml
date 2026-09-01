@@ -14,16 +14,10 @@ $valueLang = $filterLocale ? [$lang, ''] : null;
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>
 
-<!-- The default behavior for the media-embed block is to attach a hyperlink to the image
-    that references the original tif file.  This CDASH modification removes that.  
-    WIth this mod, the user has access to the right-click menu for saving the thumbnail or
-    opening it in a new window. -->
-<script>
-images = document.getElementsByClassName("media-render file")
-for (let i = 0; i < images.length; i++) {
-    anchors = images[i].getElementsByTagName('a')
-    for (let j = 0; j < anchors.length; j++) {
-         anchors[j].removeAttribute("href");
-       }
-}
-</script>
+<!-- The media-embed block wraps each image in a link to the original TIF, which
+     CDASH strips so the right-click menu can be used to save or open the
+     thumbnail. That used to be an inline <script> here. It now lives in
+     applyContentFixups() in cdash/cdash-map-5.phtml, which runs on load and
+     again after every browse-pane swap -- this template is no longer
+     re-executed on navigation, so a script here would only fire on a full
+     page load. -->
