@@ -77,155 +77,169 @@ const CDASH_SITE_URL = <?php echo json_encode($this->currentSite()->url(), JSON_
 
   
 
-// Map State information may be saved in the browser's session cache.
-// If it is set, use it to check the map layer options.  If not, set up the defaults.
+// ===========================================================================
+// Map state lives in the URL hash:  #zoom/lat/lng/layerKey,layerKey
+//
+// 4.1.1 kept zoom, centre and layer checkboxes in sessionStorage, but only
+// because every click reloaded the document and the map had to be reassembled
+// to look like the one just destroyed. Nothing is destroyed now, so that
+// storage has no job left -- and putting the state in the URL instead buys
+// something sessionStorage never could: a map view you can bookmark, share or
+// send to a colleague. "Here is this block in 1947" becomes a link.
+//
+// Read once, on load. Written continuously thereafter.
+//
+// Deliberately NOT re-read on Back/Forward: after a history restore the
+// featured-marker logic already pans to whatever item was restored, and
+// applying an older hash on top of that would mean two things fighting over
+// where the map should sit. The restore pans to the item, the resulting
+// moveend rewrites the hash, and the URL stays truthful.
+// ===========================================================================
 
-//let mapCenter = [42.368, -71.09];  // East Cambridge
-//let mapZoom = 14.3;
+const CDASH_DEFAULT_CENTER = [42.377, -71.11];   // Full Cambridge
+const CDASH_DEFAULT_ZOOM   = 13.45;
 
-let mapCenter = [42.377, -71.11];  // Full Cambridge
-let mapZoom = 13.45;
+// Only keys the registry actually defines may come out of a hash. A pasted or
+// hand-edited URL is untrusted input; an unknown key would otherwise reach
+// overlayMaps[key] as undefined and throw inside Leaflet.
+const CDASH_LAYER_KEYS  = CDASH_LAYERS.map(function (d) { return d.key; });
+const CDASH_BASEMAP_KEYS = CDASH_LAYERS
+      .filter(function (d) { return d.group === 'basemap'; })
+      .map(function (d) { return d.key; });
 
-let current_basemap_key = 'camAddBase';
-
-
-// Does browser support storage?
-
-if (typeof(Storage) == "undefined") {
-    alert("Your browser does not seem to support sessionStorage.  Try upgrading it.");
-} else {  // Browser supports storage. 
-
-
-    if (sessionStorage.getItem("zoom") != null) {
-      mapZoom = sessionStorage.getItem("zoom");
-      console.log("Recovered saved zoom: " + mapZoom);
-    } else {
-      console.log("Initializing stored Map Zoom: " + mapZoom);
-      sessionStorage.setItem("zoom", mapZoom );
-    };
-
-// If this is the first time the map is drawn, use the default zoom
-
-
-    if (sessionStorage.getItem("mapLon") == null)  {
-      console.log("Initializing stored map center :" + mapCenter);
-      sessionStorage.setItem("mapLat", mapCenter[0] );
-      sessionStorage.setItem("mapLon", mapCenter[1] );
-    } else {  
-      mapLat = sessionStorage.getItem("mapLat");
-      mapLon = sessionStorage.getItem("mapLon");
-      mapCenter = [mapLat, mapLon];
-      console.log("Retrieved stored  center location " + mapLat + " " + mapLon);
-    };
-
-    // The layer_panel_pos key that used to live here tracked the 4.1.1
-    // slide-toggle panel, which the Layers drawer replaces. The drawer keeps
-    // its own open/closed state in Alpine, so nothing needs storing.
-
-  } //Browser supports storage
-
-   //this stuff is here as an experiment.
- const mapDiv = document.getElementById("drawmap");
-//const map = L.map(mapDiv).setView([51.505, -0.09], 13);
-const map = L.map(mapDiv , { center: mapCenter, zoom: mapZoom, maxZoom: 19 });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-
-//Sorry for the extreme comments.  I needed them at the time. 
-//This block of code, to END, is the better logic for saving the map state in sessionStorage.
-//Read the overlayChecks object out of storage if it exists.  If not, set formValues to an empty object. 
-let overlayStates = JSON.parse(sessionStorage.getItem('overlayStates')) || {'allMarkers': true, 'camBase': true};
-
-// added 20230108
-//This seems to make $checkboxes into a list of all the checkbox objects in the document that are within a 
-//Div with ID="overlayBoxes. This should happen once per session.  No state is saved here. 
-//let $layerPickers = $("#overlayBoxes :checkbox, #baseMapButtons :radio");
-let $layerPickers = $("#overlay-menu :checkbox, #basemap-menu :radio");
-
-//This function populates the overlayStates hash based on the state of the checkboxes in the DOM
-// the function is called when a checkbox changes.
-function storeLayerStates(){
-  $layerPickers.each(function(){
-    //compare first to see which box has changed
-    prevState = overlayStates[this.id];
-    if (prevState != this.checked) {  //The state has changed
-      console.log("The box for  " + this.id + "state is now " + this.checked)
-        if (this.checked) {
-          console.log("Adding layer " +  this.id);
-          map.addLayer(overlayMaps[this.id]);
-        } else {
-          map.removeLayer(overlayMaps[this.id]);
-        }
-    }  
-    overlayStates[this.id] = this.checked;
-  });
-  //Here is where the persistent container, overlayStates is populated with a JSON version of the 
-  //hash of teh same name. 
-  sessionStorage.setItem("overlayStates", JSON.stringify(overlayStates));
+function cdashDefaultLayerKeys() {
+  return CDASH_LAYERS
+    .filter(function (d) { return d.defaultOn; })
+    .map(function (d) { return d.key; });
 }
 
-//Listen for a change among any of the boxes.  Anytime one of them changes
-//The updatestorage function reads the check status of each box, updates formValues
-//Stringify's the hash and writes that into the formValues bucket of the browser storage.  
-// It is interesting that they did not just write out the function inside of here...
-$layerPickers.on("change", function(){
-  storeLayerStates();
-});
+function parseMapHash() {
+  var raw = window.location.hash.replace(/^#/, '');
+  if (!raw) return null;
 
-//Everytime page loads, set the checked status from each entry in overlayStates (which is presumed to exist) 
-//and updates the checked property of the corresponding checkbox in the DOM.  This has to ve called after the 
-// map has been put on the screen.  
-function drawOverlays(){
-  $.each(overlayStates, function(key, value) {
-    $("#" + key).prop('checked', value);
-    //let attribution = overlayMaps[key].getAttribution;
-    //$("#" + key + "_attribution").prop('innerHTML', 
-    //   "<a href='" + attribution + "' target='cdash_metadata'> <img src=<?//php echo $infodot?>></a><br>");
-    if (value) {  // checkbox is checked for layer.  Draw it!
-          console.log("Adding Overlay " +  this.id);
-          map.addLayer(overlayMaps[key]);
+  var parts = raw.split('/');
+  if (parts.length < 3) return null;
+
+  var zoom = parseFloat(parts[0]);
+  var lat  = parseFloat(parts[1]);
+  var lng  = parseFloat(parts[2]);
+  if (!isFinite(zoom) || !isFinite(lat) || !isFinite(lng)) return null;
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) return null;
+
+  // A missing fourth segment means "no opinion about layers" -> use defaults.
+  // A present but empty one means "explicitly no layers" -> honour it.
+  var layers;
+  if (parts.length < 4) {
+    layers = cdashDefaultLayerKeys();
+  } else {
+    layers = parts[3].split(',').filter(function (k) {
+      return k && CDASH_LAYER_KEYS.indexOf(k) !== -1;
+    });
   }
-});
 
-} //END of overlayState code.
+  return { zoom: zoom, center: [lat, lng], layers: layers };
+}
 
+var cdashInitialState = parseMapHash();
+var mapCenter    = cdashInitialState ? cdashInitialState.center : CDASH_DEFAULT_CENTER;
+var mapZoom      = cdashInitialState ? cdashInitialState.zoom   : CDASH_DEFAULT_ZOOM;
+var initialLayers = cdashInitialState ? cdashInitialState.layers : cdashDefaultLayerKeys();
 
+const mapDiv = document.getElementById("drawmap");
+const map = L.map(mapDiv, { center: mapCenter, zoom: mapZoom, maxZoom: 19 });
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 const resizeObserver = new ResizeObserver(() => {
   map.invalidateSize();
 });
-
 resizeObserver.observe(mapDiv);
 
-// Now we're ready to draw the map. 
-//var map = L.map('drawmap', { center: mapCenter, zoom: mapZoom, maxZoom: 19 });
+// Always-on ground layer, pinned beneath everything else. Not a hash token --
+// it is never switchable, so there is nothing to record.
 map.addLayer(overlayMaps.massGIS);
 overlayMaps.massGIS.setZIndex(0);
 
-drawOverlays();  //reads the checkboxes and adds the layers to the map accordingly. 
-//drawBaseMaps(); 
+let $layerPickers = $("#overlay-menu :checkbox, #basemap-menu :radio");
 
-// If map is moved, save extent info into browser cache
-map.on('zoomend', function() {
-    var newZoom = map.getZoom();
-    if (typeof(Storage) !== "undefined") {
-        sessionStorage.setItem("zoom", newZoom );
-        console.log("Zoom level is now. " + newZoom);
-       } else {
-        console.log("Can't save zoom. No browser storage support");
-       }
-    });
-    
-    map.on('moveend', function() {
-      let newCenter = [map.getCenter().lat, map.getCenter().lng];
-      //let newCenter = map.getCenter();
-      //console.log("After move, map center is" + newCenter );
-       if (typeof(Storage) !== "undefined") {
-         sessionStorage.setItem("mapLat", map.getCenter().lat );
-         sessionStorage.setItem("mapLon", map.getCenter().lng );
-       } else {
-          console.log("Can't save new center. No browser storage support");
-       }
-    });
+function activeLayerKeys() {
+  var keys = [];
+  $layerPickers.each(function () {
+    if (this.checked) keys.push(this.id);
+  });
+  return keys;
+}
+
+/**
+ * Drives both the controls and the map from a list of keys.
+ *
+ * Leaflet's addLayer/removeLayer are idempotent, so this can be applied
+ * wholesale without diffing against the previous state the way 4.1.1 did --
+ * which is also what makes basemap switching fall out for free: the browser
+ * unchecks the sibling radio, and the now-unchecked layer gets removed on the
+ * same pass that adds the newly checked one.
+ */
+function applyLayerState(keys) {
+  // Guard against a hand-edited URL naming two basemaps. The radios can only
+  // represent one, so honour the first and drop the rest -- otherwise the map
+  // would show two while the controls showed one.
+  var seenBasemap = false;
+  var wanted = keys.filter(function (k) {
+    if (CDASH_BASEMAP_KEYS.indexOf(k) === -1) return true;
+    if (seenBasemap) return false;
+    seenBasemap = true;
+    return true;
+  });
+
+  $layerPickers.each(function () {
+    var on = wanted.indexOf(this.id) !== -1;
+    this.checked = on;
+
+    var layer = overlayMaps[this.id];
+    if (!layer) return;
+    if (on) {
+      map.addLayer(layer);
+    } else {
+      map.removeLayer(layer);
+    }
+  });
+}
+
+function writeMapHash() {
+  var c = map.getCenter();
+  var hash = '#' + map.getZoom().toFixed(2)
+           + '/' + c.lat.toFixed(5)
+           + '/' + c.lng.toFixed(5)
+           + '/' + activeLayerKeys().join(',');
+
+  // replaceState, not pushState: panning the map must not pile up history
+  // entries. Back should step through items, not through every mouse drag.
+  //
+  // history.state is passed through untouched -- htmx keeps its restore
+  // information there, and dropping it would break Back after a swap.
+  history.replaceState(
+    history.state,
+    '',
+    window.location.pathname + window.location.search + hash
+  );
+}
+
+applyLayerState(initialLayers);
+
+$layerPickers.on("change", function () {
+  applyLayerState(activeLayerKeys());
+  writeMapHash();
+});
+
+// Keep the URL in step with the map. moveend also fires after a programmatic
+// panTo, so the featured-marker pan updates the hash too, with no extra wiring.
+map.on('moveend', writeMapHash);
+map.on('zoomend', writeMapHash);
+
+// htmx rewrites the URL on every swap, and it pushes the request path only --
+// no fragment -- so the map hash would be dropped on each navigation. Put it
+// back once htmx has finished writing history.
+document.body.addEventListener('htmx:pushedIntoHistory', writeMapHash);
+document.body.addEventListener('htmx:replacedInHistory', writeMapHash);
 
 
 // ---------------------------------------------------------------------------
