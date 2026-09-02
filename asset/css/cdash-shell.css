@@ -443,6 +443,13 @@ html, body {
   overflow-x: hidden;
   border-left: none;
   background-color: #EAE7D8;
+
+  /* Items vary in length, so without a reserved gutter the scrollbar appears
+     and disappears as they swap in and the pane's content width jogs by ~15px
+     each time. 4.1.1 avoided this with overflow-y:scroll, which also paints a
+     dead track on short items; "stable" reserves the space without it.
+     Ignored by browsers that lack it, which just means the jog comes back. */
+  scrollbar-gutter: stable;
 }
 
 /* Was grid-area:content with margin:10px, which no longer has a grid to sit

@@ -206,23 +206,6 @@ $userBar = $this->userBar();
       <section class="cdash-pane cdash-browse-pane"
                :class="{ 'cdash-pane-collapsed': browseCollapsed }">
         <div class="cdash-pane-content">
-          <?php
-          /**
-           * Marker clicks navigate by setting this anchor's href and clicking
-           * it, rather than calling htmx.ajax() directly.
-           *
-           * htmx.ajax() has no history option, so going that route would mean
-           * hand-rolling pushState plus a popstate handler alongside the one
-           * hx-boost already runs -- two history mechanisms writing the same
-           * stack, and htmx's restore cache would not know about entries we
-           * pushed ourselves, so Back would swap in stale or empty content.
-           * Routing the click through a real boosted anchor keeps history
-           * entirely htmx's job, so a marker click and a link click produce
-           * identical history behaviour.
-           */
-          ?>
-          <a id="cdash-marker-link" href="#" hidden aria-hidden="true" tabindex="-1"></a>
-
           <div id="showresult">
             <div id="content" role="main">
               <?php echo $this->content; ?>

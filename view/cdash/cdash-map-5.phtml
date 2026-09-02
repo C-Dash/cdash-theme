@@ -435,21 +435,44 @@ function pushMarkers(json_response, markerGroup){
 
 
 
-// This single line is what the whole persistent-map change turns on. 4.1.1
-// called window.location.replace(), which tore down the document and rebuilt
-// the map -- every layer constructor re-run and the full marker query re-issued
-// -- just to show a different item in the other pane. Driving the boosted
-// anchor instead swaps only #content, and the map is never touched.
-// See the comment on #cdash-marker-link in layout.phtml for why this goes
-// through an anchor rather than htmx.ajax().
+// This function is what the whole persistent-map change turns on. 4.1.1 called
+// window.location.replace(), which tore down the document and rebuilt the map
+// -- every layer constructor re-run and the full marker query re-issued -- just
+// to show a different item in the other pane. Requesting the swap directly
+// replaces only #content, and the map is never touched.
+//
+// An earlier attempt routed this through a hidden boosted anchor, setting its
+// href before clicking it. That cannot work: htmx reads a boosted anchor's href
+// once, when it first processes the DOM, and closes over that value --
+//
+//     if (t.tagName === "A") { r = "get"; o = ee(t, "href") }
+//
+// -- so the request always went wherever the href pointed at page load,
+// whatever the href said by the time it was clicked.
+//
+// htmx.ajax takes the path as an argument, so there is nothing to go stale.
+// `source` is not where the request goes; it is the element htmx resolves
+// inherited hx-* attributes from. Passing an element inside the shell is what
+// picks up hx-push-url="true" and hands history management to htmx, which is
+// the whole reason the anchor existed. mapDiv is genuinely the origin of the
+// click, since the marker lives on the map.
 function onMarkerClick(e) {
-  var link = document.getElementById('cdash-marker-link');
-  if (!link) {          // No htmx/shell (or JS partly failed) -- navigate the old way.
-    window.location.assign(e.target.item_url);
+  var url = e.target.item_url;
+
+  if (!window.htmx) {   // htmx missing or failed to load -- navigate the old way.
+    window.location.assign(url);
     return;
   }
-  link.setAttribute('href', e.target.item_url);
-  link.click();
+
+  // Mirrors the hx-* attributes on .cdash-app-shell in layout.phtml. Keep the
+  // swap spec in step with it, including the scroll modifier that returns the
+  // browse pane to the top on each new item.
+  htmx.ajax('GET', url, {
+    source: mapDiv,
+    target: '#content',
+    select: '#content',
+    swap: 'outerHTML scroll:#showresult:top'
+  });
 }
 
 }); // $(document).ready(function() ends
