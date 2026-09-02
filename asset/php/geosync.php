@@ -47,9 +47,13 @@ die("Connection failed: " . $conn->connect_error . "<br>");
 echo "<b>Item Summary:</b> Creating summary tables for Places and Documents. <br><br>";
 
 $makeplace_sql = "CREATE TEMPORARY TABLE tmp_places AS
-SELECT resource.id as place_id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, c.value as streetAddress, h.value as houseNum,
+SELECT resource.id as place_id, value.value as placetype, g.value as streetName, 
+d.value as placeName, 
+c.value as streetAddress, 
+h.value as houseNum,
 CONCAT(g.value,'_', REPEAT('0',8 - IFNULL(char_length(REGEXP_SUBSTR(h.value,'^[0-9]+')), 0)),IFNULL(h.value, '')) as streetSort,
-lat, lng, CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem
+lat, lng, 
+CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem 
 FROM resource
 LEFT OUTER JOIN mapping_marker
   ON resource.id = mapping_marker.item_id
@@ -90,7 +94,11 @@ if ($places) {
 // place name and streetsort key so that derived title and streetsort can be synced back.
 
 $make_doc_sql = "CREATE TEMPORARY TABLE tmp_docs AS
-select resource.id as doc_id, value.value_resource_id as place_id, tmp_places.placeName as placeName, concat(tmp_places.title, ' - ', vtype.value) as doctitle, concat(tmp_places.streetSort,vtype.value) as streetSort, tmp_places.lat, tmp_places.lng
+select resource.id as doc_id, 
+value.value_resource_id as place_id, 
+tmp_places.placeName as placeName, 
+concat(tmp_places.placeItem, ' - ', vtype.value) as doctitle, 
+concat(tmp_places.streetSort,vtype.value) as streetSort, tmp_places.lat, tmp_places.lng
 from resource
 left outer join value on value.resource_id = resource.id and value.property_id = (select id from property where local_name = 'placeItem')
 left outer join value vtype on vtype.resource_id = resource.id
