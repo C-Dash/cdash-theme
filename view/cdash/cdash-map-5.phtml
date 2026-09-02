@@ -223,6 +223,26 @@ function writeMapHash() {
   );
 }
 
+/**
+ * Coalesces bursts of hash writes.
+ *
+ * Dragging the pane divider resizes #drawmap, the ResizeObserver calls
+ * invalidateSize on every frame, and Leaflet fires moveend from every
+ * invalidateSize where the size actually changed -- so a two-second drag would
+ * otherwise issue well over a hundred replaceState calls. Safari and Firefox
+ * both rate-limit the history API and start dropping or throwing at that
+ * volume. Only the settled position is worth recording, so wait for the burst
+ * to stop before writing once.
+ */
+var cdashHashTimer = null;
+function scheduleMapHashWrite() {
+  if (cdashHashTimer) clearTimeout(cdashHashTimer);
+  cdashHashTimer = setTimeout(function () {
+    cdashHashTimer = null;
+    writeMapHash();
+  }, 250);
+}
+
 applyLayerState(initialLayers);
 
 $layerPickers.on("change", function () {
@@ -232,12 +252,15 @@ $layerPickers.on("change", function () {
 
 // Keep the URL in step with the map. moveend also fires after a programmatic
 // panTo, so the featured-marker pan updates the hash too, with no extra wiring.
-map.on('moveend', writeMapHash);
-map.on('zoomend', writeMapHash);
+// Debounced -- these arrive in bursts during a drag; see scheduleMapHashWrite.
+map.on('moveend', scheduleMapHashWrite);
+map.on('zoomend', scheduleMapHashWrite);
 
 // htmx rewrites the URL on every swap, and it pushes the request path only --
 // no fragment -- so the map hash would be dropped on each navigation. Put it
-// back once htmx has finished writing history.
+// back once htmx has finished writing history. Written immediately rather than
+// debounced: this fires once per navigation, and leaving the URL fragment-less
+// for even a moment means a copied link loses the map view.
 document.body.addEventListener('htmx:pushedIntoHistory', writeMapHash);
 document.body.addEventListener('htmx:replacedInHistory', writeMapHash);
 
