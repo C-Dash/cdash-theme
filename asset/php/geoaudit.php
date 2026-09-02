@@ -5,6 +5,11 @@
 // geoaudit_fast.php: uses temporary tables instead of views so the expensive
 // multi-join SELECT against the value table runs once, not once per query.
 
+// Must come first: the guard needs to set a response code before any output.
+// This script only reads, but it reports across the whole collection and has no
+// business answering anonymous requests.
+require __DIR__ . '/_require-admin.php';
+
 echo "<head><title>GeoAudit</title></head>";
 
 echo "<h1>GeoAudit: Check Integrity of CDASH Schema</h1>";

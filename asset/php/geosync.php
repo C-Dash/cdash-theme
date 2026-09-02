@@ -5,6 +5,10 @@
 // geosync_fast.php: uses temporary tables instead of views so the expensive
 // multi-join SELECT against the value table runs once per sync, not once per query.
 
+// Must come first: this script writes to the database as soon as it runs, and
+// the guard needs to set a response code before any output.
+require __DIR__ . '/_require-admin.php';
+
 echo "<head><title>GeoSync Fast</title></head>";
 echo "<h1>GeoSync: Syncronize Place updates to Documents</h1>";
 
