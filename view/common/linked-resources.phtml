@@ -102,12 +102,35 @@ $caption = sprintf(
 </div>
 
 <script>
-const propertySelect = $('#resource-property-select');
-const url = propertySelect.data('url');
-const fragment = propertySelect.data('fragment');
-propertySelect.on('change', function(e) {
-    const selectedOption = propertySelect.find(':selected');
-    const resourceProperty = selectedOption.val();
-    window.location = url + '?' + $.param({resource_property: resourceProperty}) + '#' + fragment;
-});
+/**
+ * Wrapped in an IIFE because this block runs more than once.
+ *
+ * These were top-level `const` declarations, which is safe in stock Omeka --
+ * a page renders once and the script executes once. This theme swaps #content
+ * in place instead of reloading, htmx re-executes scripts in swapped content,
+ * and the second run hit:
+ *
+ *     Uncaught SyntaxError: Identifier 'propertySelect' has already been declared
+ *
+ * which aborted the whole block, so the selector stopped working after the
+ * first navigation. Function scope makes the script safely re-runnable: each
+ * swap binds a fresh handler to the new select, and the old one is discarded
+ * with the element it was attached to.
+ *
+ * `url` and `fragment` were also globals, which is worth avoiding regardless --
+ * both are names almost anything else might want.
+ */
+(function () {
+    const propertySelect = $('#resource-property-select');
+    if (!propertySelect.length) {
+        return;
+    }
+    const url = propertySelect.data('url');
+    const fragment = propertySelect.data('fragment');
+    propertySelect.on('change', function(e) {
+        const selectedOption = propertySelect.find(':selected');
+        const resourceProperty = selectedOption.val();
+        window.location = url + '?' + $.param({resource_property: resourceProperty}) + '#' + fragment;
+    });
+})();
 </script>
