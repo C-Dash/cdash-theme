@@ -44,6 +44,11 @@ $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.ajax.js'));
 // Leaflet plugins above, since it calls into L.esri and L.GeoJSON.AJAX.
 $this->headScript()->appendFile($this->assetUrl('js/cdash-layer-factory.js'));
 
+// The map itself. Deferred so it runs after the document is parsed and the
+// #cdash-map-config island it reads exists; deferred scripts also run in source
+// order, so the layer factory above is defined by the time this needs it.
+$this->headScript()->appendFile($this->assetUrl('js/cdash-map.js'), 'text/javascript', ['defer' => true]);
+
 // Application shell: pane splitter, banner collapse, and the Layers/Filters
 // drawers. cdash-layout.js registers Alpine components on the alpine:init
 // event, so it must be parsed BEFORE Alpine boots -- hence defer on both,
