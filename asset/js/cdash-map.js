@@ -377,10 +377,16 @@ function refreshFromBrowsePane() {
 
 refreshFromBrowsePane();
 
-// Every browse-pane swap -- marker click, boosted link, search, Back/Forward.
-// htmx fires afterSwap on the swap target's parent, so listening on body
-// catches all of them.
+// A forward navigation -- marker click, boosted link, search -- fires afterSwap.
 document.body.addEventListener('htmx:afterSwap', function (evt) {
+  refreshFromBrowsePane();
+});
+
+// Back/Forward does NOT. htmx restores from its own history cache and fires
+// historyRestore instead, so the comment that used to sit above afterSwap
+// claiming it "catches all of them" was wrong: the featured marker stayed on
+// whatever item was showing before the restore.
+document.body.addEventListener('htmx:historyRestore', function (evt) {
   refreshFromBrowsePane();
 });
 

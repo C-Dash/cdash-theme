@@ -211,7 +211,25 @@ $userBar = $this->userBar();
       <section class="cdash-pane cdash-browse-pane"
                :class="{ 'cdash-pane-collapsed': browseCollapsed }">
         <div class="cdash-pane-content">
-          <div id="showresult">
+          <?php
+          /**
+           * hx-history-elt scopes what htmx snapshots and restores on
+           * Back/Forward. Without it htmx uses document.body:
+           *
+           *     function getHistoryElement() {
+           *         return document.querySelector('[hx-history-elt]') || document.body
+           *     }
+           *
+           * so pressing Back replaced the entire body -- including #drawmap.
+           * Leaflet went on holding a node that was no longer in the document,
+           * and the map froze: still painted, but detached and inert.
+           *
+           * #showresult is the right scope. It contains the swap target
+           * (#content) but is never itself swapped, so the attribute survives,
+           * and restoring its innerHTML leaves the map pane untouched.
+           */
+          ?>
+          <div id="showresult" hx-history-elt>
             <div id="content" role="main">
               <?php echo $this->content; ?>
             </div>
