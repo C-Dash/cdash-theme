@@ -10,31 +10,14 @@ html, body {
         white-space: normal;
     }
 
-    #grid-container {
-        display: grid;
-        height: 100vh;
-        width: 100%;
-        grid-template:
-        "top top" 
-        "cdash-map showresult" ;
-        grid-template-columns: 40vw 1fr;
-        grid-template-rows: 176px 1fr;
-    }
-    
-    map {
-        border-left: 3px solid $gray;
-        border-bottom: 3px solid $gray;
-    }
-    #top {
-        height: 176px;
-        grid-area: top;
-        display: grid;
-        grid-template:
-        "banner"
-        "navmenu" ;
-        /* grid-template-rows: 140px 36px; */
-        
-    }
+/* The 4.1.1 desktop layout that used to live here -- #grid-container, #top,
+   the <map> element, #cdmap-frame, #cdmap-tools, #layer-panel(-flip),
+   #overlayBoxes, #baseMapButtons, #header and #menubar -- has been removed.
+   None of those selectors appear in this theme's markup, in its JS/PHP, or in
+   Omeka's core views: the shell is .cdash-app-shell and is styled by
+   asset/css/cdash-shell.css. The selectors kept below (#banner, #navmenu,
+   #drawmap, #showresult, #content, #overlay-menu, #basemap-menu, #user-bar)
+   ARE still live, which is why cdash-shell.css still has to override them. */
 #navmenu {
     grid-area: navmenu;
     display: flex;
@@ -76,61 +59,11 @@ html, body {
     "cdmap-tools" 300px ; */
     /* } */
 
-#cdmap-frame {
-    /* grid-area: cdmap-frame; */
-    border: 3px dotted rgb(202, 178, 126);
-}
-
 #drawmap {
     background-color:rgb(231, 226, 214);
     /*height: 100%;*/
 }
 
-#cdmap-tools {
-    background-color:rgb(233, 227, 204);
-    /*border: 3px dotted rgb(202, 178, 126);*/
-    grid-area: cdmap-tools;
-    /*overflow: auto; */
-    /* resize: vertical; */
-    /*min-width: 120px; */
-    /*max-width: 50vw;*/ 
-    /*overflow-x: visible ; */
-    overflow-y: scroll ;
-    height: 300px;
-    display: grid;
-    grid-template:
-    "overlay-menu  basemap-menu " 1fr 1fr;
-    padding-left: 20px;
-}
-
-#layer-panel-flip {
-    text-align: right;
-    margin-right: 15px;
-    cursor: n-resize;
-  }
-  
-  /*
-  #layer-panel {
-    height: 300px;
-    display: grid;
-    grid-template:
-    "overlay-menu basemap-menu";
-  }
-
-*/
-
-#layer-panel {
-    display: grid;
-    background-color: $page;
-    grid-area: layer-panel;
-    overflow-y: auto;
-    /*overflow-x: hidden ;*/
-    grid-template-columns: 
-     "overlay-menu" 1fr
-    "basemap-menu" 1fr; 
-
-    /*grid-template-columns: "overlay-menu basemap-menu" 1fr  */
-}
 
 #overlay-menu {
     grid-area: overlay-menu;
@@ -179,14 +112,6 @@ html, body {
 }
 
 
-
-#overlayBoxes {
-    grid-area: overlayBoxes;
-} 
-#baseMapButtons {
-    grid-area: baseMapButtons;
-
-}
 
 #content {
     grid-area: content;
@@ -287,13 +212,6 @@ html, body {
 //}
 */
 
-#cdash_map #map {
-    //margin: $spacing-s;
-    //margin-top: $spacing-m;
-    //width: 50%;
-    /*height: 600px;*/
-    //grid-area: map;
-}
 
 /*#baseMapButtons, #overlayBoxes {
     //overflow-y: auto; 
@@ -394,36 +312,6 @@ td {
     background-color: $darkgray;
 }
 
-#header {
-    //position: relative;
-    //padding: $spacing-s 0 0;
-    //margin-bottom: 2 * $spacing-l;
-    //background-color: $page;
-    background-color: $darkgray;
-    //position: fixed;
-}
-
-#header > * {
-    //padding: 0 (2 * gutter());
-    padding: 0 0 0 0;
-}
-
-//#header.fixed {
-//    position: fixed;
- //   width: 1328px;
-//    top: -115px;
-
-//}
-
-
-
-
-#header > h1 {
-    //margin: $spacing-s auto;
-    padding: 0 0 0 0;
-    line-height: 34px;
-}
-
 /* @end */
 
 /* @group ----- Footer ----- */
@@ -441,12 +329,6 @@ td {
 /* @end */
 
 /* @group ----- Navigation ----- */
-
-#menubar {
-    background-color: #60655F;
-    height: (1.5 * $spacing-l);
-    //@include container;
-}
 
 #navmenu {
 

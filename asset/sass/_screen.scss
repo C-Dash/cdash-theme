@@ -1,5 +1,12 @@
+/* The padding/margin half of this reset came from _grid.scss, which was the
+   4.1.1 layout and is gone. _grid was imported immediately before this file,
+   so merging the two `*` rules leaves the cascade unchanged. Removing the
+   padding/margin reset is NOT safe on its own -- the rules below assume UA
+   margins are already zeroed and set their own where they want them. */
 * {
     box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
 html {
@@ -86,7 +93,12 @@ input[type="password"],
 input[type="email"],
 input[type="url"],
 textarea {
+    /* Written out rather than left to autoprefixer, which is now off: the
+       build is a plain dart-sass run, so what is here is what ships. Matches
+       the prefixes already spelled out on the button rule below. */
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     border-radius: 0;
     height: 1.5 * $spacing-l;
     border: 1px solid $light;

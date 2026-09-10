@@ -6,7 +6,11 @@
 
 @media screen {
     @import "base";
-    @import "grid";
+    // "grid" was the 4.1.1 layout -- a <main> grid over the custom elements
+    // <main-header>, <map>, <show-window>. None of those elements exist in
+    // this theme's markup; the shell is .cdash-app-shell, styled by
+    // asset/css/cdash-shell.css. Its one live rule (the * padding/margin
+    // reset) moved to the top of _screen.scss.
     @import "screen";
     @import "desktop";
 }

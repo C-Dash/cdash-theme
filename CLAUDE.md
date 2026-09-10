@@ -112,18 +112,77 @@ docker logs cdash-dev-docker-omeka-1 --since 5m 2>&1 | grep -c placemarkers
 # 1 = correct. ~10 = the map is being rebuilt; the swap is broken.
 ```
 
-There is no JS engine on this machine and pulling one has failed repeatedly, so
 `asset/js/*.js` is checked by the editor rather than by tooling here. PHP lints
 via `docker exec cdash-dev-docker-omeka-1 php -l <path>`. No test suite exists.
+
+There *is* a JS engine on this machine, contrary to what this file used to say:
+VS Code's Electron runs as Node 24, via
+
+```bash
+ELECTRON_RUN_AS_NODE=1 "$LOCALAPPDATA/Programs/Microsoft VS Code/Code.exe" -e "…"
+```
+
+Standalone `node`/`npm` are still absent, and installing them has failed
+repeatedly — but the above works if a Node script is ever genuinely needed.
+
+### Building style.css
+
+`asset/css/style.css` is generated from `asset/sass/`. Two things compile it and
+they must agree:
+
+- the VS Code **Live Sass Compiler** extension (`glenn2223.live-sass`), which
+  fires only on a save *inside the editor* — it uses `onDidSaveTextDocument`
+  and registers no filesystem watcher, so files written by anything else,
+  Claude included, never trigger it;
+- **Dart Sass standalone 1.97.3**, vendored at `../tools/dart-sass/` — outside
+  this repo on purpose, since the theme is published and a 4 MB Windows binary
+  does not belong in it:
+
+```bash
+../tools/dart-sass/sass.bat asset/sass/style.scss asset/css/style.css --style=expanded
+```
+
+They agree because **autoprefixer is turned off**, in the committed
+`.vscode/settings.json` alongside the output format. Left on, its default
+browserslist (`"defaults"`) resolves against a caniuse-lite bundled *inside the
+extension*, so the emitted prefixes change silently when the extension updates —
+and it both adds prefixes and strips hand-written ones. The prefixes that matter
+are spelled out in the `.scss` sources instead. If `.vscode/settings.json` does
+not take effect, check whether VS Code's workspace root is this directory or its
+parent.
+
+The build emits 14 deprecation warnings — `@import` (removed in Dart Sass 3.0),
+plus `darken()`/`lighten()` global builtins. All pre-existing; none affect
+output yet. Migrating to `@use` and `color.adjust` is future work.
 
 ## Still open
 
 1. **Production `geosync.php`.** `cdash_4.1.1` ships an unauthenticated endpoint
    that rewrites the database on load — no auth, no request gating. Guarded in
    this theme by `_require-admin.php`; **production is not**. Highest priority.
-2. **CSS split.** `cdash-shell.css` is hand-written while `style.css` is
-   sass-generated. Decide whether the shell folds in as `_shell.scss` imported
-   last, or stays standalone. This is the first fork in the styling work.
+2. **CSS split — half done.** The dead half is gone: `_grid.scss` (the whole
+   4.1.1 `<main>` grid over `<map>` / `<show-window>` / `<main-header>`) is
+   deleted, and the dead layout block is out of `_desktop.scss` —
+   `#grid-container`, `#top`, `#cdmap-*`, `#layer-panel*`, `#overlayBoxes`,
+   `#baseMapButtons`, `#header`, `#menubar`. None of those selectors exist in
+   the markup, in the theme's JS/PHP, or in Omeka's core views. `_grid`'s one
+   live rule, the `*` padding/margin reset, merged into the `*` rule at the top
+   of `_screen.scss`; `_screen` was imported immediately after `_grid`, so the
+   cascade is unchanged.
+
+   What remains is the *live* overlap. `#banner`, `#navmenu`, `#drawmap`,
+   `#showresult`, `#content`, `#overlay-menu` and `#basemap-menu` are declared
+   in both places on purpose — the sass owns colour and typography, the shell
+   owns the box model — which is why the Overrides section at the end of
+   `cdash-shell.css` is still needed. Giving each of those one owner is the
+   decision left, and only then does folding the shell in as `_shell.scss`
+   become a real option.
+
+   **Note the asymmetry this creates:** sass edits do nothing until the Live
+   Sass Compiler regenerates `style.css`. Verified once (2026-09-10) that
+   `style.css` is a faithful build of `asset/sass/` — every declaration maps
+   back through `style.css.map`, no hand-edits — so the sass is safe to treat
+   as source.
 3. **Item-page centring.** A shared hash URL restores zoom and layers, but the
    featured-marker logic then pans to the item's own marker, so the framing is
    not reproduced. Deliberate; may want revisiting.

@@ -1,158 +1,14 @@
 @charset "UTF-8";
 @media screen {
+  /* The padding/margin half of this reset came from _grid.scss, which was the
+     4.1.1 layout and is gone. _grid was imported immediately before this file,
+     so merging the two `*` rules leaves the cascade unchanged. Removing the
+     padding/margin reset is NOT safe on its own -- the rules below assume UA
+     margins are already zeroed and set their own where they want them. */
   * {
     box-sizing: border-box;
     padding: 0;
     margin: 0;
-  }
-  body {
-    /*margin: 10px;*/
-    height: 100%;
-  }
-  main {
-    display: grid;
-    padding: 0px;
-    height: 100vh;
-    grid-template: "main-header main-header" min-content "map show-window" 1fr "map show-window"/min-content 1fr;
-    /*    "main-footer main-footer"
-           / min-content 1fr ; */
-  }
-  main-header {
-    grid-area: main-header;
-    /*overflow: auto;
-    resize: horizontal;
-    min-width: 120px;
-    max-width: 50vw;*/
-  }
-  map {
-    grid-area: map;
-    width: 40vw;
-    resize: horizontal;
-    min-width: 20vw;
-    max-width: 50vw;
-    height: 100%;
-    overflow-x: auto;
-    display: grid;
-    grid-template: "map-frame" 1fr "map-tools";
-  }
-  map-frame {
-    grid-area: map-frame;
-  }
-  #drawmap {
-    background-color: #a7a09a;
-    height: 100%;
-  }
-  map-tools {
-    grid-area: map-tools;
-    /*overflow: auto; */
-    /* resize: vertical; */
-    min-width: 120px;
-    max-width: 50vw;
-    /*overflow-x: visible ; */
-  }
-  #layer-panel-flip {
-    text-align: center;
-    height: 22px;
-    background-color: #a7a09a;
-  }
-  #layer-panel_flip .hover {
-    color: white;
-  }
-  /*
-    #layer-panel {
-      height: 300px;
-      display: grid;
-      grid-template:
-      "overlay-menu basemap-menu";
-    }
-
-  */
-  #layer-panel {
-    display: grid;
-    grid-area: layer-panel;
-    overflow-y: auto;
-    /*overflow-x: hidden ;*/
-    grid-template-columns: "overlay-menu" 1fr "basemap-menu" 1fr;
-    /*grid-template-columns: "overlay-menu basemap-menu" 1fr  */
-  }
-  #overlay-menu {
-    grid-area: overlay-menu;
-    grid-column: 2;
-    height: 100%;
-  }
-  #basemap-menu {
-    grid-area: basemap-menu;
-    grid-column: 1;
-    height: 100%;
-    /*overflow-x: visible;*/
-  }
-  show-footer {
-    grid-area: show-footer;
-    border-left: double;
-    padding-right: 20px;
-    overflow: auto;
-    /*resize: horizontal;*/
-    min-width: 120px;
-    max-width: 100vw;
-    display: flex;
-    background-color: #a7a09a;
-  }
-  .left {
-    margin-left: auto;
-  }
-  show-window {
-    grid-area: show-window;
-    display: grid;
-    grid-template: "showresult" "show-footer" 22px;
-  }
-  /* .showtab {
-    background: lightgray;   
-  } */
-  .tab {
-    background: lightgray;
-    padding: 8px 8px;
-    border-radius: 8px 8px 0 0;
-    border: 2px solid white;
-    border-bottom: 0;
-    color: gray;
-  }
-  .selected-tab {
-    padding: 8px 9px;
-    background: rgb(250, 250, 247);
-    border-radius: 8px 8px 0 0;
-    margin-bottom: 0 auto;
-    /*border: 1px solid #ddd;*/
-    border: 3px dotted gray;
-    border-bottom: 3px solid white;
-    color: black;
-  }
-  /*
-  .tooltip {
-      position: relative;
-      display: inline-block;
-
-    }
-    */
-  /*
-  .tooltip .tooltiptext {
-    visibility: hidden;
-    display: inline-block;
-    background-color: lightblue;
-    color: black;
-    text-align: center;
-    border-radius: 6px;
-    border-width: 1px;
-    padding: 5px 0;
-    border-bottom: 1px dotted black;*/
-  /* Position the tooltip */
-  /*position: absolute;
-    width: 200px;
-    top: 100%;
-    right: 90%;
-
-  }*/
-  * {
-    box-sizing: border-box;
   }
   html {
     height: 100%;
@@ -223,9 +79,12 @@
   input[type=email],
   input[type=url],
   textarea {
+    /* Written out rather than left to autoprefixer, which is now off: the
+       build is a plain dart-sass run, so what is here is what ships. Matches
+       the prefixes already spelled out on the button rule below. */
+    appearance: none;
     -webkit-appearance: none;
-       -moz-appearance: none;
-            appearance: none;
+    -moz-appearance: none;
     border-radius: 0;
     height: 27px;
     border: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
@@ -273,7 +132,11 @@
   }
   .field {
     margin: 18px 0;
+    display: -webkit-flex;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-flex-wrap: wrap;
+    -ms-flex-wrap: wrap;
     flex-wrap: wrap;
   }
   .field .field-meta {
@@ -604,6 +467,7 @@
   .left .item.resource,
   .right .item.resource {
     margin: 0 0 18px 0;
+    width: -webkit-min-content;
     width: -moz-min-content;
     width: min-content;
     max-width: 40vw;
@@ -765,8 +629,7 @@
     grid-template-columns: repeat(3, 1fr);
 
     grid-gap: 2px; */
-    -moz-column-count: 3;
-         column-count: 3;
+    column-count: 3;
   }
   ul.resource-list .resource {
     border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
@@ -942,25 +805,14 @@
     max-width: 300px;
     white-space: normal;
   }
-  #grid-container {
-    display: grid;
-    height: 100vh;
-    width: 100%;
-    grid-template: "top top" "cdash-map showresult";
-    grid-template-columns: 40vw 1fr;
-    grid-template-rows: 176px 1fr;
-  }
-  map {
-    border-left: 3px solid #a7a09a;
-    border-bottom: 3px solid #a7a09a;
-  }
-  #top {
-    height: 176px;
-    grid-area: top;
-    display: grid;
-    grid-template: "banner" "navmenu";
-    /* grid-template-rows: 140px 36px; */
-  }
+  /* The 4.1.1 desktop layout that used to live here -- #grid-container, #top,
+     the <map> element, #cdmap-frame, #cdmap-tools, #layer-panel(-flip),
+     #overlayBoxes, #baseMapButtons, #header and #menubar -- has been removed.
+     None of those selectors appear in this theme's markup, in its JS/PHP, or in
+     Omeka's core views: the shell is .cdash-app-shell and is styled by
+     asset/css/cdash-shell.css. The selectors kept below (#banner, #navmenu,
+     #drawmap, #showresult, #content, #overlay-menu, #basemap-menu, #user-bar)
+     ARE still live, which is why cdash-shell.css still has to override them. */
   #navmenu {
     grid-area: navmenu;
     display: flex;
@@ -994,51 +846,9 @@
       "cdmap-frame" 1fr
       "cdmap-tools" 300px ; */
   /* } */
-  #cdmap-frame {
-    /* grid-area: cdmap-frame; */
-    border: 3px dotted rgb(202, 178, 126);
-  }
   #drawmap {
     background-color: rgb(231, 226, 214);
     /*height: 100%;*/
-  }
-  #cdmap-tools {
-    background-color: rgb(233, 227, 204);
-    /*border: 3px dotted rgb(202, 178, 126);*/
-    grid-area: cdmap-tools;
-    /*overflow: auto; */
-    /* resize: vertical; */
-    /*min-width: 120px; */
-    /*max-width: 50vw;*/
-    /*overflow-x: visible ; */
-    overflow-y: scroll;
-    height: 300px;
-    display: grid;
-    grid-template: "overlay-menu  basemap-menu " 1fr 1fr;
-    padding-left: 20px;
-  }
-  #layer-panel-flip {
-    text-align: right;
-    margin-right: 15px;
-    cursor: n-resize;
-  }
-  /*
-    #layer-panel {
-      height: 300px;
-      display: grid;
-      grid-template:
-      "overlay-menu basemap-menu";
-    }
-
-  */
-  #layer-panel {
-    display: grid;
-    background-color: #EAE7D8;
-    grid-area: layer-panel;
-    overflow-y: auto;
-    /*overflow-x: hidden ;*/
-    grid-template-columns: "overlay-menu" 1fr "basemap-menu" 1fr;
-    /*grid-template-columns: "overlay-menu basemap-menu" 1fr  */
   }
   #overlay-menu {
     grid-area: overlay-menu;
@@ -1075,12 +885,6 @@
   #user-bar {
     grid-area: user-bar;
     width: 100%;
-  }
-  #overlayBoxes {
-    grid-area: overlayBoxes;
-  }
-  #baseMapButtons {
-    grid-area: baseMapButtons;
   }
   #content {
     grid-area: content;
@@ -1167,9 +971,6 @@
   //    height: 100%;
   //}
   */
-  #cdash_map #map {
-    /*height: 600px;*/
-  }
   /*#baseMapButtons, #overlayBoxes {
       //overflow-y: auto; 
       //overflow-x: hidden;
@@ -1234,24 +1035,10 @@
   #banner {
     background-color: #60655F;
   }
-  #header {
-    background-color: #60655F;
-  }
-  #header > * {
-    padding: 0 0 0 0;
-  }
-  #header > h1 {
-    padding: 0 0 0 0;
-    line-height: 34px;
-  }
   /* @end */
   /* @group ----- Footer ----- */
   /* @end */
   /* @group ----- Navigation ----- */
-  #menubar {
-    background-color: #60655F;
-    height: 27px;
-  }
   #navmenu {
     background-color: #60655F;
   }

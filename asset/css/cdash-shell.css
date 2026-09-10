@@ -6,11 +6,17 @@
    generated from asset/sass -- do not hand-edit it; put shell rules here.
 
    The 4.1.1 layout was built on custom elements (<map>, <show-window>,
-   <main-header>). Those elements are gone from layout.phtml, so the rules
-   targeting them in style.css no longer match anything and are inert. The
-   rules that DO still bite are the ones on real elements and on ids the new
-   markup keeps -- #banner, #navmenu, #showresult, #content, #drawmap -- and
-   those are neutralised in the "Overrides" section at the end.
+   <main-header>) and on ids this markup dropped (#grid-container, #top,
+   #layer-panel, #header, #menubar). Those rules matched nothing and have now
+   been deleted at source: _grid.scss is gone entirely and the dead layout
+   block is out of _desktop.scss.
+
+   What survives in style.css and still bites is the styling on ids this
+   markup DOES keep -- #banner, #navmenu, #showresult, #content, #drawmap,
+   #overlay-menu, #basemap-menu -- which is why the "Overrides" section at the
+   end is still needed. Those ids are declared in two places on purpose: the
+   sass owns their colour and typography, this file owns their box model.
+   Folding them into one owner is the remaining half of the CSS split.
    ============================================================================ */
 
 /* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
