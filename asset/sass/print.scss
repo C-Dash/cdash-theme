@@ -1,0 +1,137 @@
+// Entry point for asset/css/print.css, loaded by layout.phtml with
+// media="print". It is the only stylesheet that reaches paper.
+//
+// Print used to be spread across three places: print1.css (hand-written, the
+// real one), _print.scss (the 4.1.1 version, not compiled from anywhere and
+// still full of dead custom elements) and an @media print block inside
+// cdash-shell.css. This is all of it, in one file, generated like everything
+// else.
+//
+// No @media print wrapper: the link's media attribute does that job, the same
+// arrangement print1.css relied on.
+//
+// Because style.css and cdash-shell.css are both media="screen", nothing else
+// applies here -- this file defines the printed page on its own. That is also
+// why the shell's old "unlock the viewport-locked boxes" rules are gone: they
+// existed only to undo the shell's own grid, height:100dvh and
+// overflow:hidden, which no longer reach paper at all. What still has to be
+// said is which chrome to hide, since those elements are in the DOM whether or
+// not the shell styles them.
+
+/* ---- Chrome that should not print ---- */
+
+// The shell's own furniture. Without these the map pane, the drag handle, the
+// Layers/Filters drawers and the nav bar all print as ordinary block content.
+.cdash-map-pane,
+.cdash-pane-divider,
+.cdash-pullout,
+.cdash-navbar {
+    display: none;
+}
+
+// Banner and identity. `header` is <header class="cdash-banner">.
+header,
+#banner,
+.site-title,
+#user-bar,
+#overlay-menu {
+    display: none !important;
+}
+
+/* ---- Page ---- */
+
+body {
+    margin: 0 3mm 0mm 3mm;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+#content {
+    background-color: white;
+    margin: 0 3mm 0mm 3mm;
+}
+
+#print-footer {
+    position: fixed;
+    bottom: 0;
+}
+
+a,
+a:visited {
+    text-decoration: underline;
+}
+
+/* ---- Page-break behaviour (from html5-boilerplate) ---- */
+
+pre,
+blockquote {
+    border: 1px solid #999;
+    page-break-inside: avoid;
+}
+
+thead {
+    display: table-header-group;
+}
+
+tr,
+img {
+    page-break-inside: avoid;
+}
+
+img {
+    max-width: 100% !important;
+    width: 100%;
+}
+
+p,
+h2,
+h3 {
+    orphans: 3;
+    widows: 3;
+}
+
+h2,
+h3 {
+    page-break-after: avoid;
+}
+
+h2 {
+    margin-top: 0;
+}
+
+/* ---- Resource values ---- */
+
+// print1.css also carried `.property value-content`, matching value-content as
+// an ELEMENT. The markup is <span class="value-content">, so that rule never
+// applied; it is dropped rather than corrected, because correcting it would
+// change what prints.
+//
+// Its font-size declarations went the same way: `font-size: 1` and
+// `font-size: .75` are unitless and invalid, so browsers discarded them. The
+// comments beside them showed the intent was $base-font-size, but restoring
+// that is a change to the printed page, not a port, so it is left alone.
+.property dt {
+    margin-bottom: 0;
+    font-weight: bold;
+}
+
+.resource-link img {
+    height: 30px;
+    width: 30px;
+}
+
+dl {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-gap: 2px;
+}
+
+dt {
+    float: left;
+    clear: left;
+    width: 6.5em;
+}
+
+dd {
+    margin: 0 0 0 9em;
+    padding: 0 0 0.2em 0;
+}

@@ -7,7 +7,10 @@ $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1')
 $this->headTitle($siteTitle)->setSeparator(' · ');
 $this->headTitle()->append($this->setting('installation_title', 'Omeka S'));
 $this->headLink()->prependStylesheet($this->assetUrl('css/style.css'),$media = 'screen');
-$this->headLink()->prependStylesheet($this->assetUrl('css/print1.css'),$media = 'print');
+// The only stylesheet that reaches paper. Generated from asset/sass/print.scss,
+// and it now carries what used to be split between print1.css and an @media
+// print block inside cdash-shell.css.
+$this->headLink()->prependStylesheet($this->assetUrl('css/print.css'),$media = 'print');
 $this->headLink()->prependStylesheet($this->assetUrl('css/iconfonts.css', 'Omeka'));
 $this->headLink()->prependStylesheet('//fonts.googleapis.com/css?family=Open+Sans:400,400italic,600,600italic,700italic,700');
 $this->headScript()->prependFile($this->assetUrl('js/default.js'));
@@ -53,9 +56,12 @@ $this->headScript()->appendFile($this->assetUrl('js/cdash-map.js'), 'text/javasc
 // drawers. cdash-layout.js registers Alpine components on the alpine:init
 // event, so it must be parsed BEFORE Alpine boots -- hence defer on both,
 // which preserves document order, rather than Alpine's usual plain script tag.
-// media 'all', not 'screen' -- this stylesheet carries its own @media print
-// block to unlock the shell's viewport-locked boxes for paper.
-$this->headLink()->appendStylesheet($this->assetUrl('css/cdash-shell.css'), 'all');
+// media 'screen', not 'all'. It was 'all' only because this stylesheet used to
+// carry its own @media print block, which existed purely to undo the shell's
+// grid, 100dvh and overflow:hidden on paper. Those rules have moved to
+// print.scss, and keeping the shell off paper entirely means there is nothing
+// left to undo -- print.css only has to say which chrome to hide.
+$this->headLink()->appendStylesheet($this->assetUrl('css/cdash-shell.css'), 'screen');
 $this->headScript()->appendFile($this->assetUrl('js/cdash-layout.js'), 'text/javascript', ['defer' => true]);
 $this->headScript()->appendFile($this->assetUrl('vendor/alpine/alpine.min.js'), 'text/javascript', ['defer' => true]);
 

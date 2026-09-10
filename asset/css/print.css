@@ -1,0 +1,103 @@
+/* ---- Chrome that should not print ---- */
+.cdash-map-pane,
+.cdash-pane-divider,
+.cdash-pullout,
+.cdash-navbar {
+  display: none;
+}
+
+header,
+#banner,
+.site-title,
+#user-bar,
+#overlay-menu {
+  display: none !important;
+}
+
+/* ---- Page ---- */
+body {
+  margin: 0 3mm 0mm 3mm;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+#content {
+  background-color: white;
+  margin: 0 3mm 0mm 3mm;
+}
+
+#print-footer {
+  position: fixed;
+  bottom: 0;
+}
+
+a,
+a:visited {
+  text-decoration: underline;
+}
+
+/* ---- Page-break behaviour (from html5-boilerplate) ---- */
+pre,
+blockquote {
+  border: 1px solid #999;
+  page-break-inside: avoid;
+}
+
+thead {
+  display: table-header-group;
+}
+
+tr,
+img {
+  page-break-inside: avoid;
+}
+
+img {
+  max-width: 100% !important;
+  width: 100%;
+}
+
+p,
+h2,
+h3 {
+  orphans: 3;
+  widows: 3;
+}
+
+h2,
+h3 {
+  page-break-after: avoid;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+/* ---- Resource values ---- */
+.property dt {
+  margin-bottom: 0;
+  font-weight: bold;
+}
+
+.resource-link img {
+  height: 30px;
+  width: 30px;
+}
+
+dl {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-gap: 2px;
+}
+
+dt {
+  float: left;
+  clear: left;
+  width: 6.5em;
+}
+
+dd {
+  margin: 0 0 0 9em;
+  padding: 0 0 0.2em 0;
+}
+
+/*# sourceMappingURL=print.css.map */

@@ -484,32 +484,3 @@ html, body {
   color: red;
   font-size: smaller;
 }
-
-/* Print: the shell's viewport-locked, overflow-hidden boxes would otherwise
-   clip everything to one page. Let the document flow normally on paper. */
-@media print {
-  html, body {
-    height: auto;
-    overflow: visible;
-  }
-
-  .cdash-app-shell,
-  .cdash-pane-container,
-  .cdash-pane-grid,
-  .cdash-pane,
-  .cdash-pane-content,
-  #showresult {
-    display: block;
-    height: auto;
-    width: auto;
-    overflow: visible;
-    border: none;
-  }
-
-  .cdash-map-pane,
-  .cdash-pane-divider,
-  .cdash-pullout,
-  .cdash-navbar {
-    display: none;
-  }
-}
