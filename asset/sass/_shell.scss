@@ -1,0 +1,66 @@
+// Outer shell: html/body, the app-shell grid, banner and nav bar.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ---- Outer shell: Banner / Nav Bar / Pane Container ---- */
+.cdash-app-shell {
+  display: grid;
+  grid-template-rows: var(--cdash-banner-h, 15%) var(--cdash-nav-h) 1fr;
+
+  /* 100vh on iOS Safari and Chrome Android measures the viewport as though
+     the collapsing URL bar were hidden, so a 100vh shell is taller than what
+     is actually on screen and the bottom of the browse pane sits underneath
+     the browser chrome. dvh tracks the visible viewport instead. The vh line
+     stays first as the fallback for browsers without dvh. */
+  height: 100vh;
+  height: 100dvh;
+
+  /* 100% rather than 100vw: on desktop, 100vw counts the scrollbar gutter
+     even when no scrollbar is shown, which pushes a sliver of the shell off
+     the right edge. */
+  width: 100%;
+
+  overflow: hidden;
+  background: lightgray;
+  transition: --cdash-banner-h 400ms ease-in;
+}
+
+.cdash-banner {
+  overflow: hidden;
+}
+
+.cdash-banner-content {
+  height: 100%;
+  transition: transform 400ms ease-in;
+}
+
+.cdash-app-shell.cdash-banner-collapsed {
+  --cdash-banner-h: 0%;
+}
+
+.cdash-app-shell.cdash-banner-collapsed .cdash-banner-content {
+  transform: translateY(-100%);
+}
+
+/* Scrolls sideways rather than clipping. This dev site has one nav item and
+   fits easily, but the production menu is longer, and at phone widths
+   overflow:hidden would put those links past the edge with no way to reach
+   them. overflow-y stays hidden so the row cannot grow and steal height from
+   the panes. */
+.cdash-navbar {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#navmenu {
+  flex-wrap: nowrap;
+}

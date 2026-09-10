@@ -1,0 +1,49 @@
+// Design tokens and the typed custom properties the shell animates.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
+/* <length-percentage> rather than <percentage> so the banner_height theme
+   setting, which the admin UI documents as taking px/em/rem, is a valid
+   value. The collapse still animates to 0%, which is a valid length-percentage,
+   and the 15% default still applies when the setting is left empty. */
+@property --cdash-banner-h {
+  syntax: '<length-percentage>';
+  inherits: false;
+  initial-value: 15%;
+}
+
+@property --cdash-split {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 50%;
+}
+
+@property --cdash-pullout-w {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+:root {
+  --cdash-map-hue: 220;
+  --cdash-map-sat: 70%;
+  --cdash-browse-hue: 42;
+  --cdash-browse-sat: 65%;
+
+  --cdash-map-boundary: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 35%);
+  --cdash-map-bg:       hsl(var(--cdash-map-hue) var(--cdash-map-sat) 90%);
+  --cdash-browse-boundary: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 40%);
+  --cdash-browse-bg:       hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 90%);
+
+  /* Pull-outs: lighter than their pane's own background, plus a subtle
+     transparency so the pane content underneath faintly shows through. */
+  --cdash-map-pullout-bg:    hsl(var(--cdash-map-hue) var(--cdash-map-sat) 97% / 0.85);
+  --cdash-browse-pullout-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 97% / 0.85);
+
+  /* The prototype used a 20px placeholder nav. The real nav carries a menu and
+     a search form, so the shell sizes that row to its content instead. */
+  --cdash-nav-h: auto;
+}

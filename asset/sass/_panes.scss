@@ -1,0 +1,138 @@
+// Pane container, the two panes, and the drag divider.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Pane Container ----
+   container-type:size lives on this element only; the actual grid (and its
+   template-switching based on the container query) lives on the nested
+   .cdash-pane-grid child, not on this element itself. Restyling
+   grid-template-columns on the very element hosting container-type:size,
+   based on that element's own aspect-ratio query, is unreliable (observed:
+   Chrome kept the base grid-template-columns while grid-template-rows from
+   the same @container rule correctly applied) -- separating "query host"
+   from "the grid that switches" sidesteps it. */
+.cdash-pane-container {
+  container-type: size;
+  container-name: panes;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+.cdash-pane-grid {
+  display: grid;
+  height: 100%;
+  width: 100%;
+
+  /* wide-case (default): Map | Divider | Browse */
+  grid-template-columns: var(--cdash-split, 50%) 2px 1fr;
+  grid-template-rows: 1fr;
+}
+
+.cdash-pane-grid.cdash-animating {
+  transition: --cdash-split 300ms ease-out;
+}
+
+.cdash-pane {
+  overflow: hidden;
+  position: relative;
+  border: 3px solid transparent;
+}
+
+/* Outer wrapper clips at the pane's actual size and carries no padding of
+   its own -- with box-sizing:border-box, padding can't compress a box
+   below its own total any more than a border can, so padding must live on
+   the inner wrapper instead, or a collapsed 8px pane would force this box
+   to grow past its parent and spill content into neighbouring panes. */
+.cdash-pane-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  /* Establishes a stacking context so pane CONTENT can never paint over the
+     pull-out drawers. Leaflet stacks its own panes at z-index 200-700 and its
+     controls at 800-1000; .cdash-pane is position:relative with z-index:auto,
+     which is NOT a stacking context, so without this those values compete
+     directly against .cdash-pullout (z-index 2) in the same context and bury
+     the Layers drawer completely. Isolating the content here beats raising the
+     drawer to some larger magic number, because it holds for any future pane
+     content rather than only for Leaflet's current values.
+     The prototype never hit this: its map pane held a placeholder heading. */
+  position: relative;
+  z-index: 0;
+}
+
+.cdash-pane-content-inner {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.cdash-map-pane {
+  grid-column: 1;
+  grid-row: 1;
+  border-color: var(--cdash-map-boundary);
+  background: var(--cdash-map-bg);
+  border-right-width: 6px;
+}
+
+.cdash-browse-pane {
+  grid-column: 3;
+  grid-row: 1;
+  border-color: var(--cdash-browse-boundary);
+  background: var(--cdash-browse-bg);
+  border-left-width: 6px;
+}
+
+/* Collapsed panes are pinned to a fixed pixel width/height (COLLAPSED_PX in
+   cdash-layout.js) -- the far-side 3px border plus content making up the
+   rest, no divider-side border. border-box can't shrink a box below its own
+   border width, so the border on the divider-facing side must drop to 0 to
+   actually fit within that budget. */
+.cdash-map-pane.cdash-pane-collapsed {
+  border-right-width: 0;
+}
+
+.cdash-browse-pane.cdash-pane-collapsed {
+  border-left-width: 0;
+}
+
+.cdash-pane-divider {
+  grid-column: 2;
+  grid-row: 1;
+  cursor: col-resize;
+  touch-action: none;
+  background: #999;
+  /* Panes are position:relative (positioned elements always paint above
+     static ones), and a collapsed pane's border can't shrink below its own
+     width even at a 0% track -- so without this the collapsed pane's
+     leftover border band paints over the divider and eats its pointer
+     events. Elevate the divider so it always wins. */
+  position: relative;
+  z-index: 1;
+}
+
+.cdash-pane-divider:hover {
+  background: #666;
+}
+
+/* The 6px visual divider is too small a touch target on a phone. Widen the
+   hit area with a transparent overlay while leaving the stripe itself 6px. */
+.cdash-pane-divider::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -8px;
+  right: -8px;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider::after {
+  left: 0;
+  right: 0;
+  top: -8px;
+  bottom: -8px;
+}

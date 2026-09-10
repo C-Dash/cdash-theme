@@ -1,0 +1,92 @@
+// Pull-out drawers: Layers on the Map pane, Filters on the Browse pane.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Pull-out drawers (Layers on the Map pane, Filters on the Browse
+   pane) -- always horizontal (sized/dragged along the pane's own width)
+   regardless of wide/tall orientation, so unlike the divider/panes above,
+   these need no @container tall-case override; their axis never flips. ---- */
+.cdash-pullout {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--cdash-pullout-w, 0%);
+  max-width: 95%;
+  /* No overflow:hidden here -- .cdash-pullout-handle deliberately protrudes
+     outside this box so it stays grabbable when collapsed, and
+     overflow:hidden would clip that protruding part out of hit-testing, not
+     just out of view. .cdash-pullout-content clips its own overflow. */
+  z-index: 2;
+}
+
+.cdash-pullout-layers {
+  left: 0;
+  border-right: 2px solid #ccc;
+  background: var(--cdash-map-pullout-bg);
+}
+
+.cdash-pullout-filters {
+  right: 0;
+  border-left: 2px solid #ccc;
+  background: var(--cdash-browse-pullout-bg);
+}
+
+.cdash-pullout.cdash-pullout-animating {
+  transition: --cdash-pullout-w 300ms ease-out;
+}
+
+/* Same outer-clips/inner-pads split as .cdash-pane-content, and for the
+   same reason: this outer wrapper must be able to shrink to the drawer's
+   actual collapsed width without its own padding forcing it wider. */
+.cdash-pullout-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cdash-pullout-content-inner {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+.cdash-pullout-handle {
+  position: absolute;
+  top: 50%;
+  width: 32px;
+  height: 110px;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  background: #ddd;
+  color: #333;
+  cursor: ew-resize;
+  touch-action: none;
+  user-select: none;
+  z-index: 3;
+}
+
+.cdash-pullout-layers .cdash-pullout-handle {
+  right: -32px;
+  border-radius: 0 8px 8px 0;
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.cdash-pullout-filters .cdash-pullout-handle {
+  left: -32px;
+  border-radius: 8px 0 0 8px;
+}
+
+.cdash-pullout-handle-disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}

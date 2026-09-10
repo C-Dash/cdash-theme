@@ -1,21 +1,33 @@
-// Entry point for asset/css/style.css.
+// Entry point for asset/css/style.css, loaded by layout.phtml with
+// media="screen". Print is a separate entry point, print.scss.
 //
-// There is no `@media screen` wrapper here any more. There used to be one, but
-// layout.phtml already loads this file with media="screen", so every rule was
-// inside a screen-only stylesheet inside a screen-only media block. The link's
-// media attribute is the one that stays, because `@use` is only legal at the
-// top level of a file and cannot be nested in `@media` at all.
+// There is no `@media screen` wrapper here. There used to be one, but the link
+// already carries media="screen", so every rule sat inside a screen-only
+// stylesheet inside a screen-only media block. The link's media attribute is
+// the one that stays, because `@use` is only legal at the top level of a file
+// and cannot be nested inside `@media` at all.
 //
-// "grid" was the 4.1.1 layout -- a <main> grid over the custom elements
-// <main-header>, <map>, <show-window>. None of those elements exist in this
-// theme's markup; the shell is .cdash-app-shell, styled by
-// asset/css/cdash-shell.css. Its one live rule (the * padding/margin reset)
-// moved to the top of _screen.scss.
-//
-// "print" is not compiled from here at all --
-// print is served by asset/css/print1.css plus the @media print block in
-// cdash-shell.css. Consolidating those is still open.
+// Order is the cascade here. The shell partials come last because they used to
+// be a separate stylesheet, asset/css/cdash-shell.css, loaded after this one --
+// several of their rules win on source order rather than on specificity, so
+// moving them earlier would quietly change which declaration applies.
 
+// Omeka component styling: typography, links, forms, fields, tables. What the
+// browse pane renders.
 @use "base";
 @use "screen";
 @use "desktop";
+
+// The application shell: the banner/nav/pane grid, the panes, the drag divider
+// and the pull-out drawers.
+@use "tokens";
+@use "shell";
+@use "panes";
+@use "drawers";
+@use "tall-case";
+
+// Undoes what _screen.scss and _desktop.scss still say about the box model of
+// ids the shell owns -- #banner, #navmenu, #drawmap, #showresult, #content,
+// #overlay-menu, #basemap-menu. This partial is the remaining seam: giving
+// each of those ids one owner is what makes it disappear.
+@use "overrides";

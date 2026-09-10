@@ -1,0 +1,51 @@
+// Tall-case: the pane container's own aspect ratio is <= 1.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Tall-case: Pane Container's own aspect ratio is <= 1 ---- */
+@container panes (aspect-ratio <= 1) {
+  .cdash-pane-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--cdash-split, 50%) 2px 1fr;
+  }
+
+  .cdash-map-pane {
+    grid-column: 1;
+    grid-row: 1;
+    border-right-width: 3px;
+    border-bottom-width: 6px;
+  }
+
+  .cdash-pane-divider {
+    grid-column: 1;
+    grid-row: 2;
+    cursor: row-resize;
+  }
+
+  .cdash-browse-pane {
+    grid-column: 1;
+    grid-row: 3;
+    border-left-width: 3px;
+    border-top-width: 6px;
+  }
+
+  /* Divider-facing side is now bottom (map) / top (browse) instead of
+     right/left, so the collapsed budget needs the border zeroed there
+     instead -- and the wide-case side restored to its normal 3px. */
+  .cdash-map-pane.cdash-pane-collapsed {
+    border-right-width: 3px;
+    border-bottom-width: 0;
+  }
+
+  .cdash-browse-pane.cdash-pane-collapsed {
+    border-left-width: 3px;
+    border-top-width: 0;
+  }
+}
+
+/* Redundant JS-mirrored cursor hint (kept in sync with the container query above) */
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider {
+  cursor: row-resize;
+}

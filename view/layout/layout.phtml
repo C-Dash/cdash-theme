@@ -56,12 +56,10 @@ $this->headScript()->appendFile($this->assetUrl('js/cdash-map.js'), 'text/javasc
 // drawers. cdash-layout.js registers Alpine components on the alpine:init
 // event, so it must be parsed BEFORE Alpine boots -- hence defer on both,
 // which preserves document order, rather than Alpine's usual plain script tag.
-// media 'screen', not 'all'. It was 'all' only because this stylesheet used to
-// carry its own @media print block, which existed purely to undo the shell's
-// grid, 100dvh and overflow:hidden on paper. Those rules have moved to
-// print.scss, and keeping the shell off paper entirely means there is nothing
-// left to undo -- print.css only has to say which chrome to hide.
-$this->headLink()->appendStylesheet($this->assetUrl('css/cdash-shell.css'), 'screen');
+// The shell used to be a second stylesheet here, cdash-shell.css, loaded after
+// style.css so its rules won on source order. It is now a set of sass partials
+// -- tokens, shell, panes, drawers, tall-case, overrides -- @use'd last from
+// style.scss, which preserves that order inside the one generated file.
 $this->headScript()->appendFile($this->assetUrl('js/cdash-layout.js'), 'text/javascript', ['defer' => true]);
 $this->headScript()->appendFile($this->assetUrl('vendor/alpine/alpine.min.js'), 'text/javascript', ['defer' => true]);
 
