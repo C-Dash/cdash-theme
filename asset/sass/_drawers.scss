@@ -90,3 +90,18 @@
   cursor: default;
   pointer-events: none;
 }
+
+/* ---- Contents of the Layers drawer ----
+   Stacked, rather than side by side as cells of the old #layer-panel grid.
+   Their padding still comes from _desktop.scss. */
+#overlay-menu,
+#basemap-menu {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cdash-layer-hint {
+  color: red;
+  font-size: smaller;
+}

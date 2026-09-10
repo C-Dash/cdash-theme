@@ -7,10 +7,15 @@
 // the one that stays, because `@use` is only legal at the top level of a file
 // and cannot be nested inside `@media` at all.
 //
-// Order is the cascade here. The shell partials come last because they used to
-// be a separate stylesheet, asset/css/cdash-shell.css, loaded after this one --
-// several of their rules win on source order rather than on specificity, so
-// moving them earlier would quietly change which declaration applies.
+// Order is the cascade here. The shell partials come after the component ones
+// because they used to be a separate stylesheet, asset/css/cdash-shell.css,
+// loaded after this one, and some of their rules still win on source order
+// rather than on specificity.
+//
+// There is no _overrides partial any more. Every id the shell cares about --
+// #banner, #navmenu, #drawmap, #showresult, #content, #overlay-menu,
+// #basemap-menu -- is now declared in exactly one place: its box model here in
+// the shell partials, its colour and typography in _screen/_desktop.
 
 // Palette and the shell's typed custom properties. First because the partials
 // below reference them as var(--cdash-*) -- custom properties resolve at
@@ -30,9 +35,3 @@
 @use "panes";
 @use "drawers";
 @use "tall-case";
-
-// Undoes what _screen.scss and _desktop.scss still say about the box model of
-// ids the shell owns -- #banner, #navmenu, #drawmap, #showresult, #content,
-// #overlay-menu, #basemap-menu. This partial is the remaining seam: giving
-// each of those ids one owner is what makes it disappear.
-@use "overrides";

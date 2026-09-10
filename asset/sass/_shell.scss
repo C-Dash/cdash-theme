@@ -61,6 +61,43 @@ html, body {
   overflow-y: hidden;
 }
 
+/* Sized by the shell rather than by the old 176px #top row: the nav is a grid
+   track that takes its height from its content, with a floor so a short menu
+   still reads as a bar. */
 #navmenu {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: 30px;
+  width: 100%;
   flex-wrap: nowrap;
+}
+
+/* ---- Banner ----
+   #banner and its image fill whatever the banner grid track gives them. The
+   4.1.1 rules that sized them to a fixed 140px are gone from _desktop.scss, so
+   these are declarations now rather than overrides. */
+#banner {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+#banner img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+  min-width: 0;
+  max-width: none;
+}
+
+#banner h1 {
+  height: 100%;
+  margin: 0;
+}
+
+#banner .site-title {
+  display: block;
+  height: 100%;
 }

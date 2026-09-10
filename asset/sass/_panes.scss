@@ -136,3 +136,44 @@
   top: -8px;
   bottom: -8px;
 }
+
+/* ---- Contents of the two panes ----
+   #drawmap, #showresult and #content are Omeka's and the map's own elements
+   rather than the shell's, but their box model belongs to the pane that holds
+   them, so it is declared here. */
+
+/* The map fills its pane. The background is #drawmap's own, from _desktop.scss,
+   so the pane does not flash white before tiles arrive. */
+#drawmap {
+  width: 100%;
+  height: 100%;
+}
+
+/* The browse pane's single scroll container -- .cdash-pane-content above it is
+   overflow:hidden precisely so there is exactly one scroller here rather than
+   two nested ones. Was a grid with a "user-bar" track and its own left border;
+   the pane supplies the border now. */
+#showresult {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: none;
+  background-color: var(--cdash-page);
+
+  /* Items vary in length, so without a reserved gutter the scrollbar appears
+     and disappears as they swap in and the pane's content width jogs by ~15px
+     each time. 4.1.1 avoided this with overflow-y:scroll, which also paints a
+     dead track on short items; "stable" reserves the space without it.
+     Ignored by browsers that lack it, which just means the jog comes back. */
+  scrollbar-gutter: stable;
+}
+
+/* Padding rather than margin so it cannot collapse out of the scroller. */
+#content {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 10px 30px 10px 10px;
+}

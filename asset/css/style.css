@@ -1501,8 +1501,45 @@ html, body {
   overflow-y: hidden;
 }
 
+/* Sized by the shell rather than by the old 176px #top row: the nav is a grid
+   track that takes its height from its content, with a floor so a short menu
+   still reads as a bar. */
 #navmenu {
+  display: flex;
+  align-items: center;
+  height: auto;
+  min-height: 30px;
+  width: 100%;
   flex-wrap: nowrap;
+}
+
+/* ---- Banner ----
+   #banner and its image fill whatever the banner grid track gives them. The
+   4.1.1 rules that sized them to a fixed 140px are gone from _desktop.scss, so
+   these are declarations now rather than overrides. */
+#banner {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+#banner img {
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  object-position: center;
+  min-width: 0;
+  max-width: none;
+}
+
+#banner h1 {
+  height: 100%;
+  margin: 0;
+}
+
+#banner .site-title {
+  display: block;
+  height: 100%;
 }
 
 /* ---- Pane Container ----
@@ -1636,6 +1673,45 @@ html, body {
   bottom: -8px;
 }
 
+/* ---- Contents of the two panes ----
+   #drawmap, #showresult and #content are Omeka's and the map's own elements
+   rather than the shell's, but their box model belongs to the pane that holds
+   them, so it is declared here. */
+/* The map fills its pane. The background is #drawmap's own, from _desktop.scss,
+   so the pane does not flash white before tiles arrive. */
+#drawmap {
+  width: 100%;
+  height: 100%;
+}
+
+/* The browse pane's single scroll container -- .cdash-pane-content above it is
+   overflow:hidden precisely so there is exactly one scroller here rather than
+   two nested ones. Was a grid with a "user-bar" track and its own left border;
+   the pane supplies the border now. */
+#showresult {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: none;
+  background-color: var(--cdash-page);
+  /* Items vary in length, so without a reserved gutter the scrollbar appears
+     and disappears as they swap in and the pane's content width jogs by ~15px
+     each time. 4.1.1 avoided this with overflow-y:scroll, which also paints a
+     dead track on short items; "stable" reserves the space without it.
+     Ignored by browsers that lack it, which just means the jog comes back. */
+  scrollbar-gutter: stable;
+}
+
+/* Padding rather than margin so it cannot collapse out of the scroller. */
+#content {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 10px 30px 10px 10px;
+}
+
 /* ---- Pull-out drawers (Layers on the Map pane, Filters on the Browse
    pane) -- always horizontal (sized/dragged along the pane's own width)
    regardless of wide/tall orientation, so unlike the divider/panes above,
@@ -1723,6 +1799,21 @@ html, body {
   pointer-events: none;
 }
 
+/* ---- Contents of the Layers drawer ----
+   Stacked, rather than side by side as cells of the old #layer-panel grid.
+   Their padding still comes from _desktop.scss. */
+#overlay-menu,
+#basemap-menu {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cdash-layer-hint {
+  color: red;
+  font-size: smaller;
+}
+
 /* ---- Tall-case: Pane Container's own aspect ratio is <= 1 ---- */
 @container panes (aspect-ratio <= 1) {
   .cdash-pane-grid {
@@ -1761,99 +1852,6 @@ html, body {
 /* Redundant JS-mirrored cursor hint (kept in sync with the container query above) */
 .cdash-pane-grid.cdash-is-tall .cdash-pane-divider {
   cursor: row-resize;
-}
-
-/* ============================================================================
-   Overrides for 4.1.1 rules that still match the new markup.
-
-   Each of these exists because style.css sized an element for the old
-   fixed-pixel grid. Inside the shell, the grid owns the sizing and these
-   fixed heights would fight it.
-   ============================================================================ */
-/* Was height:140px inside a 176px #top row. The banner row is now a grid
-   track, so the banner and its image fill whatever the track gives them. */
-#banner {
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-}
-
-#banner img {
-  height: 100%;
-  width: 100%;
-  object-fit: cover;
-  object-position: center;
-  min-width: 0;
-  max-width: none;
-}
-
-#banner h1 {
-  height: 100%;
-  margin: 0;
-}
-
-#banner .site-title {
-  display: block;
-  height: 100%;
-}
-
-/* Was height:30px with a grid-area from the old #top grid. */
-#navmenu {
-  display: flex;
-  align-items: center;
-  height: auto;
-  min-height: 30px;
-  width: 100%;
-}
-
-/* The map fills its pane; #drawmap keeps its 4.1.1 background so the pane
-   does not flash white before tiles arrive. */
-#drawmap {
-  width: 100%;
-  height: 100%;
-}
-
-/* Was a grid with a "user-bar" track and its own left border. The pane
-   supplies the border now, and this is the browse pane's single scroll
-   container -- .cdash-pane-content above it is overflow:hidden precisely so
-   there is exactly one scroller here rather than two nested ones. */
-#showresult {
-  display: block;
-  width: 100%;
-  height: 100%;
-  overflow-y: auto;
-  overflow-x: hidden;
-  border-left: none;
-  background-color: var(--cdash-page);
-  /* Items vary in length, so without a reserved gutter the scrollbar appears
-     and disappears as they swap in and the pane's content width jogs by ~15px
-     each time. 4.1.1 avoided this with overflow-y:scroll, which also paints a
-     dead track on short items; "stable" reserves the space without it.
-     Ignored by browsers that lack it, which just means the jog comes back. */
-  scrollbar-gutter: stable;
-}
-
-/* Was grid-area:content with margin:10px, which no longer has a grid to sit
-   in. Padding rather than margin so it cannot collapse out of the scroller. */
-#content {
-  width: 100%;
-  height: auto;
-  margin: 0;
-  padding: 10px 30px 10px 10px;
-}
-
-/* Stacked inside the Layers drawer rather than side by side in the old
-   #layer-panel grid. */
-#overlay-menu,
-#basemap-menu {
-  display: block;
-  width: 100%;
-  height: auto;
-}
-
-.cdash-layer-hint {
-  color: red;
-  font-size: smaller;
 }
 
 /*# sourceMappingURL=style.css.map */
