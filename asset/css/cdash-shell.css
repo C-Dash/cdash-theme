@@ -20,8 +20,12 @@
    ============================================================================ */
 
 /* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
+/* <length-percentage> rather than <percentage> so the banner_height theme
+   setting, which the admin UI documents as taking px/em/rem, is a valid
+   value. The collapse still animates to 0%, which is a valid length-percentage,
+   and the 15% default still applies when the setting is left empty. */
 @property --cdash-banner-h {
-  syntax: '<percentage>';
+  syntax: '<length-percentage>';
   inherits: false;
   initial-value: 15%;
 }

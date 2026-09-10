@@ -76,9 +76,32 @@ $this->headScript()->appendFile($this->assetUrl('js/advanced-search.js', 'Omeka'
 
 $this->jsTranslate();
 $banner = $this->themeSettingAssetUrl('banner');
-$bannerHeight = $this->themeSetting('banner_height');
-$bannerHeightMobile = $this->themeSetting('banner_height_mobile');
-$bannerPosition = ($this->themeSetting('banner_position')) ? str_replace('_','-', $this->themeSetting('banner_position')) : 'center';
+// The banner is a grid track of .cdash-app-shell whose height is the custom
+// property --cdash-banner-h, animated to 0% when the banner collapses. These
+// settings therefore feed that property rather than a height declaration --
+// setting height directly would fight the track and break the animation.
+// Empty means "not set": leave the property alone so shell.css's 15% stands.
+//
+// These land inside a <style> block, where neither escapeHtml (wrong context)
+// nor escapeCss (it would escape the "." in 1.5rem and break the value) is
+// right. Validate as a CSS length instead: anything that is not one is
+// discarded, and shell.css's default stands.
+$cssLength = function ($v) {
+    $v = trim((string) $v);
+    return preg_match('/^\d+(\.\d+)?(px|em|rem|%|vh|vw|dvh|svh|lvh|pt|pc|ch|ex|cm|mm|in|q)$/i', $v)
+        ? $v : '';
+};
+$bannerHeight = $cssLength($this->themeSetting('banner_height'));
+$bannerHeightMobile = $cssLength($this->themeSetting('banner_height_mobile'));
+
+// banner_position was align-items on a flex banner. The banner image now fills
+// its track with object-fit:cover, so the equivalent is object-position: it
+// picks which part of the image survives the crop.
+$bannerPosition = [
+    'flex_start' => 'top',
+    'flex_end'   => 'bottom',
+    'center'     => 'center',
+][(string) $this->themeSetting('banner_position')] ?? 'center';
 $this->trigger('view.layout');
 $userBar = $this->userBar();
 ?>
@@ -105,17 +128,24 @@ $userBar = $this->userBar();
             }
             <?php endif; ?>
 
-            .banner {
-                height: <?php echo ($bannerHeight !== '') ? $bannerHeight: 'auto'  ?>;
-                align-items: <?php echo $bannerPosition; ?>;
+            <?php // Single-class selector, so .cdash-banner-collapsed (two
+                  // classes) still wins and the collapse animation survives. ?>
+            <?php if ($bannerHeight !== ''): ?>
+            .cdash-app-shell {
+                --cdash-banner-h: <?php echo $bannerHeight; ?>;
             }
-            <?php if ($bannerHeightMobile !== ''): ?>
-                @media screen and (max-width:640px) {
-                    .banner {
-                        height: <?php echo $bannerHeightMobile; ?>;
-                    }
-                }
             <?php endif; ?>
+            <?php if ($bannerHeightMobile !== ''): ?>
+            @media screen and (max-width:640px) {
+                .cdash-app-shell {
+                    --cdash-banner-h: <?php echo $bannerHeightMobile; ?>;
+                }
+            }
+            <?php endif; ?>
+
+            #banner img {
+                object-position: <?php echo $bannerPosition; ?>;
+            }
         </style>
     </head>
 
