@@ -151,6 +151,13 @@ are spelled out in the `.scss` sources instead. If `.vscode/settings.json` does
 not take effect, check whether VS Code's workspace root is this directory or its
 parent.
 
+One cosmetic difference survives: the two disagree only on how they emit the
+trailing `sourceMappingURL` comment — postcss joins it to the preceding `*/`
+with no final newline, dart-sass puts it on its own line. So `style.css` can
+show a 3-line diff at its tail depending on which compiler ran last. That is
+expected noise, not a real change; the 1,268 lines of actual CSS above it are
+identical either way.
+
 The build emits 14 deprecation warnings — `@import` (removed in Dart Sass 3.0),
 plus `darken()`/`lighten()` global builtins. All pre-existing; none affect
 output yet. Migrating to `@use` and `color.adjust` is future work.
