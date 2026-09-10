@@ -525,7 +525,6 @@ footer {
   max-width: 1600px;
   margin-left: auto;
   margin-right: auto;
-  padding: 0 9px 18px;
 }
 
 .item-showcase {
@@ -991,22 +990,10 @@ html, body {
    ARE still live, which is why cdash-shell.css still has to override them. */
 #navmenu {
   grid-area: navmenu;
-  display: flex;
-  height: 30px;
 }
 
 #banner {
-  height: 140px;
-  width: 100%;
   grid-area: banner;
-  overflow: hidden;
-}
-
-#banner img {
-  height: 140px;
-  min-width: 100%;
-  max-width: none;
-  /*margin:0 -100%; */
 }
 
 .left {
@@ -1034,32 +1021,17 @@ max-width: 50vw; */
 #overlay-menu {
   grid-area: overlay-menu;
   grid-column: 2;
-  /*border: 3px dotted rgb(238, 234, 21);*/
-  height: 100%;
   padding: 1px 4px 1px 4px;
 }
 
 #basemap-menu {
   grid-area: basemap-menu;
   grid-column: 1;
-  /*border: 3px dotted rgb(6, 240, 248);*/
-  height: 100%;
   padding: 1px 4px 1px 4px;
-  /*overflow-x: visible;*/
 }
 
 #showresult {
-  width: 100%;
-  height: 100%;
-  background-color: var(--cdash-page);
-  /*padding-left: 4px;
-  padding-right: 8px; */
-  overflow-y: scroll;
-  overflow-x: hidden;
-  border-left: 3px solid var(--cdash-gray);
   grid-area: showresult;
-  display: grid;
-  grid-template: "content" 1fr "user-bar" 50px;
 }
 
 /* #detail {
@@ -1073,10 +1045,6 @@ max-width: 50vw; */
 
 #content {
   grid-area: content;
-  width: 100%;
-  height: 100%;
-  margin: 10px;
-  padding-right: 30px;
 }
 
 #content {

@@ -20,25 +20,22 @@ html, body {
    asset/css/cdash-shell.css. The selectors kept below (#banner, #navmenu,
    #drawmap, #showresult, #content, #overlay-menu, #basemap-menu, #user-bar)
    ARE still live, which is why cdash-shell.css still has to override them. */
+// display:flex and the height moved to _shell.scss, which is the only place
+// that says how the nav row is sized. grid-area is inert -- there is no grid
+// here any more -- but it is left until #navmenu has one owner.
 #navmenu {
     grid-area: navmenu;
-    display: flex;
-    height: 30px;
 }
 
+// height/width/overflow moved to _shell.scss. The 140px was for the old 176px
+// #top row; the banner is a grid track now and fills whatever it is given.
 #banner { 
-    height: 140px;
-    width: 100%;
     grid-area: banner; 
-    overflow: hidden;
 }
 
-#banner img {
-    height: 140px;
-    min-width:100%;
-    max-width:none;
-    /*margin:0 -100%; */
-} 
+// Sizing moved to _shell.scss, which sets object-fit:cover on this image; the
+// 140px height and min-width:100% belonged to the fixed-pixel banner.
+
 
 .left {
     margin-left: auto;
@@ -67,40 +64,26 @@ html, body {
 }
 
 
+// height moved to _drawers.scss: these are stacked in the Layers drawer now,
+// not cells in the old #layer-panel grid, so they size to content.
 #overlay-menu {
     grid-area: overlay-menu;
     grid-column: 2;
-    /*border: 3px dotted rgb(238, 234, 21);*/
-    height: 100%;
     padding: 1px 4px 1px 4px;
 }
 
 #basemap-menu {
     grid-area: basemap-menu;
     grid-column: 1;
-    /*border: 3px dotted rgb(6, 240, 248);*/
-    height: 100%;
     padding: 1px 4px 1px 4px;
-    /*overflow-x: visible;*/
-
 }
 
 
-#showresult {    
-    //border: 3px solid rgb(194, 171, 124);
-    width: 100%; 
-    height: 100%;
-    background-color: var(--cdash-page);
-    /*padding-left: 4px;
-    padding-right: 8px; */
-    overflow-y: scroll;
-    overflow-x:hidden; 
-    border-left: 3px solid var(--cdash-gray);
-  grid-area: showresult;
-    display: grid;
-    grid-template:
-    "content" 1fr
-     "user-bar" 50px; 
+// The whole box model moved to _panes.scss: this is the browse pane's single
+// scroll container now, not a grid with a "user-bar" track and its own left
+// border. grid-area and grid-template went with the grid that is gone.
+#showresult {
+    grid-area: showresult;
 }
 
 /* #detail {
@@ -115,12 +98,10 @@ html, body {
 
 
 
+// Sizing moved to _panes.scss. margin:10px could collapse out of the scroller,
+// which is why its successor uses padding.
 #content {
     grid-area: content;
-    width: 100%;
-    height: 100%;
-    margin: 10px;
-    padding-right: 30px;
 }
 
 

@@ -513,9 +513,12 @@ footer {
 
 /* @group ----- Page and Blocks ----- */
 
+// The padding here lost to the shell's, so it is gone. base.container stays,
+// but note it is only half-effective: it sets max-width plus auto side
+// margins, and the shell's `margin: 0` cancels the centring. #content is
+// therefore width-capped and left-aligned. Worth deciding deliberately.
 #content {
     @include base.container;
-    padding: 0 base.$spacing-m base.$spacing-l;
 }
 
 .item-showcase {
