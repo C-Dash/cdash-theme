@@ -1,29 +1,21 @@
-@import "normalize";
-//@import "susy";
+// Entry point for asset/css/style.css.
+//
+// There is no `@media screen` wrapper here any more. There used to be one, but
+// layout.phtml already loads this file with media="screen", so every rule was
+// inside a screen-only stylesheet inside a screen-only media block. The link's
+// media attribute is the one that stays, because `@use` is only legal at the
+// top level of a file and cannot be nested in `@media` at all.
+//
+// "grid" was the 4.1.1 layout -- a <main> grid over the custom elements
+// <main-header>, <map>, <show-window>. None of those elements exist in this
+// theme's markup; the shell is .cdash-app-shell, styled by
+// asset/css/cdash-shell.css. Its one live rule (the * padding/margin reset)
+// moved to the top of _screen.scss.
+//
+// "print" is not compiled from here at all --
+// print is served by asset/css/print1.css plus the @media print block in
+// cdash-shell.css. Consolidating those is still open.
 
-
-
-
-@media screen {
-    @import "base";
-    // "grid" was the 4.1.1 layout -- a <main> grid over the custom elements
-    // <main-header>, <map>, <show-window>. None of those elements exist in
-    // this theme's markup; the shell is .cdash-app-shell, styled by
-    // asset/css/cdash-shell.css. Its one live rule (the * padding/margin
-    // reset) moved to the top of _screen.scss.
-    @import "screen";
-    @import "desktop";
-}
-
-/*
-@media screen and (min-width:800px) {
-    @import "grid";
-    @import "desktop";
-}
-
-
-@media print { 
-    @import "print";
-}
-*/
-
+@use "base";
+@use "screen";
+@use "desktop";

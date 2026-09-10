@@ -1,6 +1,8 @@
+@use "base";
+
 
 html, body { 
-    background-color: $gray;
+    background-color: base.$gray;
     //margin: $spacing-s auto;
     //height:   100%;
     
@@ -88,12 +90,12 @@ html, body {
     //border: 3px solid rgb(194, 171, 124);
     width: 100%; 
     height: 100%;
-    background-color: $page;
+    background-color: base.$page;
     /*padding-left: 4px;
     padding-right: 8px; */
     overflow-y: scroll;
     overflow-x:hidden; 
-    border-left: 3px solid $gray;
+    border-left: 3px solid base.$gray;
   grid-area: showresult;
     display: grid;
     grid-template:
@@ -139,7 +141,7 @@ html, body {
 
     .property dt {
         margin-bottom: 0;
-        font-size: 1 * $base-font-size;
+        font-size: 1 * base.$base-font-size;
         font-weight: bold;
         width: 8.5em ;  
 
@@ -150,7 +152,7 @@ html, body {
 
     .property value-content {
         margin-bottom: 0;
-        font-size: .75 * $base-font-size;
+        font-size: .75 * base.$base-font-size;
         font-weight: bold;
         
     }
@@ -287,29 +289,29 @@ html, body {
 
 p {
     display: block;
-    margin-block-start: $spacing-m;
-    margin-block-end: $spacing-m;
+    margin-block-start: base.$spacing-m;
+    margin-block-end: base.$spacing-m;
     margin-inline-start: 0px;
     margin-inline-end: 0px;
 }
 
 table {
-    margin: $spacing-l 0;
+    margin: base.$spacing-l 0;
     border-collapse: collapse;
 }
 
 th,
 td {
     text-align: left;
-    padding: $spacing-s $spacing-m;
-    padding-bottom: $spacing-s - 1px;
-    border-bottom: 1px solid $gray;
+    padding: base.$spacing-s base.$spacing-m;
+    padding-bottom: base.$spacing-s - 1px;
+    border-bottom: 1px solid base.$gray;
 }
 
 /* @group ----- Header ----- */
 
 #banner {
-    background-color: $darkgray;
+    background-color: base.$darkgray;
 }
 
 /* @end */
@@ -332,7 +334,7 @@ td {
 
 #navmenu {
 
-    background-color: $darkgray;
+    background-color: base.$darkgray;
 }
 
 //nav {
@@ -349,7 +351,7 @@ td {
 
 nav {
  a:link, a:visited, a:hover {
-    color: $page;
+    color: base.$page;
 }}
 
 nav:before {
@@ -384,7 +386,7 @@ nav > ul ul:hover > li {
 }
 
 nav ul.navigation {
-    margin-left: -$spacing-s;
+    margin-left: -(base.$spacing-s);
     //position: static;
     display: flex;
     align-items: flex-end;
@@ -398,7 +400,7 @@ nav ul.navigation {
     }
 
     & > li:not(:last-child) {
-        margin-right: $spacing-m;
+        margin-right: base.$spacing-m;
     }
 
     & > li > ul {
@@ -411,7 +413,7 @@ nav ul.navigation {
         list-style-type: none;
         list-style: none;
         width: 100%;
-        padding: ($spacing-m - 1px) 0 ($spacing-s - 1px);
+        padding: (base.$spacing-m - 1px) 0 (base.$spacing-s - 1px);
         display: flex;
         flex-direction: row;
         flex-flow: row wrap;
@@ -419,8 +421,8 @@ nav ul.navigation {
     }
 
     & > li:hover > ul {
-        @include container;
-        padding: $spacing-m calc(0.5 * $spacing-l) ;
+        @include base.container;
+        padding: base.$spacing-m calc(0.5 * base.$spacing-l) ;
         left: 0;
         right: 0;
         border-bottom: 0;
@@ -434,17 +436,17 @@ nav ul.navigation {
             position: absolute;
             top: 0;
             bottom: 0;
-            border-bottom: 1px solid $light;
-            border-top: 1px solid $light;
+            border-bottom: 1px solid base.$light;
+            border-top: 1px solid base.$light;
             z-index: -1;
         }
     }
 
     & > li > ul > li {
         width: 25%;
-        font-size: .75 * $base-font-size;
+        font-size: .75 * base.$base-font-size;
         font-weight: bold;
-        padding-bottom: $spacing-l;
+        padding-bottom: base.$spacing-l;
     }
 
     & > li > ul > li ul {
@@ -456,8 +458,8 @@ nav ul.navigation {
 }
 
 nav > ul > li > a {
-    margin: $spacing-l;
-    color: $page;
+    margin: base.$spacing-l;
+    color: base.$page;
 }
 
 /* All top-level nav items with siblings are parent items and get an arrow. */
@@ -465,7 +467,7 @@ nav > ul > li > a:not(:only-child):after {
     font-family: "Font Awesome 5 Free";
     content: "\f107";
     display: inline-block;
-    margin-left: $spacing-s;
+    margin-left: base.$spacing-s;
 }
 
 nav > ul li:hover ul li {
@@ -480,15 +482,15 @@ nav > ul > li > ul > li > ul > li a {
 }
 
 .sub-menu ul {
-    border-bottom: 1px solid $light;
-    padding-bottom: ($spacing-m - 1px);
+    border-bottom: 1px solid base.$light;
+    padding-bottom: (base.$spacing-m - 1px);
 }
 
 .sub-menu li {
     display: inline-block;
     border: 0;
     padding: 0;
-    margin-right: $spacing-m;
+    margin-right: base.$spacing-m;
 
     &:first-of-type {
         border: 0;
@@ -509,7 +511,7 @@ nav > ul > li > ul > li > ul > li a {
     //position: relative;
     //float: right;
     //padding: 2px;
-    background-color: $darkgray;
+    background-color: base.$darkgray;
     //border: 0;
     //border-left: 1px solid $light;
     //padding: $spacing-s;
@@ -536,14 +538,14 @@ nav > ul > li > ul > li > ul > li a {
 /* @group ----- Resource List ----- */
 
 ul.resource-list .resource img {
-    width: 4 * $spacing-l;
+    width: 4 * base.$spacing-l;
     height: auto;
     float: right;
     /*margin-left: $spacing-m;*/
 }
 
 /*ul.resource-list .resource img ~ * {
-    width: calc(100% - #{4.5 * $spacing-l});
+    width: calc(100% - #{4.5 * base.$spacing-l});
 }*/
 
 /* @end */
@@ -564,9 +566,9 @@ body.item-set.item #content {
 
 body.item-set .metadata {
     width: span(4 of 12 alpha);
-    border-left: 5px solid $light;
-    padding-left: $spacing-m;
-    margin-right: $spacing-m;
+    border-left: 5px solid base.$light;
+    padding-left: base.$spacing-m;
+    margin-right: base.$spacing-m;
 }
 
 body.item-set .metadata h4:first-of-type {
@@ -575,8 +577,8 @@ body.item-set .metadata h4:first-of-type {
 
 body.item-set #content .metadata ~ * {
     width: span(8 of 12 omega);
-    border-left: 1px solid $light;
-    padding-left: $spacing-m;
+    border-left: 1px solid base.$light;
+    padding-left: base.$spacing-m;
 }
 
 body.item-set .item-set-items h3 {
@@ -597,8 +599,8 @@ body.item-set .metadata ~ nav.pagination:first-of-type {
 }
 
 ul.preview.resource-list li:first-of-type {
-    border-top: 1px solid $light;
-    padding-top: ($spacing-l - 1px);
+    border-top: 1px solid base.$light;
+    padding-top: (base.$spacing-l - 1px);
 }
 
 /* Added for CDASH pbc 26/04/14 affects pages */

@@ -1,3 +1,4 @@
+@use "sass:color";
 // Susy -- removed. Its gutter() calls outlived it: Sass passes an unknown
 // function through as literal CSS, so `padding: 0 gutter()` compiled to
 // `padding: 0 gutter()` and every browser dropped it as invalid. Eleven
@@ -21,9 +22,9 @@
 //$gray:                                  #ababab;
 
 $gray:                                  #a7a09a;
-$bold:                                  darken($gray, 20%);
-$light:                                 lighten($gray, 20%);
-$bg:                                    lighten($gray, 30%);
+$bold:                                  color.adjust($gray, $lightness: -20%);
+$light:                                 color.adjust($gray, $lightness: 20%);
+$bg:                                    color.adjust($gray, $lightness: 30%);
 $link:                                  #920b0b;
 //$link:                                  green;
 $page:                                  #EAE7D8;
