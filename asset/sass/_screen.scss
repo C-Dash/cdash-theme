@@ -102,7 +102,7 @@ textarea {
     border-radius: 0;
     height: 1.5 * $spacing-l;
     border: 1px solid $light;
-    padding: ($spacing-s - 1px) gutter();
+    padding: ($spacing-s - 1px) $spacing-m;
     margin: 0;
 }
 
@@ -165,12 +165,12 @@ select {
 
 .field .field-meta {
     width: 30%;
-    padding: $spacing-s gutter() 0 0;
+    padding: $spacing-s $spacing-m 0 0;
 }
 
 .field .inputs {
     width: 70%;
-    padding-left: gutter();
+    padding-left: $spacing-m;
 
     & > select,
     & > textarea,
@@ -229,7 +229,7 @@ header nav:before {
     text-align: center;
     border-radius: 2px;
     position: absolute;
-    right: gutter();
+    right: $spacing-m;
     top: -(1.625 * $spacing-l);
     cursor: pointer;
     line-height: 1.5 * $base-line-height;
@@ -437,7 +437,7 @@ header {
 
     & > * {
         @include container;
-        padding: 0 gutter();
+        padding: 0 $spacing-m;
         display: block;
     }
 }
@@ -464,7 +464,7 @@ button.o-icon-search {
     //background-color: #fff;
     border-bottom: 1px solid $light;
     border-top: 1px solid $light;
-    //padding: $spacing-s gutter();
+    //padding: $spacing-s $spacing-m;
 }
 
 #search form {
@@ -504,7 +504,7 @@ button.o-icon-search {
 
 footer {
     @include container;
-    padding: 0 gutter() $spacing-l;
+    padding: 0 $spacing-m $spacing-l;
 }
 
 /* @end */
@@ -513,7 +513,7 @@ footer {
 
 #content {
     @include container;
-    padding: 0 gutter() $spacing-l;
+    padding: 0 $spacing-m $spacing-l;
 }
 
 .item-showcase {
@@ -556,7 +556,7 @@ footer {
     &:not(:only-child) {
         width: 25%;
         clear: none;
-        padding: 0 gutter();
+        padding: 0 $spacing-m;
     }
 
     &:not(:only-child) h3 {

@@ -1,6 +1,14 @@
-// Susy
-
-
+// Susy -- removed. Its gutter() calls outlived it: Sass passes an unknown
+// function through as literal CSS, so `padding: 0 gutter()` compiled to
+// `padding: 0 gutter()` and every browser dropped it as invalid. Eleven
+// declarations shipped that way, which is why some elements had no horizontal
+// padding at all.
+//
+// The intended value is recoverable from the config below. Susy 3 reads
+// `gutters: 0.1` as a fraction of a column, so 12 columns plus 11 gutters is
+// 13.1 units across a 1184px container: 1184 / 13.1 * 0.1 = 9.04px. That is
+// $spacing-m (.5 * 18px = 9px) to within 0.04px, so the calls now use the
+// token rather than a reconstructed magic number.
 
 //$susy: (
 //    columns:                            susy-repeat(12),

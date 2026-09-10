@@ -88,7 +88,7 @@
     border-radius: 0;
     height: 27px;
     border: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-    padding: 3.5px gutter();
+    padding: 3.5px 9px;
     margin: 0;
   }
   textarea {
@@ -141,11 +141,11 @@
   }
   .field .field-meta {
     width: 30%;
-    padding: 4.5px gutter() 0 0;
+    padding: 4.5px 9px 0 0;
   }
   .field .inputs {
     width: 70%;
-    padding-left: gutter();
+    padding-left: 9px;
   }
   .field .inputs > select, .field .inputs > textarea, .field .inputs > input[type=text], .field .inputs > input[type=password], .field .inputs > input[type=email], .field .inputs > input[type=url] {
     width: 100%;
@@ -188,7 +188,7 @@
     text-align: center;
     border-radius: 2px;
     position: absolute;
-    right: gutter();
+    right: 9px;
     top: -29.25px;
     cursor: pointer;
     line-height: 27px;
@@ -353,7 +353,7 @@
     max-width: 1600px;
     margin-left: auto;
     margin-right: auto;
-    padding: 0 gutter();
+    padding: 0 9px;
     display: block;
   }
   .site-title:hover,
@@ -401,7 +401,7 @@
     max-width: 1600px;
     margin-left: auto;
     margin-right: auto;
-    padding: 0 gutter() 18px;
+    padding: 0 9px 18px;
   }
   /* @end */
   /* @group ----- Page and Blocks ----- */
@@ -409,7 +409,7 @@
     max-width: 1600px;
     margin-left: auto;
     margin-right: auto;
-    padding: 0 gutter() 18px;
+    padding: 0 9px 18px;
   }
   .item-showcase {
     margin: 18px 0;
@@ -445,7 +445,7 @@
   .item-showcase .resource.item:not(:only-child) {
     width: 25%;
     clear: none;
-    padding: 0 gutter();
+    padding: 0 9px;
   }
   .item-showcase .resource.item:not(:only-child) h3 {
     clear: left;
@@ -1199,8 +1199,8 @@
   body.item-set .metadata {
     width: span(4 of 12 alpha);
     border-left: 5px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-    padding-left: gutter();
-    margin-right: gutter();
+    padding-left: 9px;
+    margin-right: 9px;
   }
   body.item-set .metadata h4:first-of-type {
     margin-top: 0;
@@ -1208,7 +1208,7 @@
   body.item-set #content .metadata ~ * {
     width: span(8 of 12 omega);
     border-left: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-    padding-left: gutter();
+    padding-left: 9px;
   }
   body.item-set .item-set-items h3 {
     margin-top: 0;

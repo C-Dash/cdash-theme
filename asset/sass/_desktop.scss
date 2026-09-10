@@ -222,8 +222,8 @@ html, body {
    }
 */
 //#content {
-//    //padding: 0 (2 * gutter()) $spacing-l;
-//    padding: 0 gutter() $spacing-l;
+//    //padding: 0 (2 * $spacing-m) $spacing-l;
+//    padding: 0 $spacing-m $spacing-l;
     //width: 60%;
 //    float: right;
 //    width: span(6 of 12 last);
@@ -513,8 +513,8 @@ nav > ul > li > ul > li > ul > li a {
     //border: 0;
     //border-left: 1px solid $light;
     //padding: $spacing-s;
-    //padding: 0 (2 * gutter()) $spacing-l;
-    //margin-right: 4 * gutter();
+    //padding: 0 (2 * $spacing-m) $spacing-l;
+    //margin-right: 4 * $spacing-m;
     //background-color: $page;
     //margin: $spacing-s;
     //margin-right: auto;
@@ -565,8 +565,8 @@ body.item-set.item #content {
 body.item-set .metadata {
     width: span(4 of 12 alpha);
     border-left: 5px solid $light;
-    padding-left: gutter();
-    margin-right: gutter();
+    padding-left: $spacing-m;
+    margin-right: $spacing-m;
 }
 
 body.item-set .metadata h4:first-of-type {
@@ -576,7 +576,7 @@ body.item-set .metadata h4:first-of-type {
 body.item-set #content .metadata ~ * {
     width: span(8 of 12 omega);
     border-left: 1px solid $light;
-    padding-left: gutter();
+    padding-left: $spacing-m;
 }
 
 body.item-set .item-set-items h3 {
