@@ -170,33 +170,36 @@ both.
 1. **Production `geosync.php`.** `cdash_4.1.1` ships an unauthenticated endpoint
    that rewrites the database on load — no auth, no request gating. Guarded in
    this theme by `_require-admin.php`; **production is not**. Highest priority.
-2. **CSS split — done, with one seam left.** The theme now builds two
-   generated stylesheets and owns no hand-written CSS. `cdash-shell.css` is
-   six partials (`_tokens`, `_shell`, `_panes`, `_drawers`, `_tall-case`,
-   `_overrides`) `@use`d last from `style.scss`, which preserves the source
-   order it used to get from being a second `<link>`. `_grid.scss` and the
-   dead layout in `_desktop.scss` are gone; print is one stylesheet;
-   `@import` is `@use`; the palette is published as `--cdash-*` custom
-   properties.
+2. **CSS split — done.** The theme builds two generated stylesheets,
+   `style.css` (media=`screen`) and `print.css` (media=`print`), and owns no
+   hand-written CSS. Each of `#banner`, `#navmenu`, `#drawmap`, `#showresult`,
+   `#content`, `#overlay-menu` and `#basemap-menu` is declared once: box model
+   in the shell partials, colour and typography in `_screen`/`_desktop`.
+   `_overrides.scss` is gone.
 
-   **The seam is `_overrides.scss`.** `#banner`, `#navmenu`, `#drawmap`,
-   `#showresult`, `#content`, `#overlay-menu` and `#basemap-menu` are still
-   declared twice on purpose — the sass owns colour and typography, the shell
-   owns the box model. Giving each one a single owner deletes that partial.
-   It is the one piece that cannot be verified by diffing compiled output,
-   because the point is to delete declarations that are currently being
-   overridden, so it wants doing a few selectors at a time with the page in
-   front of you.
+   The method is worth reusing, because the obvious one is wrong. Commenting
+   out an override does not show whether it is needed — it just reveals the
+   losing declaration underneath, so everything looks load-bearing. What works
+   is deleting the *loser* and verifying the **effective cascade**: for every
+   exact selector string, the last value declared for each property. That map
+   was identical across both steps (772 → 768 pairs when 23 losing
+   declarations went, zero changed values; then 768 → 768, a pure move).
+   Watch for two traps it has: a group selector like
+   `#overlay-menu, #basemap-menu` is a *different* selector string with the
+   same specificity, and a shorthand can silently supply a longhand you
+   deleted.
 
-   Two things there were never true and are worth not re-deriving: `gutter()`
-   had been undefined since susy was dropped, so eleven declarations shipped
-   as `padding: 0 gutter()` and were discarded by the browser; and
+   Three things that were quietly false and are not worth re-deriving:
+   `gutter()` had been undefined since susy was dropped, so eleven
+   declarations shipped as `padding: 0 gutter()` and were discarded;
    `.property value-content` in the old print CSS matched `value-content` as
-   an element, when the markup is `<span class="value-content">`.
+   an element, when the markup is `<span class="value-content">`; and
+   `#content` takes `max-width` plus auto side margins from `base.container`
+   while the shell's `margin: 0` cancels the centring, so it is width-capped
+   and left-aligned. The last one is still live — a decision, not a bug.
 
    `sass-migrator` 2.6.1 is vendored beside dart-sass at
-   `../tools/sass-migrator/` — it did the `@use` and colour-function
-   migrations mechanically, with byte-identical output.
+   `../tools/sass-migrator/`.
 
 3. **Item-page centring.** A shared hash URL restores zoom and layers, but the
    featured-marker logic then pans to the item's own marker, so the framing is
