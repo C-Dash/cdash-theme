@@ -28,12 +28,13 @@ Verified by access log, not by inspection: 19 navigations produce exactly one
 | `asset/js/cdash-map.js` | the map program — state, layers, markers, featured marker, htmx wiring |
 | `asset/js/cdash-layer-factory.js` | turns registry descriptors into Leaflet layers |
 | `asset/js/cdash-layout.js` | Alpine components: pane splitter, banner collapse, drawers |
-| `asset/css/cdash-shell.css` | hand-written shell CSS, loaded **after** `style.css` so its overrides win |
-| `asset/css/style.css` | **generated** from `asset/sass/` by the VS Code Live Sass Compiler. Do not hand-edit |
+| `asset/sass/` | **the stylesheets.** `style.scss` and `print.scss` are the two entry points; everything else is a partial. `_tokens` publishes the palette, `_shell`/`_panes`/`_drawers`/`_tall-case` are the application shell, `_screen`/`_desktop` are Omeka component styling |
+| `asset/css/style.css`, `print.css` | **generated.** Do not hand-edit — see *Building the stylesheets* |
 | `asset/php/_require-admin.php` | admin guard for the geo tools |
 
-No build step and no bundler. Alpine and htmx are vendored under
-`asset/vendor/` and chosen precisely to avoid one.
+No bundler, and no build step for the JavaScript — Alpine and htmx are vendored
+under `asset/vendor/` precisely to avoid one. Sass is the single exception, and
+it is dev-time only: nothing the browser loads is bundled or transpiled.
 
 ## Decisions worth not relitigating
 
@@ -125,10 +126,11 @@ ELECTRON_RUN_AS_NODE=1 "$LOCALAPPDATA/Programs/Microsoft VS Code/Code.exe" -e "�
 Standalone `node`/`npm` are still absent, and installing them has failed
 repeatedly — but the above works if a Node script is ever genuinely needed.
 
-### Building style.css
+### Building the stylesheets
 
-`asset/css/style.css` is generated from `asset/sass/`. Two things compile it and
-they must agree:
+`asset/css/style.css` (media=`screen`) and `asset/css/print.css` (media=`print`)
+are generated from `asset/sass/`. They are the only stylesheets the theme owns;
+there is no hand-written CSS left. Two things compile them and they must agree:
 
 - the VS Code **Live Sass Compiler** extension (`glenn2223.live-sass`), which
   fires only on a save *inside the editor* — it uses `onDidSaveTextDocument`
@@ -140,6 +142,7 @@ they must agree:
 
 ```bash
 ../tools/dart-sass/sass.bat asset/sass/style.scss asset/css/style.css --style=expanded
+../tools/dart-sass/sass.bat asset/sass/print.scss asset/css/print.css --style=expanded
 ```
 
 They agree because **autoprefixer is turned off**, in the committed
@@ -158,38 +161,43 @@ show a 3-line diff at its tail depending on which compiler ran last. That is
 expected noise, not a real change; the 1,268 lines of actual CSS above it are
 identical either way.
 
-The build emits 14 deprecation warnings — `@import` (removed in Dart Sass 3.0),
-plus `darken()`/`lighten()` global builtins. All pre-existing; none affect
-output yet. Migrating to `@use` and `color.adjust` is future work.
+The build emits no deprecation warnings. It used to emit 14, from `@import`
+and the `darken()`/`lighten()` global builtins; the module migration settled
+both.
 
 ## Still open
 
 1. **Production `geosync.php`.** `cdash_4.1.1` ships an unauthenticated endpoint
    that rewrites the database on load — no auth, no request gating. Guarded in
    this theme by `_require-admin.php`; **production is not**. Highest priority.
-2. **CSS split — half done.** The dead half is gone: `_grid.scss` (the whole
-   4.1.1 `<main>` grid over `<map>` / `<show-window>` / `<main-header>`) is
-   deleted, and the dead layout block is out of `_desktop.scss` —
-   `#grid-container`, `#top`, `#cdmap-*`, `#layer-panel*`, `#overlayBoxes`,
-   `#baseMapButtons`, `#header`, `#menubar`. None of those selectors exist in
-   the markup, in the theme's JS/PHP, or in Omeka's core views. `_grid`'s one
-   live rule, the `*` padding/margin reset, merged into the `*` rule at the top
-   of `_screen.scss`; `_screen` was imported immediately after `_grid`, so the
-   cascade is unchanged.
+2. **CSS split — done, with one seam left.** The theme now builds two
+   generated stylesheets and owns no hand-written CSS. `cdash-shell.css` is
+   six partials (`_tokens`, `_shell`, `_panes`, `_drawers`, `_tall-case`,
+   `_overrides`) `@use`d last from `style.scss`, which preserves the source
+   order it used to get from being a second `<link>`. `_grid.scss` and the
+   dead layout in `_desktop.scss` are gone; print is one stylesheet;
+   `@import` is `@use`; the palette is published as `--cdash-*` custom
+   properties.
 
-   What remains is the *live* overlap. `#banner`, `#navmenu`, `#drawmap`,
-   `#showresult`, `#content`, `#overlay-menu` and `#basemap-menu` are declared
-   in both places on purpose — the sass owns colour and typography, the shell
-   owns the box model — which is why the Overrides section at the end of
-   `cdash-shell.css` is still needed. Giving each of those one owner is the
-   decision left, and only then does folding the shell in as `_shell.scss`
-   become a real option.
+   **The seam is `_overrides.scss`.** `#banner`, `#navmenu`, `#drawmap`,
+   `#showresult`, `#content`, `#overlay-menu` and `#basemap-menu` are still
+   declared twice on purpose — the sass owns colour and typography, the shell
+   owns the box model. Giving each one a single owner deletes that partial.
+   It is the one piece that cannot be verified by diffing compiled output,
+   because the point is to delete declarations that are currently being
+   overridden, so it wants doing a few selectors at a time with the page in
+   front of you.
 
-   **Note the asymmetry this creates:** sass edits do nothing until the Live
-   Sass Compiler regenerates `style.css`. Verified once (2026-09-10) that
-   `style.css` is a faithful build of `asset/sass/` — every declaration maps
-   back through `style.css.map`, no hand-edits — so the sass is safe to treat
-   as source.
+   Two things there were never true and are worth not re-deriving: `gutter()`
+   had been undefined since susy was dropped, so eleven declarations shipped
+   as `padding: 0 gutter()` and were discarded by the browser; and
+   `.property value-content` in the old print CSS matched `value-content` as
+   an element, when the markup is `<span class="value-content">`.
+
+   `sass-migrator` 2.6.1 is vendored beside dart-sass at
+   `../tools/sass-migrator/` — it did the `@use` and colour-function
+   migrations mechanically, with byte-identical output.
+
 3. **Item-page centring.** A shared hash URL restores zoom and layers, but the
    featured-marker logic then pans to the item's own marker, so the framing is
    not reproduced. Deliberate; may want revisiting.
