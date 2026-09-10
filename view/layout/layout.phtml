@@ -98,6 +98,12 @@ $cssLength = function ($v) {
 $bannerHeight = $cssLength($this->themeSetting('banner_height'));
 $bannerHeightMobile = $cssLength($this->themeSetting('banner_height_mobile'));
 
+// Same story for the accent colour, which feeds --cdash-link. The setting is
+// an Omeka ColorPicker, so a hex value is what it should hold, but it is a
+// stored string and this is a <style> block: validate rather than trust.
+$accentColor = trim((string) $this->themeSetting('accent_color'));
+$accentColor = preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $accentColor) ? $accentColor : '';
+
 // banner_position was align-items on a flex banner. The banner image now fills
 // its track with object-fit:cover, so the equivalent is object-position: it
 // picks which part of the image survives the crop.
@@ -119,15 +125,26 @@ $userBar = $this->userBar();
         <?php echo $this->headScript(); ?>
         
         <style>
-            <?php if ($accentColor = $this->themeSetting('accent_color')): ?>
-            a:link,
-            a:visited {
-                color: <?php echo $accentColor; ?>
+            <?php // Sets the palette entry rather than re-stating the rules.
+                  // This used to have to emit its own a:link/a:visited/a:hover
+                  // declarations, because the link colour was a sass variable
+                  // compiled into style.css and there was no other way past it.
+                  // Anything that comes to use --cdash-link now follows this
+                  // automatically.
+                  //
+                  // -hover is set to the accent itself, not a lightened form,
+                  // because that is what the old rules did: they paired the
+                  // flat accent colour with opacity .75, which is kept below.
+                  // Without an accent set, --cdash-link-hover stays the 20%
+                  // lightened value from _tokens.scss and no opacity applies. ?>
+            <?php if ($accentColor !== ''): ?>
+            :root {
+                --cdash-link: <?php echo $accentColor; ?>;
+                --cdash-link-hover: <?php echo $accentColor; ?>;
             }
-            
+
             a:active,
             a:hover {
-                color: <?php echo $accentColor; ?>;
                 opacity: .75;
             }
             <?php endif; ?>

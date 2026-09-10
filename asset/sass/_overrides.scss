@@ -66,7 +66,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   border-left: none;
-  background-color: #EAE7D8;
+  background-color: var(--cdash-page);
 
   /* Items vary in length, so without a reserved gutter the scrollbar appears
      and disappears as they swap in and the pane's content width jogs by ~15px

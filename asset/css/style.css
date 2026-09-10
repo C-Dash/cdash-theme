@@ -1,4 +1,58 @@
 @charset "UTF-8";
+/* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
+/* <length-percentage> rather than <percentage> so the banner_height theme
+   setting, which the admin UI documents as taking px/em/rem, is a valid
+   value. The collapse still animates to 0%, which is a valid length-percentage,
+   and the 15% default still applies when the setting is left empty. */
+@property --cdash-banner-h {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 15%;
+}
+@property --cdash-split {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --cdash-pullout-w {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 0%;
+}
+:root {
+  /* ---- Palette, published from _base.scss ----
+     $bold, $light and $bg are derived from $gray at build time; the two
+     -hover/-light entries exist because their call sites used color.adjust()
+     inline, which var() cannot do. */
+  --cdash-gray: #a7a09a;
+  --cdash-gray-light: rgb(202.619047619, 198.4523809524, 194.880952381);
+  --cdash-bold: rgb(117.0317460317, 108.9206349206, 101.9682539683);
+  --cdash-light: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  --cdash-bg: rgb(238.2380952381, 236.9047619048, 235.7619047619);
+  --cdash-darkgray: #60655F;
+  --cdash-page: #EAE7D8;
+  /* Overridden at runtime by the accent_color theme setting, which used to
+     have to inject its own a:link/a:visited rules to get past the compiled
+     value. It now sets this one property. */
+  --cdash-link: #920b0b;
+  --cdash-link-hover: rgb(237.4140127389, 21.5859872611, 21.5859872611);
+  --cdash-map-hue: 220;
+  --cdash-map-sat: 70%;
+  --cdash-browse-hue: 42;
+  --cdash-browse-sat: 65%;
+  --cdash-map-boundary: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 35%);
+  --cdash-map-bg: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 90%);
+  --cdash-browse-boundary: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 40%);
+  --cdash-browse-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 90%);
+  /* Pull-outs: lighter than their pane's own background, plus a subtle
+     transparency so the pane content underneath faintly shows through. */
+  --cdash-map-pullout-bg: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 97% / 0.85);
+  --cdash-browse-pullout-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 97% / 0.85);
+  /* The prototype used a 20px placeholder nav. The real nav carries a menu and
+     a search form, so the shell sizes that row to its content instead. */
+  --cdash-nav-h: auto;
+}
+
 /* The padding/margin half of this reset came from _grid.scss, which was the
    4.1.1 layout and is gone. _grid was imported immediately before this file,
    so merging the two `*` rules leaves the cascade unchanged. Removing the
@@ -21,7 +75,7 @@ html {
 }
 
 body {
-  background-color: rgb(238.2380952381, 236.9047619048, 235.7619047619);
+  background-color: var(--cdash-bg);
   font-family: "Open Sans", sans-serif;
   font-size: 15px;
   line-height: 18px;
@@ -31,17 +85,17 @@ body {
 
 a:link {
   text-decoration: none;
-  color: #920b0b;
+  color: var(--cdash-link);
   border-bottom: 1px dotted;
 }
 
 a:visited {
-  color: #920b0b;
+  color: var(--cdash-link);
 }
 
 a:active,
 a:hover {
-  color: rgb(237.4140127389, 21.5859872611, 21.5859872611);
+  color: var(--cdash-link-hover);
 }
 
 h1 {
@@ -99,7 +153,7 @@ textarea {
   -moz-appearance: none;
   border-radius: 0;
   height: 27px;
-  border: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border: 1px solid var(--cdash-light);
   padding: 3.5px 9px;
   margin: 0;
 }
@@ -117,7 +171,7 @@ input[type=file] {
 button,
 a.button,
 [type=submit] {
-  background-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  background-color: var(--cdash-light);
   border-radius: 2px;
   padding: 4.5px;
   display: inline-block;
@@ -131,7 +185,7 @@ a.button,
 select {
   background-color: #fff;
   padding: 4.5px;
-  border-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-color: var(--cdash-light);
   height: 27px;
 }
 
@@ -214,7 +268,7 @@ header nav:before {
   display: block;
   width: 22.5px;
   height: 22.5px;
-  border: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border: 1px solid var(--cdash-light);
   text-align: center;
   border-radius: 2px;
   position: absolute;
@@ -241,10 +295,10 @@ header nav ul a {
 }
 header nav ul a:hover {
   border-bottom: 0;
-  background-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  background-color: var(--cdash-light);
 }
 header nav ul li {
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-top: 1px solid var(--cdash-light);
   position: relative;
 }
 header nav ul li li:last-of-type {
@@ -259,7 +313,7 @@ header nav ul li > ul:before {
   position: absolute;
   right: 0;
   top: -27px;
-  color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  color: var(--cdash-light);
   width: 18px;
   height: 27px;
   line-height: 27px;
@@ -269,11 +323,11 @@ header nav ul li > ul:hover:before {
   content: "\f107";
 }
 header nav ul a:hover ~ ul:before {
-  color: #a7a09a;
+  color: var(--cdash-gray);
 }
 
 header nav > ul > li:last-child {
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
   padding-bottom: -1px;
 }
 
@@ -285,7 +339,7 @@ header nav > ul ul li {
 
 header nav > ul ul:hover > li {
   height: auto;
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-top: 1px solid var(--cdash-light);
   padding-top: -1px;
 }
 
@@ -318,11 +372,11 @@ header nav > ul > li > ul > li > ul > li a {
 .sub-menu li {
   font-size: 11.25px;
   font-weight: bold;
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
   padding: 4.5px 0 3.5px;
 }
 .sub-menu li:first-of-type {
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-top: 1px solid var(--cdash-light);
   padding-top: 3.5px;
 }
 
@@ -354,17 +408,17 @@ nav.pagination {
 }
 
 .pagination .button {
-  border: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-  background-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border: 1px solid var(--cdash-light);
+  background-color: var(--cdash-light);
   width: 27px;
   text-align: center;
   padding: 4.5px;
   border-radius: 2px;
-  color: #a7a09a;
+  color: var(--cdash-gray);
   line-height: 18px;
 }
 .pagination .button:hover {
-  background-color: rgb(117.0317460317, 108.9206349206, 101.9682539683);
+  background-color: var(--cdash-bold);
 }
 
 .pagination .inactive.button {
@@ -399,8 +453,8 @@ nav.pagination {
 
 header {
   margin: 0 0 0;
-  background-color: #60655F;
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  background-color: var(--cdash-darkgray);
+  border-bottom: 1px solid var(--cdash-light);
 }
 header > * {
   max-width: 1600px;
@@ -424,8 +478,8 @@ button.o-icon-search {
 }
 
 #search {
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
+  border-top: 1px solid var(--cdash-light);
 }
 
 #search form {
@@ -476,8 +530,8 @@ footer {
 
 .item-showcase {
   margin: 18px 0;
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-top: 1px solid var(--cdash-light);
+  border-bottom: 1px solid var(--cdash-light);
   padding: 17px 0 0;
   overflow: hidden;
   text-align: center;
@@ -541,13 +595,13 @@ footer {
 }
 .left .item.resource:first-of-type,
 .right .item.resource:first-of-type {
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-top: 1px solid var(--cdash-light);
   padding-top: 17px;
   margin-top: 0;
 }
 .left .item.resource:last-of-type,
 .right .item.resource:last-of-type {
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
   padding-bottom: 17px;
 }
 .left .item.resource .media-render > *, .left .item.resource img,
@@ -618,7 +672,7 @@ footer {
 .break {
   width: 100%;
   clear: both;
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
   padding-bottom: -1px;
   margin: 18px 0;
 }
@@ -626,7 +680,7 @@ footer {
   border-color: transparent;
 }
 .break.opaque {
-  border-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-color: var(--cdash-light);
 }
 
 .preview-block {
@@ -635,7 +689,7 @@ footer {
 }
 
 .resource-list.preview + a {
-  background-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  background-color: var(--cdash-light);
   text-align: center;
   padding: 4.5px;
   border-radius: 2px;
@@ -644,7 +698,7 @@ footer {
   font-weight: bold;
 }
 .resource-list.preview + a:hover {
-  background-color: rgb(117.0317460317, 108.9206349206, 101.9682539683);
+  background-color: var(--cdash-bold);
   border-bottom-width: 0px;
   color: #fff;
 }
@@ -652,7 +706,7 @@ footer {
 .toc-block > ul {
   margin: 18px 0;
   list-style-type: none;
-  border-left: 5px solid #a7a09a;
+  border-left: 5px solid var(--cdash-gray);
 }
 
 .toc-block > ul > li {
@@ -674,7 +728,7 @@ footer {
 
 .toc-block ul ul li:before {
   content: "—";
-  color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  color: var(--cdash-light);
 }
 
 .item-with-metadata .show.resource {
@@ -687,7 +741,7 @@ footer {
 }
 
 .site-page-pagination a {
-  background-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  background-color: var(--cdash-light);
   border-radius: 2px;
   padding: 4.5px;
   display: inline-block;
@@ -725,7 +779,7 @@ ul.resource-list {
 }
 
 ul.resource-list .resource {
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
   padding-bottom: 3.5px;
   margin: 4.5px 0;
   overflow: hidden;
@@ -787,12 +841,12 @@ ul.resource-list > li > A > img {
 .filter-label,
 .filter-value {
   display: inline-block;
-  border: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border: 1px solid var(--cdash-light);
   padding: 3.5px;
 }
 
 .filter-label {
-  background-color: rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  background-color: var(--cdash-light);
 }
 
 .filter-value {
@@ -848,7 +902,7 @@ body.resource #content > h2:first-of-type + h3 {
 }
 
 .property .value .language {
-  background-color: rgb(202.619047619, 198.4523809524, 194.880952381);
+  background-color: var(--cdash-gray-light);
   padding: 2.25px;
   font-size: 7.5px;
 }
@@ -875,7 +929,7 @@ body.resource #content > h2:first-of-type + h3 {
 #linked-resources caption {
   text-align: left;
   font-weight: bold;
-  border-bottom: 3px solid #a7a09a;
+  border-bottom: 3px solid var(--cdash-gray);
   padding: 4.5px 9px 1.5px;
 }
 
@@ -919,7 +973,7 @@ a.metadata-browse-link {
 
 /* @end */
 html, body {
-  background-color: #a7a09a;
+  background-color: var(--cdash-gray);
 }
 
 .leaflet-popup {
@@ -997,12 +1051,12 @@ max-width: 50vw; */
 #showresult {
   width: 100%;
   height: 100%;
-  background-color: #EAE7D8;
+  background-color: var(--cdash-page);
   /*padding-left: 4px;
   padding-right: 8px; */
   overflow-y: scroll;
   overflow-x: hidden;
-  border-left: 3px solid #a7a09a;
+  border-left: 3px solid var(--cdash-gray);
   grid-area: showresult;
   display: grid;
   grid-template: "content" 1fr "user-bar" 50px;
@@ -1169,12 +1223,12 @@ td {
   text-align: left;
   padding: 4.5px 9px;
   padding-bottom: 3.5px;
-  border-bottom: 1px solid #a7a09a;
+  border-bottom: 1px solid var(--cdash-gray);
 }
 
 /* @group ----- Header ----- */
 #banner {
-  background-color: #60655F;
+  background-color: var(--cdash-darkgray);
 }
 
 /* @end */
@@ -1182,11 +1236,11 @@ td {
 /* @end */
 /* @group ----- Navigation ----- */
 #navmenu {
-  background-color: #60655F;
+  background-color: var(--cdash-darkgray);
 }
 
 nav a:link, nav a:visited, nav a:hover {
-  color: #EAE7D8;
+  color: var(--cdash-page);
 }
 
 nav:before {
@@ -1264,8 +1318,8 @@ nav ul.navigation > li:hover > ul:after {
   position: absolute;
   top: 0;
   bottom: 0;
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
+  border-top: 1px solid var(--cdash-light);
   z-index: -1;
 }
 nav ul.navigation > li > ul > li {
@@ -1283,7 +1337,7 @@ nav ul.navigation > li > ul > li ul {
 
 nav > ul > li > a {
   margin: 18px;
-  color: #EAE7D8;
+  color: var(--cdash-page);
 }
 
 /* All top-level nav items with siblings are parent items and get an arrow. */
@@ -1306,7 +1360,7 @@ nav > ul > li > ul > li > ul > li a {
 }
 
 .sub-menu ul {
-  border-bottom: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-bottom: 1px solid var(--cdash-light);
   padding-bottom: 8px;
 }
 
@@ -1326,7 +1380,7 @@ nav > ul > li > ul > li > ul > li a {
 }
 
 #search {
-  background-color: #60655F;
+  background-color: var(--cdash-darkgray);
 }
 
 #search form input[type=text],
@@ -1360,7 +1414,7 @@ body.item-set.item #content > h2, body.item-set.item #content > h3 {
 
 body.item-set .metadata {
   width: span(4 of 12 alpha);
-  border-left: 5px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-left: 5px solid var(--cdash-light);
   padding-left: 9px;
   margin-right: 9px;
 }
@@ -1371,7 +1425,7 @@ body.item-set .metadata h4:first-of-type {
 
 body.item-set #content .metadata ~ * {
   width: span(8 of 12 omega);
-  border-left: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-left: 1px solid var(--cdash-light);
   padding-left: 9px;
 }
 
@@ -1390,7 +1444,7 @@ body.item-set .metadata ~ nav.pagination:first-of-type {
 }
 
 ul.preview.resource-list li:first-of-type {
-  border-top: 1px solid rgb(214.4920634921, 211.2698412698, 208.5079365079);
+  border-top: 1px solid var(--cdash-light);
   padding-top: 17px;
 }
 
@@ -1425,44 +1479,6 @@ ul.preview.resource-list li:first-of-type {
 }
 
 /* @end */
-/* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
-/* <length-percentage> rather than <percentage> so the banner_height theme
-   setting, which the admin UI documents as taking px/em/rem, is a valid
-   value. The collapse still animates to 0%, which is a valid length-percentage,
-   and the 15% default still applies when the setting is left empty. */
-@property --cdash-banner-h {
-  syntax: "<length-percentage>";
-  inherits: false;
-  initial-value: 15%;
-}
-@property --cdash-split {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 50%;
-}
-@property --cdash-pullout-w {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 0%;
-}
-:root {
-  --cdash-map-hue: 220;
-  --cdash-map-sat: 70%;
-  --cdash-browse-hue: 42;
-  --cdash-browse-sat: 65%;
-  --cdash-map-boundary: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 35%);
-  --cdash-map-bg: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 90%);
-  --cdash-browse-boundary: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 40%);
-  --cdash-browse-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 90%);
-  /* Pull-outs: lighter than their pane's own background, plus a subtle
-     transparency so the pane content underneath faintly shows through. */
-  --cdash-map-pullout-bg: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 97% / 0.85);
-  --cdash-browse-pullout-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 97% / 0.85);
-  /* The prototype used a 20px placeholder nav. The real nav carries a menu and
-     a search form, so the shell sizes that row to its content instead. */
-  --cdash-nav-h: auto;
-}
-
 html, body {
   margin: 0;
   padding: 0;
@@ -1840,7 +1856,7 @@ html, body {
   overflow-y: auto;
   overflow-x: hidden;
   border-left: none;
-  background-color: #EAE7D8;
+  background-color: var(--cdash-page);
   /* Items vary in length, so without a reserved gutter the scrollbar appears
      and disappears as they swap in and the pane's content width jogs by ~15px
      each time. 4.1.1 avoided this with overflow-y:scroll, which also paints a

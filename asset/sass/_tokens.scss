@@ -1,8 +1,23 @@
 // Design tokens and the typed custom properties the shell animates.
 //
 // Moved out of the hand-written asset/css/cdash-shell.css, which used to be
-// loaded as a second stylesheet after style.css. It is a sass partial now and
-// is @use'd last from style.scss, so it still wins on source order.
+// loaded as a second stylesheet after style.css.
+//
+// The colour tokens below are published from the sass variables in _base.scss
+// rather than replacing them, because the two do different jobs. _base.scss
+// still owns the values and the derivations -- $light, $bg and $bold are
+// color.adjust() of $gray, which a custom property cannot do at build time.
+// What the custom properties add is a runtime handle: a theme setting, or a
+// future dark mode, can change one property instead of needing a rule for
+// every place a colour is used.
+//
+// The numeric tokens deliberately do NOT get this treatment. $spacing-*,
+// $base-font-size and $base-line-height are used in arithmetic in 72 places
+// (`1.5 * $spacing-l`, `.75 * $base-font-size`), which a custom property can
+// only express by wrapping every one of them in calc(). They stay sass.
+
+@use "sass:color";
+@use "base";
 
 /* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
 /* <length-percentage> rather than <percentage> so the banner_height theme
@@ -28,6 +43,24 @@
 }
 
 :root {
+  /* ---- Palette, published from _base.scss ----
+     $bold, $light and $bg are derived from $gray at build time; the two
+     -hover/-light entries exist because their call sites used color.adjust()
+     inline, which var() cannot do. */
+  --cdash-gray:       #{base.$gray};
+  --cdash-gray-light: #{color.adjust(base.$gray, $lightness: 15%)};
+  --cdash-bold:       #{base.$bold};
+  --cdash-light:      #{base.$light};
+  --cdash-bg:         #{base.$bg};
+  --cdash-darkgray:   #{base.$darkgray};
+  --cdash-page:       #{base.$page};
+
+  /* Overridden at runtime by the accent_color theme setting, which used to
+     have to inject its own a:link/a:visited rules to get past the compiled
+     value. It now sets this one property. */
+  --cdash-link:       #{base.$link};
+  --cdash-link-hover: #{color.adjust(base.$link, $lightness: 20%)};
+
   --cdash-map-hue: 220;
   --cdash-map-sat: 70%;
   --cdash-browse-hue: 42;

@@ -1,4 +1,3 @@
-@use "sass:color";
 @use "base";
 
 /* The padding/margin half of this reset came from _grid.scss, which was the
@@ -23,7 +22,7 @@ html {
 }
 
 body {
-    background-color: base.$bg;
+    background-color: var(--cdash-bg);
     font-family: "Open Sans", sans-serif;
     font-size: base.$base-font-size;
     line-height: base.$base-line-height;
@@ -34,17 +33,17 @@ body {
 a:link {
     text-decoration: none;
  
-    color: base.$link;
+    color: var(--cdash-link);
     border-bottom: 1px dotted;
 }
 
 a:visited {
-    color: base.$link;
+    color: var(--cdash-link);
 }
  
 a:active,
 a:hover {
-    color: color.adjust(base.$link, $lightness: 20%);
+    color: var(--cdash-link-hover);
 
 }
 
@@ -104,7 +103,7 @@ textarea {
     -moz-appearance: none;
     border-radius: 0;
     height: 1.5 * base.$spacing-l;
-    border: 1px solid base.$light;
+    border: 1px solid var(--cdash-light);
     padding: (base.$spacing-s - 1px) base.$spacing-m;
     margin: 0;
 }
@@ -122,7 +121,7 @@ input[type="file"] {
 button,
 a.button,
 [type="submit"] {
-    background-color: base.$light;
+    background-color: var(--cdash-light);
     border-radius: 2px;
     padding: base.$spacing-s;
     display: inline-block;
@@ -136,7 +135,7 @@ a.button,
 select {
     background-color: #fff;
     padding: base.$spacing-s;
-    border-color: base.$light;
+    border-color: var(--cdash-light);
     height: 1.5 * base.$spacing-l;
 }
 
@@ -228,7 +227,7 @@ header nav:before {
     display: block;
     width: 1.25 * base.$spacing-l;
     height: 1.25 * base.$spacing-l;
-    border: 1px solid base.$light;
+    border: 1px solid var(--cdash-light);
     text-align: center;
     border-radius: 2px;
     position: absolute;
@@ -261,11 +260,11 @@ header nav ul {
 
     a:hover {
         border-bottom: 0;
-        background-color: base.$light;
+        background-color: var(--cdash-light);
     }
 
     li {
-        border-top: 1px solid base.$light;
+        border-top: 1px solid var(--cdash-light);
         position: relative;
     }
 
@@ -283,7 +282,7 @@ header nav ul {
         position: absolute;
         right: 0;
         top: -(1.5 * base.$spacing-l);
-        color: base.$light;
+        color: var(--cdash-light);
         width: base.$spacing-l;
         height: 1.5 * base.$spacing-l;
         line-height: 1.5 * base.$base-line-height;
@@ -295,12 +294,12 @@ header nav ul {
     }
 
     a:hover ~ ul:before {
-        color: base.$gray;
+        color: var(--cdash-gray);
     }
 }
 
 header nav > ul > li:last-child {
-    border-bottom: 1px solid base.$light;
+    border-bottom: 1px solid var(--cdash-light);
     padding-bottom: -1px;
 }
 
@@ -312,7 +311,7 @@ header nav > ul ul li {
 
 header nav > ul ul:hover > li {
     height: auto;
-    border-top: 1px solid base.$light;
+    border-top: 1px solid var(--cdash-light);
     padding-top: -1px;
 }
 
@@ -345,11 +344,11 @@ header nav > ul > li > ul > li > ul > li a {
 .sub-menu li {
     font-size: .75 * base.$base-font-size;
     font-weight: bold;
-    border-bottom: 1px solid base.$light;
+    border-bottom: 1px solid var(--cdash-light);
     padding: base.$spacing-s 0 (base.$spacing-s - 1px);
 
     &:first-of-type {
-        border-top: 1px solid base.$light;
+        border-top: 1px solid var(--cdash-light);
         padding-top: (base.$spacing-s - 1px);
     }
 }
@@ -382,17 +381,17 @@ nav.pagination {
 }
 
 .pagination .button {
-    border: 1px solid base.$light;
-    background-color: base.$light;
+    border: 1px solid var(--cdash-light);
+    background-color: var(--cdash-light);
     width: 1.5 * base.$spacing-l;
     text-align: center;
     padding: base.$spacing-s;
     border-radius: 2px;
-    color: base.$gray;
+    color: var(--cdash-gray);
     line-height: base.$base-line-height;
 
     &:hover {
-        background-color: base.$bold;
+        background-color: var(--cdash-bold);
     }
 }
 
@@ -434,8 +433,8 @@ header {
   
     margin: 0 0 0 ;
  
-    background-color: base.$darkgray;
-    border-bottom: 1px solid base.$light;
+    background-color: var(--cdash-darkgray);
+    border-bottom: 1px solid var(--cdash-light);
 
 
     & > * {
@@ -465,8 +464,8 @@ button.o-icon-search {
    // left: 0;
    // right: 0;
     //background-color: #fff;
-    border-bottom: 1px solid base.$light;
-    border-top: 1px solid base.$light;
+    border-bottom: 1px solid var(--cdash-light);
+    border-top: 1px solid var(--cdash-light);
     //padding: $spacing-s $spacing-m;
 }
 
@@ -521,8 +520,8 @@ footer {
 
 .item-showcase {
     margin: base.$spacing-l 0;
-    border-top: 1px solid base.$light;
-    border-bottom: 1px solid base.$light;
+    border-top: 1px solid var(--cdash-light);
+    border-bottom: 1px solid var(--cdash-light);
     padding: (base.$spacing-l - 1px) 0 0;
     overflow: hidden;
     text-align: center;
@@ -592,13 +591,13 @@ footer {
     max-width: 40vw;
 
     &:first-of-type {
-        border-top: 1px solid base.$light;
+        border-top: 1px solid var(--cdash-light);
         padding-top: (base.$spacing-l - 1px);
         margin-top: 0;
     }
 
     &:last-of-type {
-        border-bottom: 1px solid base.$light;
+        border-bottom: 1px solid var(--cdash-light);
         padding-bottom: (base.$spacing-l - 1px);
     }
 
@@ -669,7 +668,7 @@ footer {
 .break {
     width: 100%;
     clear: both;
-    border-bottom: 1px solid base.$light;
+    border-bottom: 1px solid var(--cdash-light);
     padding-bottom: -1px;
     margin: base.$spacing-l 0;
 
@@ -678,7 +677,7 @@ footer {
     }
 
     &.opaque {
-        border-color: base.$light;
+        border-color: var(--cdash-light);
     }
 }
 
@@ -688,7 +687,7 @@ footer {
 }
 
 .resource-list.preview + a {
-    background-color: base.$light;
+    background-color: var(--cdash-light);
     text-align: center;
     padding: base.$spacing-s;
     border-radius: 2px;
@@ -697,7 +696,7 @@ footer {
     font-weight: bold;
 
     &:hover {
-        background-color: base.$bold;
+        background-color: var(--cdash-bold);
         border-bottom-width: 0px;
         color: #fff;
     }
@@ -706,7 +705,7 @@ footer {
 .toc-block > ul {
     margin: base.$spacing-l 0;
     list-style-type: none;
-    border-left: 5px solid base.$gray;
+    border-left: 5px solid var(--cdash-gray);
 }
 
 .toc-block > ul > li {
@@ -728,7 +727,7 @@ footer {
 
 .toc-block ul ul li:before {
     content: "\2014";
-    color: base.$light;
+    color: var(--cdash-light);
 }
 
 .item-with-metadata .show.resource {
@@ -741,7 +740,7 @@ footer {
 }
 
 .site-page-pagination a {
-    background-color: base.$light;
+    background-color: var(--cdash-light);
     border-radius: 2px;
     padding: base.$spacing-s;
     display: inline-block;
@@ -786,7 +785,7 @@ ul.resource-list {
 }
 
 ul.resource-list .resource {
-    border-bottom: 1px solid base.$light;
+    border-bottom: 1px solid var(--cdash-light);
     //padding-bottom: ($spacing-l - 1px);
     //margin: $spacing-l 0;
     padding-bottom: (base.$spacing-s - 1px);
@@ -854,12 +853,12 @@ order: 0;
 .filter-label,
 .filter-value {
     display: inline-block;
-    border: 1px solid base.$light;
+    border: 1px solid var(--cdash-light);
     padding: (base.$spacing-s - 1px);
 }
 
 .filter-label {
-    background-color: base.$light;
+    background-color: var(--cdash-light);
 }
 
 .filter-value {
@@ -917,7 +916,7 @@ body.resource #content > h2:first-of-type + h3 {
 }
 
 .property .value .language {
-    background-color: color.adjust(base.$gray, $lightness: 15%);
+    background-color: var(--cdash-gray-light);
     padding: .5 * base.$spacing-s;
     font-size: .5 * base.$base-font-size;
 }
@@ -945,7 +944,7 @@ body.resource #content > h2:first-of-type + h3 {
 #linked-resources caption {
     text-align: left;
     font-weight: bold;
-    border-bottom: 3px solid base.$gray;
+    border-bottom: 3px solid var(--cdash-gray);
     padding: base.$spacing-s base.$spacing-m (base.$spacing-s - 3px);
 }
 

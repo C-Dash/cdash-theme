@@ -12,6 +12,12 @@
 // several of their rules win on source order rather than on specificity, so
 // moving them earlier would quietly change which declaration applies.
 
+// Palette and the shell's typed custom properties. First because the partials
+// below reference them as var(--cdash-*) -- custom properties resolve at
+// computed-value time so order does not actually decide anything here, but
+// reading the values before their uses does.
+@use "tokens";
+
 // Omeka component styling: typography, links, forms, fields, tables. What the
 // browse pane renders.
 @use "base";
@@ -20,7 +26,6 @@
 
 // The application shell: the banner/nav/pane grid, the panes, the drag divider
 // and the pull-out drawers.
-@use "tokens";
 @use "shell";
 @use "panes";
 @use "drawers";
