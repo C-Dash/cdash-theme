@@ -107,11 +107,22 @@ $accentColor = preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $accentColor) ? $ac
 // banner_position was align-items on a flex banner. The banner image now fills
 // its track with object-fit:cover, so the equivalent is object-position: it
 // picks which part of the image survives the crop.
+//
+// The horizontal half is fixed at `left` and is not the admin's to set: the
+// shipped banner carries the roundel and title on that side, and anything else
+// crops them away. The setting's own wording -- "where to affix the banner
+// image when scaling down" -- is about the vertical axis anyway, which is what
+// align-items controlled.
+//
+// Empty means "not set", and _shell.scss's `left center` default stands. This
+// used to be emitted unconditionally, which mattered more than it looks: the
+// inline <style> below is later in the head than the stylesheet, so a hardcoded
+// `center` here silently beat anything _shell.scss said.
 $bannerPosition = [
-    'flex_start' => 'top',
-    'flex_end'   => 'bottom',
-    'center'     => 'center',
-][(string) $this->themeSetting('banner_position')] ?? 'center';
+    'flex_start' => 'left top',
+    'flex_end'   => 'left bottom',
+    'center'     => 'left center',
+][(string) $this->themeSetting('banner_position')] ?? '';
 $this->trigger('view.layout');
 $userBar = $this->userBar();
 ?>
@@ -164,9 +175,11 @@ $userBar = $this->userBar();
             }
             <?php endif; ?>
 
-            #banner img {
-                object-position: <?php echo $bannerPosition; ?>;
+            <?php if ($bannerPosition !== ''): ?>
+            .cdash-app-shell {
+                --cdash-banner-pos: <?php echo $bannerPosition; ?>;
             }
+            <?php endif; ?>
         </style>
     </head>
 

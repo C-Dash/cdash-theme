@@ -1523,11 +1523,18 @@ html, body {
   overflow: hidden;
 }
 
+/* The shipped banner is 1909x113 -- 16.89:1 -- with the CHC roundel and the
+   title in its left ~52% and nothing but filing-cabinet texture to the right.
+   The banner track is 15% of viewport HEIGHT, so the box is almost always a far
+   less extreme ratio than the image and cover has to crop horizontally. Anchor
+   that crop left: what is thrown away is then the texture, not the roundel and
+   the start of the title. Centred, at 800x1000 the box is 5.33:1 against the
+   image's 16.89:1 and two thirds of it goes, taken off both sides. */
 #banner img {
   height: 100%;
   width: 100%;
   object-fit: cover;
-  object-position: center;
+  object-position: var(--cdash-banner-pos, left center);
   min-width: 0;
   max-width: none;
 }
