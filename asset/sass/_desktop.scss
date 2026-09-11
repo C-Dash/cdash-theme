@@ -91,10 +91,9 @@ html, body {
     overflow: auto;
 } */
 
-#user-bar {
-    grid-area: user-bar;
-    width: 100%;
-}
+// #user-bar moved to _panes.scss: it is part of #showresult's box model now
+// (the grid row that pins it to the pane's bottom edge), not Omeka component
+// styling. grid-area went with the grid that is gone, same as #showresult above.
 
 
 

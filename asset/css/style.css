@@ -1038,11 +1038,6 @@ max-width: 50vw; */
     grid-area: detail;
     overflow: auto;
 } */
-#user-bar {
-  grid-area: user-bar;
-  width: 100%;
-}
-
 #content {
   grid-area: content;
 }
@@ -1693,10 +1688,30 @@ html, body {
 
 /* The browse pane's single scroll container -- .cdash-pane-content above it is
    overflow:hidden precisely so there is exactly one scroller here rather than
-   two nested ones. Was a grid with a "user-bar" track and its own left border;
-   the pane supplies the border now. */
+   two nested ones. Its own left border came from a grid that is gone; the pane
+   supplies the border now.
+
+   display:grid with a 1fr/auto row split, rather than plain block flow, is
+   deliberate: it is the CSS "sticky footer" pattern, and it is what pins
+   #user-bar (the admin toolbar, when logged in) to the pane's bottom edge
+   instead of leaving it wherever #content happens to end. On short content the
+   1fr row expands to fill the available height, so the auto row -- and
+   #user-bar in it -- lands flush at the bottom. On content taller than the
+   pane, the 1fr row's default min-height:auto lets it grow past its share, and
+   the whole grid -- content and toolbar together -- overflows and scrolls as
+   one block via this element's own overflow-y, with the toolbar at the true
+   end. 4.1.1 used exactly this shape (#showresult itself as the grid,
+   "content" 1fr / "user-bar" 50px) -- ported here with auto replacing the
+   hardcoded 50px, so the row sizes to whatever the toolbar actually renders
+   at instead of a guessed pixel value.
+
+   No grid-area is needed on the children: a single-column, two-row grid
+   places items in source order, and #content is first. #print-footer (second,
+   display:none on screen) and #user-bar (third, when present) both fall in
+   the auto row; #print-footer being invisible on screen makes that harmless. */
 #showresult {
-  display: block;
+  display: grid;
+  grid-template-rows: 1fr auto;
   width: 100%;
   height: 100%;
   overflow-y: auto;
@@ -1709,6 +1724,13 @@ html, body {
      dead track on short items; "stable" reserves the space without it.
      Ignored by browsers that lack it, which just means the jog comes back. */
   scrollbar-gutter: stable;
+}
+
+/* The admin toolbar, rendered only when logged in. Sits in #showresult's auto
+   row above -- see the comment there for why it is a grid row rather than a
+   plain block child. */
+#user-bar {
+  width: 100%;
 }
 
 /* Padding rather than margin so it cannot collapse out of the scroller. */
