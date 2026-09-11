@@ -1708,9 +1708,16 @@ html, body {
    No grid-area is needed on the children: a single-column, two-row grid
    places items in source order, and #content is first. #print-footer (second,
    display:none on screen) and #user-bar (third, when present) both fall in
-   the auto row; #print-footer being invisible on screen makes that harmless. */
+   the auto row; #print-footer being invisible on screen makes that harmless.
+
+   grid-template-columns:1fr is NOT optional here. Leaving only rows declared
+   defaults the one implicit column to grid-auto-columns:auto, which sizes to
+   the column's own content rather than to the available width -- with #content
+   holding item text, that squeezed everything into a narrow column at the
+   pane's left edge instead of spanning it, taking #user-bar down with it. */
 #showresult {
   display: grid;
+  grid-template-columns: 1fr;
   grid-template-rows: 1fr auto;
   width: 100%;
   height: 100%;
