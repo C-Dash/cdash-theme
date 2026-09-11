@@ -544,8 +544,22 @@ body.item-set.item #content {
     }
 }
 
+// span() is Susy's -- and susy has been commented out of this theme since
+// before 4.1.1 (checked: identical dead width:span(...) there too, same susy
+// config commented out in its _base.scss). Sass passes an unknown function
+// through as literal CSS, so these two `width` lines compile to
+// `width: span(...)`, which every browser discards as invalid -- the same
+// bug class gutter() had, left unfixed here rather than fixed, on purpose.
+//
+// Restoring susy would not be enough to fix it, either: span() used as a
+// function (`width: span(...)`), rather than susy's own `@include span(...)`
+// mixin, only ever returns a percentage -- it does not add the float/flex
+// that would be needed to make .metadata and its sibling sit side by side.
+// Neither element has one. So even a working width would still just be a
+// narrower stacked box, not the two-column metadata sidebar this looks like
+// it was going for. That is real layout work, not a value to restore --
+// tracked as a possible future feature, not attempted here.
 body.item-set .metadata {
-    width: span(4 of 12 alpha);
     border-left: 5px solid var(--cdash-light);
     padding-left: base.$spacing-m;
     margin-right: base.$spacing-m;
@@ -556,7 +570,6 @@ body.item-set .metadata h4:first-of-type {
 }
 
 body.item-set #content .metadata ~ * {
-    width: span(8 of 12 omega);
     border-left: 1px solid var(--cdash-light);
     padding-left: base.$spacing-m;
 }

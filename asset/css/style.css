@@ -1356,7 +1356,6 @@ body.item-set.item #content > h2, body.item-set.item #content > h3 {
 }
 
 body.item-set .metadata {
-  width: span(4 of 12 alpha);
   border-left: 5px solid var(--cdash-light);
   padding-left: 9px;
   margin-right: 9px;
@@ -1367,7 +1366,6 @@ body.item-set .metadata h4:first-of-type {
 }
 
 body.item-set #content .metadata ~ * {
-  width: span(8 of 12 omega);
   border-left: 1px solid var(--cdash-light);
   padding-left: 9px;
 }
