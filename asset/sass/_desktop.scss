@@ -21,21 +21,16 @@ html, body {
    #drawmap, #showresult, #content, #overlay-menu, #basemap-menu, #user-bar)
    ARE still live, which is why cdash-shell.css still has to override them. */
 // display:flex and the height moved to _shell.scss, which is the only place
-// that says how the nav row is sized. grid-area is inert -- there is no grid
-// here any more -- but it is left until #navmenu has one owner.
-#navmenu {
-    grid-area: navmenu;
-}
+// that says how the nav row is sized. #navmenu's own rule here is gone
+// entirely now -- it carried only grid-area:navmenu, and its parent,
+// .cdash-navbar, is plain block, confirmed by checking before removing (see
+// the #content grid-area incident: an "inert" leftover reactivates the moment
+// its parent gains display:grid/flex, so this isn't assumed, it's verified).
 
 // height/width/overflow moved to _shell.scss. The 140px was for the old 176px
 // #top row; the banner is a grid track now and fills whatever it is given.
-#banner { 
-    grid-area: banner; 
-}
-
-// Sizing moved to _shell.scss, which sets object-fit:cover on this image; the
-// 140px height and min-width:100% belonged to the fixed-pixel banner.
-
+// #banner's rule here carried only grid-area:banner, same story as #navmenu
+// above -- parent (.cdash-banner-content) is plain block, verified, removed.
 
 .left {
     margin-left: auto;
@@ -65,26 +60,22 @@ html, body {
 
 
 // height moved to _drawers.scss: these are stacked in the Layers drawer now,
-// not cells in the old #layer-panel grid, so they size to content.
+// not cells in the old #layer-panel grid, so they size to content. grid-area
+// and grid-column, dead the same way #navmenu's/#banner's were above --
+// parent (.cdash-pullout-content-inner) is plain block, verified -- are gone.
 #overlay-menu {
-    grid-area: overlay-menu;
-    grid-column: 2;
     padding: 1px 4px 1px 4px;
 }
 
 #basemap-menu {
-    grid-area: basemap-menu;
-    grid-column: 1;
     padding: 1px 4px 1px 4px;
 }
 
 
 // The whole box model moved to _panes.scss: this is the browse pane's single
 // scroll container now, not a grid with a "user-bar" track and its own left
-// border. grid-area and grid-template went with the grid that is gone.
-#showresult {
-    grid-area: showresult;
-}
+// border. grid-area is gone too -- #showresult's parent, .cdash-pane-content,
+// is plain block, verified rather than assumed, same as the others above.
 
 /* #detail {
     grid-area: detail;
@@ -93,7 +84,7 @@ html, body {
 
 // #user-bar moved to _panes.scss: it is part of #showresult's box model now
 // (the grid row that pins it to the pane's bottom edge), not Omeka component
-// styling. grid-area went with the grid that is gone, same as #showresult above.
+// styling.
 
 
 

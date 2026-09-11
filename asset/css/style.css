@@ -988,14 +988,6 @@ html, body {
    asset/css/cdash-shell.css. The selectors kept below (#banner, #navmenu,
    #drawmap, #showresult, #content, #overlay-menu, #basemap-menu, #user-bar)
    ARE still live, which is why cdash-shell.css still has to override them. */
-#navmenu {
-  grid-area: navmenu;
-}
-
-#banner {
-  grid-area: banner;
-}
-
 .left {
   margin-left: auto;
 }
@@ -1019,19 +1011,11 @@ max-width: 50vw; */
 }
 
 #overlay-menu {
-  grid-area: overlay-menu;
-  grid-column: 2;
   padding: 1px 4px 1px 4px;
 }
 
 #basemap-menu {
-  grid-area: basemap-menu;
-  grid-column: 1;
   padding: 1px 4px 1px 4px;
-}
-
-#showresult {
-  grid-area: showresult;
 }
 
 /* #detail {
