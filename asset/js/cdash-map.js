@@ -178,7 +178,46 @@ window.CDASH_MAP_INIT = {
   requestedCenter: mapCenter,
 };
 
+/**
+ * Keeps Leaflet's idea of the map size in step with the pane.
+ *
+ * The floor is not an optimisation. Below it the pane is collapsed and none of
+ * the map is visible, and telling Leaflet the map is ~5px wide (COLLAPSED_PX
+ * is 8 in cdash-layout.js, less the 3px .cdash-pane border) is what breaks the
+ * camBase basemap -- the one esriVector layer in the registry, and so the only
+ * one rendering through a WebGL canvas.
+ *
+ * maplibre sizes its drawing buffer as floor(pixelRatio * width), where that
+ * ratio is clamped against a cached _maxCanvasSize. Resizing into the
+ * collapsed sliver makes its painter report overLimit, and maplibre then
+ * *overwrites* that cache from the starved context:
+ *
+ *     this._maxCanvasSize = [gl.drawingBufferWidth, gl.drawingBufferHeight];
+ *
+ * which pins the cap at roughly [0.6, 0.9]. Every later resize then clamps the
+ * ratio to ~0.001 and floors the buffer to 0x0, so the layer draws nothing
+ * while its CSS box, its transform and its GL context all still look correct.
+ * Nothing recovers it -- not setPixelRatio, not resize, not triggerRepaint;
+ * only removing and re-adding the layer, which rebuilds the painter. That line
+ * is still in maplibre's current main, so a vendor upgrade would not help.
+ *
+ * Leaflet caches _size and re-reads it only when invalidateSize sets
+ * _sizeChanged, so skipping the call keeps the last good size rather than
+ * deferring the problem. Both axes are guarded because the tall-case layout
+ * collapses the pane by height rather than width.
+ *
+ * This is prevention, not recovery: a poisoned canvas still needs a reload.
+ * Chosen deliberately over detect-and-rebuild, because the whole
+ * slide-collapse-restore behaviour is a redesign candidate and this is cheap
+ * to delete when that lands.
+ */
+const COLLAPSED_MAP_FLOOR_PX = 50;
+
 const resizeObserver = new ResizeObserver(() => {
+  if (mapDiv.clientWidth < COLLAPSED_MAP_FLOOR_PX ||
+      mapDiv.clientHeight < COLLAPSED_MAP_FLOOR_PX) {
+    return;
+  }
   map.invalidateSize();
 });
 resizeObserver.observe(mapDiv);
