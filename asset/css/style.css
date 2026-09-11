@@ -1039,10 +1039,6 @@ max-width: 50vw; */
     overflow: auto;
 } */
 #content {
-  grid-area: content;
-}
-
-#content {
   /*CDASH experiments to zoom in on image */
 }
 #content .media-embeds {

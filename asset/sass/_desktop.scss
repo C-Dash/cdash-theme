@@ -99,9 +99,18 @@ html, body {
 
 // Sizing moved to _panes.scss. margin:10px could collapse out of the scroller,
 // which is why its successor uses padding.
-#content {
-    grid-area: content;
-}
+//
+// grid-area:content used to live here and was judged harmless when the CSS
+// split removed the rest of this rule: #content's parent, #showresult, was
+// display:block at the time, and grid-area on a child of a non-grid element
+// does nothing. It stopped being harmless the moment #showresult became
+// display:grid (see _panes.scss) -- #content is a genuine grid item now, so
+// grid-area:content started to mean something: with no area named "content"
+// in #showresult's template, the browser creates an IMPLICIT named track for
+// it, outside the explicit 1-column/2-row grid entirely. #user-bar (no
+// grid-area, auto-placed) fell into the one explicit cell left over; #content
+// landed in the new implicit one -- diagonal from #user-bar instead of
+// stacked below it. Removed rather than left inert a second time.
 
 
 #content {
