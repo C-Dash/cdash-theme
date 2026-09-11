@@ -113,8 +113,16 @@ docker logs cdash-dev-docker-omeka-1 --since 5m 2>&1 | grep -c placemarkers
 # 1 = correct. ~10 = the map is being rebuilt; the swap is broken.
 ```
 
-`asset/js/*.js` is checked by the editor rather than by tooling here. PHP lints
-via `docker exec cdash-dev-docker-omeka-1 php -l <path>`. No test suite exists.
+PHP lints via `docker exec cdash-dev-docker-omeka-1 php -l <path>`. No test
+suite exists.
+
+`asset/js/*.js` can be syntax-checked, using the Node below — worth doing after
+any edit, since nothing else catches a typo before the browser does:
+
+```bash
+ELECTRON_RUN_AS_NODE=1 "$LOCALAPPDATA/Programs/Microsoft VS Code/Code.exe" \
+  --check asset/js/cdash-map.js
+```
 
 There *is* a JS engine on this machine, contrary to what this file used to say:
 VS Code's Electron runs as Node 24, via
@@ -206,10 +214,40 @@ both.
    not reproduced. Deliberate; may want revisiting.
 4. **Real-device phone check.** The `100dvh` fix addresses the collapsing mobile
    URL bar and is desktop-verified only.
-5. **`asset/php/geosync copy.php`** — untracked leftover.
-6. **13 Dependabot alerts** on the default branch; they clear when the
+5. **Slide-collapse-restore is a redesign candidate**, and there is a trap in
+   it worth knowing before touching it.
+
+   `camBase` is the only `esriVector` layer in the registry, so the only
+   basemap drawn through a WebGL canvas. maplibre sizes its drawing buffer as
+   `floor(pixelRatio * width)`, clamping that ratio against a cached
+   `_maxCanvasSize`. Resizing the map into a collapsed sliver makes its painter
+   report `overLimit`, whereupon maplibre **overwrites that cache from the
+   starved context** — `this._maxCanvasSize = [gl.drawingBufferWidth,
+   gl.drawingBufferHeight]` — pinning the cap at roughly `[0.6, 0.9]`. Every
+   later resize then clamps the ratio to ~0.001 and floors the buffer to 0×0.
+
+   The layer then draws nothing while its CSS box, its transform and its GL
+   context all still look correct, which is what makes it confusing: the pane
+   is not blank, because the raster `massGIS` ground layer keeps drawing. Only
+   `removeLayer` + `addLayer` recovers it, by rebuilding the painter —
+   `setPixelRatio`, setting `painter.pixelRatio`, `resize` and `triggerRepaint`
+   were each tested and none take. A vendor upgrade does not help either: that
+   line is still in maplibre's current `main`, Leaflet plays no part, and
+   maplibre is baked into the prebuilt `esri-leaflet-vector` bundle rather than
+   separately upgradable.
+
+   Guarded in `asset/js/cdash-map.js` by not propagating a map size below
+   `COLLAPSED_MAP_FLOOR_PX` to Leaflet at all. That is **prevention, not
+   recovery**, chosen on purpose over detect-and-rebuild because this
+   behaviour is due for redesign. A canvas poisoned by some other route — the
+   plausible one being a window resize *while* the pane sits collapsed, since
+   Leaflet's own resize handler calls `invalidateSize` directly — still needs a
+   reload. If the redesign keeps a collapse-to-nothing gesture, it needs to
+   keep that floor or solve this properly.
+6. **`asset/php/geosync copy.php`** — untracked leftover.
+7. **13 Dependabot alerts** on the default branch; they clear when the
    `package-lock.json` deletion merges to `main`.
-7. **No PR yet** — styling first, by decision.
+8. **No PR yet** — styling first, by decision.
 
 ## Longer-term
 
