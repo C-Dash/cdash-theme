@@ -8,14 +8,17 @@
 @container panes (aspect-ratio <= 1) {
   .cdash-pane-grid {
     grid-template-columns: 1fr;
-    grid-template-rows: var(--cdash-split, 50%) 2px 1fr;
+    grid-template-rows: var(--cdash-split, 50%) var(--cdash-divider-track, 1px) 1fr;
   }
 
+  /* Divider-facing side is bottom (map) / top (browse) instead of right/left,
+     so that is the side without a border here. .cdash-pane-collapsed's
+     border-width:0 is two classes, so it still wins over these. */
   .cdash-map-pane {
     grid-column: 1;
     grid-row: 1;
     border-right-width: 3px;
-    border-bottom-width: 6px;
+    border-bottom-width: 0;
   }
 
   .cdash-pane-divider {
@@ -28,20 +31,29 @@
     grid-column: 1;
     grid-row: 3;
     border-left-width: 3px;
-    border-top-width: 6px;
-  }
-
-  /* Divider-facing side is now bottom (map) / top (browse) instead of
-     right/left, so the collapsed budget needs the border zeroed there
-     instead -- and the wide-case side restored to its normal 3px. */
-  .cdash-map-pane.cdash-pane-collapsed {
-    border-right-width: 3px;
-    border-bottom-width: 0;
-  }
-
-  .cdash-browse-pane.cdash-pane-collapsed {
-    border-left-width: 3px;
     border-top-width: 0;
+  }
+
+  /* Pane tabs move to the top and bottom edges, with horizontal labels. The
+     drawer tabs do not: drawers stay horizontal in both orientations. */
+  .cdash-pane-tab {
+    writing-mode: horizontal-tb;
+    width: 110px;
+    height: 32px;
+  }
+
+  .cdash-pane-tab-map {
+    top: var(--cdash-split);
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 0 0 8px 8px;
+  }
+
+  .cdash-pane-tab-browse {
+    top: var(--cdash-split);
+    left: 50%;
+    transform: translate(-50%, -100%);
+    border-radius: 8px 8px 0 0;
   }
 }
 

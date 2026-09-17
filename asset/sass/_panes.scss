@@ -21,14 +21,26 @@
   overflow: hidden;
 }
 
+/* The divider track is a plain custom property rather than a literal, so the
+   collapsed state can zero it once for both orientations. A class rule that
+   restated grid-template-columns would out-specify the tall-case container
+   query and put a tall layout back into columns. */
 .cdash-pane-grid {
   display: grid;
   height: 100%;
   width: 100%;
 
+  /* Containing block for the pane tabs. */
+  position: relative;
+
   /* wide-case (default): Map | Divider | Browse */
-  grid-template-columns: var(--cdash-split, 50%) 2px 1fr;
+  grid-template-columns: var(--cdash-split, 50%) var(--cdash-divider-track, 1px) 1fr;
   grid-template-rows: 1fr;
+}
+
+/* One pane is shut, so there is nothing left to divide. */
+.cdash-pane-grid.cdash-pane-collapsed-any {
+  --cdash-divider-track: 0px;
 }
 
 .cdash-pane-grid.cdash-animating {
@@ -44,7 +56,7 @@
 /* Outer wrapper clips at the pane's actual size and carries no padding of
    its own -- with box-sizing:border-box, padding can't compress a box
    below its own total any more than a border can, so padding must live on
-   the inner wrapper instead, or a collapsed 8px pane would force this box
+   the inner wrapper instead, or a collapsed 0px pane would force this box
    to grow past its parent and spill content into neighbouring panes. */
 .cdash-pane-content {
   width: 100%;
@@ -71,12 +83,15 @@
   padding: 0.5rem;
 }
 
+/* Colour marks each pane's outer edges only. The divider-facing side carries
+   no border: the old 6px + 2px + 6px band there is what made the boundary
+   read as heavy. */
 .cdash-map-pane {
   grid-column: 1;
   grid-row: 1;
   border-color: var(--cdash-map-boundary);
   background: var(--cdash-map-bg);
-  border-right-width: 6px;
+  border-right-width: 0;
 }
 
 .cdash-browse-pane {
@@ -84,20 +99,13 @@
   grid-row: 1;
   border-color: var(--cdash-browse-boundary);
   background: var(--cdash-browse-bg);
-  border-left-width: 6px;
-}
-
-/* Collapsed panes are pinned to a fixed pixel width/height (COLLAPSED_PX in
-   cdash-layout.js) -- the far-side 3px border plus content making up the
-   rest, no divider-side border. border-box can't shrink a box below its own
-   border width, so the border on the divider-facing side must drop to 0 to
-   actually fit within that budget. */
-.cdash-map-pane.cdash-pane-collapsed {
-  border-right-width: 0;
-}
-
-.cdash-browse-pane.cdash-pane-collapsed {
   border-left-width: 0;
+}
+
+/* A collapsed pane sits in a 0 track. border-box cannot shrink a box below its
+   own borders, so any border left on it would spill 3px into the other pane. */
+.cdash-pane.cdash-pane-collapsed {
+  border-width: 0;
 }
 
 .cdash-pane-divider {
@@ -105,36 +113,149 @@
   grid-row: 1;
   cursor: col-resize;
   touch-action: none;
-  background: #999;
+  background: var(--cdash-divider);
   /* Panes are position:relative (positioned elements always paint above
-     static ones), and a collapsed pane's border can't shrink below its own
-     width even at a 0% track -- so without this the collapsed pane's
-     leftover border band paints over the divider and eats its pointer
-     events. Elevate the divider so it always wins. */
+     static ones), so the divider must be elevated or its widened hit area
+     below would sit under the neighbouring pane and never see a pointer. */
   position: relative;
   z-index: 1;
 }
 
-.cdash-pane-divider:hover {
-  background: #666;
+/* Hidden, not display:none: it is still a grid item in column 2, and
+   visibility also takes its hit area out of play. */
+.cdash-pane-grid.cdash-pane-collapsed-any .cdash-pane-divider {
+  visibility: hidden;
 }
 
-/* The 6px visual divider is too small a touch target on a phone. Widen the
-   hit area with a transparent overlay while leaving the stripe itself 6px. */
+/* The highlight: a band wider than the 1px line, drawn as a pseudo-element so
+   the track itself never changes width and nothing reflows on hover. */
+.cdash-pane-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -2px;
+  right: -2px;
+  background: var(--cdash-edge-active);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.cdash-pane-divider:hover::before,
+.cdash-pane-divider:focus-visible::before,
+.cdash-pane-divider.cdash-dragging::before {
+  opacity: 1;
+}
+
+/* The band is the focus indicator. */
+.cdash-pane-divider:focus-visible {
+  outline: none;
+}
+
+/* A 1px line is no target at all, least of all on a phone. Widen the hit area
+   with a transparent overlay while leaving the line itself 1px. */
 .cdash-pane-divider::after {
   content: "";
   position: absolute;
   top: 0;
   bottom: 0;
-  left: -8px;
-  right: -8px;
+  left: -6px;
+  right: -6px;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider::before {
+  left: 0;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
 }
 
 .cdash-pane-grid.cdash-is-tall .cdash-pane-divider::after {
   left: 0;
   right: 0;
-  top: -8px;
-  bottom: -8px;
+  top: -6px;
+  bottom: -6px;
+}
+
+/* ---- Grip ----
+   The pill at the centre of an open, movable edge: the divider here, and the
+   drawer edges in _drawers.scss. Decoration only -- pointer-events:none, so a
+   press on it lands on the edge that owns the drag. */
+.cdash-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--cdash-grip-fg);
+  border-radius: 4px;
+  background-color: var(--cdash-grip-bg);
+  background-image: radial-gradient(circle, var(--cdash-grip-fg) 1px, transparent 1.5px);
+  background-size: 6px 6px;
+  background-position: center;
+  pointer-events: none;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider .cdash-grip {
+  width: 36px;
+  height: 8px;
+}
+
+/* ---- Pane tabs ----
+   Shown only while their pane is collapsed. They sit on --cdash-split, which
+   is 0% or 100% when collapsed, so at rest that is the screen edge; during a
+   drag they follow the pane they are opening. Wide: vertical labels on the
+   left and right edges. Tall: see _tall-case.scss. */
+.cdash-pane-tab {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 110px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  writing-mode: vertical-rl;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.cdash-pane-tab:hover {
+  filter: brightness(1.1);
+}
+
+.cdash-pane-tab:focus-visible {
+  outline: 2px solid var(--cdash-edge-active);
+  outline-offset: 2px;
+}
+
+/* rotate(180deg) makes the label read bottom-to-top on the left edge. The
+   radius is written before that rotation, so the rounded corners given here
+   as left-hand end up on the outer, right-hand side. */
+.cdash-pane-tab-map {
+  left: var(--cdash-split);
+  transform: translateY(-50%) rotate(180deg);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-map-tab-bg);
+  color: var(--cdash-map-tab-fg);
+}
+
+.cdash-pane-tab-browse {
+  left: var(--cdash-split);
+  transform: translate(-100%, -50%);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-browse-tab-bg);
+  color: var(--cdash-browse-tab-fg);
 }
 
 /* ---- Contents of the two panes ----

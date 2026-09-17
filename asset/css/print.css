@@ -1,6 +1,7 @@
 /* ---- Chrome that should not print ---- */
 .cdash-map-pane,
 .cdash-pane-divider,
+.cdash-pane-tab,
 .cdash-pullout,
 .cdash-navbar {
   display: none;

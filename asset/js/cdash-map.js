@@ -159,7 +159,12 @@ var mapZoom      = cdashInitialState ? cdashInitialState.zoom   : CDASH_DEFAULT_
 var initialLayers = cdashInitialState ? cdashInitialState.layers : cdashDefaultLayerKeys();
 
 const mapDiv = document.getElementById("drawmap");
-const map = L.map(mapDiv, { center: mapCenter, zoom: mapZoom, maxZoom: 19 });
+// trackResize:false because Leaflet's own window-resize handler calls
+// invalidateSize directly, bypassing the COLLAPSED_MAP_FLOOR_PX guard below --
+// a window resize while the map pane was collapsed was the one remaining way
+// to break camBase. Nothing is lost: the ResizeObserver below sees every
+// window resize too, since the pane resizes with the window.
+const map = L.map(mapDiv, { center: mapCenter, zoom: mapZoom, maxZoom: 19, trackResize: false });
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 // Everything in this file lives inside a $(document).ready closure, so none of
@@ -181,11 +186,11 @@ window.CDASH_MAP_INIT = {
 /**
  * Keeps Leaflet's idea of the map size in step with the pane.
  *
- * The floor is not an optimisation. Below it the pane is collapsed and none of
- * the map is visible, and telling Leaflet the map is ~5px wide (COLLAPSED_PX
- * is 8 in cdash-layout.js, less the 3px .cdash-pane border) is what breaks the
- * camBase basemap -- the one esriVector layer in the registry, and so the only
- * one rendering through a WebGL canvas.
+ * The floor is not an optimisation. Below it the pane is collapsed -- to 0, or
+ * mid-drag on its way there -- and telling Leaflet the map is that small is
+ * what breaks the camBase basemap: the one esriVector layer in the registry,
+ * and so the only one rendering through a WebGL canvas. An open pane never
+ * sits below it, because SNAP_PX in cdash-layout.js is larger.
  *
  * maplibre sizes its drawing buffer as floor(pixelRatio * width), where that
  * ratio is clamped against a cached _maxCanvasSize. Resizing into the
@@ -207,9 +212,8 @@ window.CDASH_MAP_INIT = {
  * collapses the pane by height rather than width.
  *
  * This is prevention, not recovery: a poisoned canvas still needs a reload.
- * Chosen deliberately over detect-and-rebuild, because the whole
- * slide-collapse-restore behaviour is a redesign candidate and this is cheap
- * to delete when that lands.
+ * The collapse redesign kept it rather than detect-and-rebuild -- a pane that
+ * collapses to 0 needs it more, not less, so do not delete it.
  */
 const COLLAPSED_MAP_FLOOR_PX = 50;
 

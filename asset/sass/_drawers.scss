@@ -33,6 +33,11 @@
   background: var(--cdash-browse-pullout-bg);
 }
 
+/* Fully shut: no width, and no border left behind as a sliver. */
+.cdash-pullout.cdash-pullout-collapsed {
+  border-width: 0;
+}
+
 .cdash-pullout.cdash-pullout-animating {
   transition: --cdash-pullout-w 300ms ease-out;
 }
@@ -53,42 +58,103 @@
   padding: 0.5rem;
 }
 
+/* ---- Open drawer: its resize edge ----
+   A 12px hit strip centred on the drawer's 2px border, holding the grip
+   (styled in _panes.scss). The drawer box is border-box, so the border lies
+   inside its width and its centre is 1px in from the outer edge. */
+.cdash-pullout-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 3;
+}
+
+.cdash-pullout-layers .cdash-pullout-edge {
+  right: -7px;
+}
+
+.cdash-pullout-filters .cdash-pullout-edge {
+  left: -7px;
+}
+
+/* Same highlight as the pane divider: a band over the border line. */
+.cdash-pullout-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 4px;
+  background: var(--cdash-edge-active);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.cdash-pullout-edge:hover::before,
+.cdash-pullout-edge:focus-visible::before,
+.cdash-pullout-edge.cdash-dragging::before {
+  opacity: 1;
+}
+
+.cdash-pullout-edge:focus-visible {
+  outline: none;
+}
+
+/* ---- Collapsed drawer: its tab ----
+   Protrudes from the zero-width drawer into the pane, so it stays reachable.
+   Pale, where the pane tabs are solid, so the two kinds read differently. */
 .cdash-pullout-handle {
   position: absolute;
   top: 50%;
   width: 32px;
   height: 110px;
-  transform: translateY(-50%);
+  margin: 0;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   writing-mode: vertical-rl;
   font-size: 1rem;
   font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.06em;
-  background: #ddd;
   color: #333;
-  cursor: ew-resize;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: pointer;
   touch-action: none;
   user-select: none;
   z-index: 3;
 }
 
+.cdash-pullout-handle:hover {
+  filter: brightness(0.96);
+}
+
+.cdash-pullout-handle:focus-visible {
+  outline: 2px solid var(--cdash-edge-active);
+  outline-offset: 2px;
+}
+
+/* The radius is written before the 180deg rotation, so left-hand corners here
+   end up rounded on the outer, right-hand side. It used to be written the
+   other way round, which rounded the corners against the drawer edge. */
 .cdash-pullout-layers .cdash-pullout-handle {
   right: -32px;
-  border-radius: 0 8px 8px 0;
+  border: 1px solid var(--cdash-map-boundary);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-map-drawer-tab-bg);
   transform: translateY(-50%) rotate(180deg);
 }
 
 .cdash-pullout-filters .cdash-pullout-handle {
   left: -32px;
+  border: 1px solid var(--cdash-browse-boundary);
   border-radius: 8px 0 0 8px;
-}
-
-.cdash-pullout-handle-disabled {
-  opacity: 0.4;
-  cursor: default;
-  pointer-events: none;
+  background: var(--cdash-browse-drawer-tab-bg);
+  transform: translateY(-50%);
 }
 
 /* ---- Contents of the Layers drawer ----

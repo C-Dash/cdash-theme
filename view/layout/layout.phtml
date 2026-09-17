@@ -243,18 +243,37 @@ $userBar = $this->userBar();
     </nav>
   </div>
 
+<?php
+/**
+ * Panes and drawers share one pattern -- the sidebar/sash idiom of VS Code,
+ * JupyterLab and Google Maps:
+ *
+ *   open       a thin edge (divider, or drawer edge) with a grip at its centre;
+ *              drag to resize, release under SNAP_PX to collapse completely
+ *   collapsed  zero size, and a tab on the edge; click it to reopen at the
+ *              last size used, or drag it to open to where the pointer is
+ *
+ * The inline style="display: none" on things that start hidden stops them
+ * flashing before Alpine boots; x-show takes over from there. Tabs and edges
+ * are buttons and separators, so they work from the keyboard too.
+ */
+?>
   <div class="cdash-pane-container" x-data="paneResizer">
-    <div class="cdash-pane-grid" :class="{ 'cdash-is-tall': orientation === 'tall' }">
+    <div class="cdash-pane-grid"
+         :class="{ 'cdash-is-tall': orientation === 'tall',
+                   'cdash-pane-collapsed-any': mapCollapsed || browseCollapsed }">
 
-      <section class="cdash-pane cdash-map-pane"
-               :class="{ 'cdash-pane-collapsed': mapCollapsed }">
+      <section id="cdash-map-pane" class="cdash-pane cdash-map-pane"
+               :class="{ 'cdash-pane-collapsed': mapCollapsed }"
+               :inert="mapCollapsed">
         <div class="cdash-pane-content">
           <?php echo $this->partial('cdash/cdash-map-5'); ?>
         </div>
 
-        <div class="cdash-pullout cdash-pullout-layers" x-data="pullOut('start')"
-             x-effect="$data.parentCollapsed = mapCollapsed">
-          <div class="cdash-pullout-content">
+        <div id="cdash-layers" class="cdash-pullout cdash-pullout-layers" x-data="pullOut('start')"
+             x-effect="$data.parentCollapsed = mapCollapsed"
+             :class="{ 'cdash-pullout-collapsed': collapsed }">
+          <div class="cdash-pullout-content" :inert="collapsed">
             <div class="cdash-pullout-content-inner">
               <div id="overlay-menu">
                 <?php echo $this->partial('cdash/map-tools/overlay-menu.phtml'); ?>
@@ -264,16 +283,37 @@ $userBar = $this->userBar();
               </div>
             </div>
           </div>
-          <div class="cdash-pullout-handle"
-               :class="{ 'cdash-pullout-handle-disabled': parentCollapsed }"
-               x-on:pointerdown="parentCollapsed ? null : onHandlePointerDown">Layers</div>
+          <div class="cdash-pullout-edge" style="display: none" x-show="!collapsed"
+               role="separator" tabindex="0" aria-controls="cdash-layers"
+               aria-label="<?php echo $escape($this->translate('Resize the Layers drawer')); ?>"
+               aria-orientation="vertical" aria-valuemin="0" aria-valuemax="95"
+               :aria-valuenow="Math.round(openPct)"
+               x-on:pointerdown="onEdgePointerDown($event)"
+               x-on:keydown="onEdgeKeydown($event)">
+            <span class="cdash-grip" aria-hidden="true"></span>
+          </div>
+          <button type="button" class="cdash-pullout-handle"
+                  x-show="collapsed && !parentCollapsed"
+                  aria-controls="cdash-layers" aria-expanded="false"
+                  x-on:pointerdown="onTabPointerDown($event)"
+                  x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Layers'); ?></button>
         </div>
       </section>
 
-      <div class="cdash-pane-divider" x-on:pointerdown="onDividerPointerDown"></div>
+      <div class="cdash-pane-divider"
+           role="separator" tabindex="0" aria-controls="cdash-map-pane"
+           aria-label="<?php echo $escape($this->translate('Resize the map and browse panes')); ?>"
+           aria-valuemin="0" aria-valuemax="100"
+           :aria-valuenow="Math.round(splitPct)"
+           :aria-orientation="orientation === 'wide' ? 'vertical' : 'horizontal'"
+           x-on:pointerdown="onDividerPointerDown($event)"
+           x-on:keydown="onDividerKeydown($event)">
+        <span class="cdash-grip" aria-hidden="true"></span>
+      </div>
 
-      <section class="cdash-pane cdash-browse-pane"
-               :class="{ 'cdash-pane-collapsed': browseCollapsed }">
+      <section id="cdash-browse-pane" class="cdash-pane cdash-browse-pane"
+               :class="{ 'cdash-pane-collapsed': browseCollapsed }"
+               :inert="browseCollapsed">
         <div class="cdash-pane-content">
           <?php
           /**
@@ -312,9 +352,10 @@ $userBar = $this->userBar();
           </div>
         </div>
 
-        <div class="cdash-pullout cdash-pullout-filters" x-data="pullOut('end')"
-             x-effect="$data.parentCollapsed = browseCollapsed">
-          <div class="cdash-pullout-content">
+        <div id="cdash-filters" class="cdash-pullout cdash-pullout-filters" x-data="pullOut('end')"
+             x-effect="$data.parentCollapsed = browseCollapsed"
+             :class="{ 'cdash-pullout-collapsed': collapsed }">
+          <div class="cdash-pullout-content" :inert="collapsed">
             <div class="cdash-pullout-content-inner">
               <form action="<?php echo $escape($site->url() . '/item'); ?>" method="GET">
                 <?php echo $this->partial('common/advanced-search', ['resourceType' => 'item']); ?>
@@ -322,11 +363,36 @@ $userBar = $this->userBar();
               </form>
             </div>
           </div>
-          <div class="cdash-pullout-handle"
-               :class="{ 'cdash-pullout-handle-disabled': parentCollapsed }"
-               x-on:pointerdown="parentCollapsed ? null : onHandlePointerDown">Filters</div>
+          <div class="cdash-pullout-edge" style="display: none" x-show="!collapsed"
+               role="separator" tabindex="0" aria-controls="cdash-filters"
+               aria-label="<?php echo $escape($this->translate('Resize the Filters drawer')); ?>"
+               aria-orientation="vertical" aria-valuemin="0" aria-valuemax="95"
+               :aria-valuenow="Math.round(openPct)"
+               x-on:pointerdown="onEdgePointerDown($event)"
+               x-on:keydown="onEdgeKeydown($event)">
+            <span class="cdash-grip" aria-hidden="true"></span>
+          </div>
+          <button type="button" class="cdash-pullout-handle"
+                  x-show="collapsed && !parentCollapsed"
+                  aria-controls="cdash-filters" aria-expanded="false"
+                  x-on:pointerdown="onTabPointerDown($event)"
+                  x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Filters'); ?></button>
         </div>
       </section>
+
+      <?php // Inside the grid, not the panes: a collapsed pane is zero-size and
+            // clips. They ride the edge through the inherited --cdash-split, so
+            // dragging one moves it with the pane it is opening. ?>
+      <button type="button" class="cdash-pane-tab cdash-pane-tab-map" style="display: none"
+              x-show="mapCollapsed"
+              aria-controls="cdash-map-pane" aria-expanded="false"
+              x-on:pointerdown="onTabPointerDown($event)"
+              x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Map'); ?></button>
+      <button type="button" class="cdash-pane-tab cdash-pane-tab-browse" style="display: none"
+              x-show="browseCollapsed"
+              aria-controls="cdash-browse-pane" aria-expanded="false"
+              x-on:pointerdown="onTabPointerDown($event)"
+              x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Browse'); ?></button>
 
     </div>
   </div>

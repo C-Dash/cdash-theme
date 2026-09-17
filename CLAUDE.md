@@ -214,8 +214,13 @@ both.
    not reproduced. Deliberate; may want revisiting.
 4. **Real-device phone check.** The `100dvh` fix addresses the collapsing mobile
    URL bar and is desktop-verified only.
-5. **Slide-collapse-restore is a redesign candidate**, and there is a trap in
-   it worth knowing before touching it.
+5. **Slide-collapse-restore — redesigned.** Panes and
+   drawers now collapse to zero (no sliver), show a grip on the open edge and
+   a tab on the collapsed one; a tab click reopens to the last size, kept in
+   `localStorage` under `cdash.layout`. Snapping is in pixels (`SNAP_PX = 64`
+   in `cdash-layout.js`, deliberately above the map's 50px floor). The trap
+   below still applies, so the floor stays and the map now has
+   `trackResize: false`.
 
    `camBase` is the only `esriVector` layer in the registry, so the only
    basemap drawn through a WebGL canvas. maplibre sizes its drawing buffer as
@@ -238,12 +243,11 @@ both.
 
    Guarded in `asset/js/cdash-map.js` by not propagating a map size below
    `COLLAPSED_MAP_FLOOR_PX` to Leaflet at all. That is **prevention, not
-   recovery**, chosen on purpose over detect-and-rebuild because this
-   behaviour is due for redesign. A canvas poisoned by some other route — the
-   plausible one being a window resize *while* the pane sits collapsed, since
-   Leaflet's own resize handler calls `invalidateSize` directly — still needs a
-   reload. If the redesign keeps a collapse-to-nothing gesture, it needs to
-   keep that floor or solve this properly.
+   recovery**. The one other known route — a window resize while the pane
+   sits collapsed, via Leaflet's own resize handler — is closed by
+   `trackResize: false`; the ResizeObserver covers window resizes instead.
+   A canvas poisoned some other way still needs a reload. Collapse-to-zero
+   depends on that floor: do not remove it.
 6. **`asset/php/geosync copy.php`** — untracked leftover.
 7. **13 Dependabot alerts** on the default branch; they clear when the
    `package-lock.json` deletion merges to `main`.

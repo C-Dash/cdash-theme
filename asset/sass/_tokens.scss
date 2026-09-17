@@ -30,9 +30,12 @@
   initial-value: 15%;
 }
 
+/* inherits:true so the pane tabs, children of .cdash-pane-grid, can position
+   themselves on the split and follow it -- animation included, since the
+   inherited value is recomputed every frame of the grid's transition. */
 @property --cdash-split {
   syntax: '<percentage>';
-  inherits: false;
+  inherits: true;
   initial-value: 50%;
 }
 
@@ -63,8 +66,9 @@
 
   --cdash-map-hue: 220;
   --cdash-map-sat: 70%;
-  --cdash-browse-hue: 42;
-  --cdash-browse-sat: 65%;
+  /* Browse was hue 42 at 65%, which read as tan. 50 at 80% is a clear yellow. */
+  --cdash-browse-hue: 50;
+  --cdash-browse-sat: 80%;
 
   --cdash-map-boundary: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 35%);
   --cdash-map-bg:       hsl(var(--cdash-map-hue) var(--cdash-map-sat) 90%);
@@ -75,6 +79,24 @@
      transparency so the pane content underneath faintly shows through. */
   --cdash-map-pullout-bg:    hsl(var(--cdash-map-hue) var(--cdash-map-sat) 97% / 0.85);
   --cdash-browse-pullout-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 97% / 0.85);
+
+  /* Tabs. A pane tab is solid and strong; a drawer tab is pale, so the two
+     read as different things when both sit on the same screen edge. The
+     browse tab is lighter than its boundary and carries dark text: white on
+     a mid yellow fails contrast. */
+  --cdash-map-tab-bg:       var(--cdash-map-boundary);
+  --cdash-map-tab-fg:       #fff;
+  --cdash-browse-tab-bg:    hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 55%);
+  --cdash-browse-tab-fg:    #222;
+  --cdash-map-drawer-tab-bg:    hsl(var(--cdash-map-hue) var(--cdash-map-sat) 85%);
+  --cdash-browse-drawer-tab-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 80%);
+
+  /* Resize edges: a quiet line at rest, a coloured band on hover, focus or
+     drag, and a grip pill marking where to take hold. */
+  --cdash-divider:     #b0b0b0;
+  --cdash-edge-active: var(--cdash-link);
+  --cdash-grip-bg:     #f4f4f4;
+  --cdash-grip-fg:     #808080;
 
   /* The prototype used a 20px placeholder nav. The real nav carries a menu and
      a search form, so the shell sizes that row to its content instead. */

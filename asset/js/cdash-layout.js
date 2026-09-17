@@ -1,6 +1,115 @@
 document.addEventListener('alpine:init', () => {
 
-  const COLLAPSED_PX = 8;
+  // Below this many pixels an open pane or drawer is not worth keeping: a
+  // drag released there snaps it fully shut. Pixels rather than a percentage,
+  // so the gesture feels the same on a phone and a wide monitor.
+  //
+  // Kept above COLLAPSED_MAP_FLOOR_PX (50) in cdash-map.js on purpose: an
+  // open map pane is then always big enough for Leaflet to be told its size.
+  const SNAP_PX = 64;
+
+  // How far a pointer may wander before a press on a tab counts as a drag
+  // rather than a click.
+  const CLICK_SLOP_PX = 4;
+
+  const KEY_STEP_PCT = 2;
+  const KEY_BIG_STEP_PCT = 10;
+  const DEFAULT_OPEN_PCT = 50;
+  const DRAWER_MAX_PCT = 95;
+
+  // Last open sizes, so a tab click brings back what the user last chose.
+  // Per-viewer layout, deliberately not in the URL hash, which holds shareable
+  // map state. Storage can be missing or throw (private windows, blocked site
+  // data); the layout then just falls back to DEFAULT_OPEN_PCT.
+  const STORAGE_KEY = 'cdash.layout';
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  function loadLayout() {
+    try {
+      const v = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      return v && typeof v === 'object' ? v : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function saveLayout(key, pct) {
+    try {
+      const v = loadLayout();
+      v[key] = Math.round(pct * 10) / 10;
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(v));
+    } catch (err) {
+      // Not persisted; the in-memory value still serves this page.
+    }
+  }
+
+  function storedPct(key) {
+    const v = loadLayout()[key];
+    return typeof v === 'number' && isFinite(v) ? v : DEFAULT_OPEN_PCT;
+  }
+
+  // One pointer gesture on el, reported as a signed distance along one axis.
+  //
+  // Listeners go on currentTarget, not target: the divider and edges contain a
+  // grip <span>, and a press landing on it must still drive the element that
+  // owns the handler. Pointer capture keeps the gesture alive when the pointer
+  // leaves that element, which on a thin divider is immediately.
+  //
+  // onEnd(moved, cancelled): moved is false for a press that stayed within
+  // CLICK_SLOP_PX, which is how a tab tells a click from a drag.
+  function trackDrag(downEvent, axisPos, onMove, onEnd) {
+    const el = downEvent.currentTarget;
+    const start = axisPos(downEvent);
+    let moved = false;
+
+    el.setPointerCapture(downEvent.pointerId);
+    el.classList.add('cdash-dragging');
+
+    const move = (e) => {
+      const delta = axisPos(e) - start;
+      if (Math.abs(delta) > CLICK_SLOP_PX) moved = true;
+      if (moved) onMove(delta);
+    };
+
+    const end = (e) => {
+      if (el.hasPointerCapture(e.pointerId)) el.releasePointerCapture(e.pointerId);
+      el.removeEventListener('pointermove', move);
+      el.removeEventListener('pointerup', end);
+      el.removeEventListener('pointercancel', end);
+      el.classList.remove('cdash-dragging');
+      onEnd(moved, e.type === 'pointercancel');
+    };
+
+    el.addEventListener('pointermove', move);
+    el.addEventListener('pointerup', end);
+    el.addEventListener('pointercancel', end);
+  }
+
+  // Animates a custom property to its new value, then drops the class that
+  // enables the transition so live drags stay unanimated.
+  function applyPct(el, prop, animClass, pct, animated) {
+    el.classList.toggle(animClass, !!animated);
+    el.style.setProperty(prop, pct + '%');
+    if (animated) {
+      const clear = () => {
+        el.classList.remove(animClass);
+        el.removeEventListener('transitionend', clear);
+      };
+      el.addEventListener('transitionend', clear);
+    }
+  }
+
+  // A tab disappears when its pane opens and the divider when a pane
+  // collapses. If keyboard focus was on the one going away, hand it to the
+  // one that replaces it rather than dropping it on <body>.
+  function handOffFocus(component, fromEl, toSelector) {
+    if (document.activeElement !== fromEl) return;
+    component.$nextTick(() => {
+      const to = document.querySelector(toSelector);
+      if (to) to.focus();
+    });
+  }
 
   Alpine.data('appShell', () => ({
     bannerCollapsed: false,
@@ -34,134 +143,120 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
-  Alpine.data('paneResizer', () => ({
-    orientation: 'wide',
-    splitPct: 50,
-    mapCollapsed: false,
-    browseCollapsed: false,
-    collapsedEdge: null,
-    dragState: null,
+  // The Map | Browse split. --cdash-split is the map pane's share of the
+  // container's axis: 0% is map collapsed, 100% is browse collapsed.
+  Alpine.data('paneResizer', () => {
+    // DOM refs kept out of Alpine's reactive wrapper -- see pullOut below.
+    // containerEl (container-type:size host) is used for size/orientation
+    // measurement. gridEl (the nested .cdash-pane-grid) is where --cdash-split
+    // and .cdash-animating live, since the grid's own template lives there --
+    // see _panes.scss for why the grid isn't on containerEl itself.
+    let containerEl = null;
+    let gridEl = null;
 
-    init() {
-      // Capture the container element here, where Alpine's $el correctly
-      // resolves to the x-data root. Handlers triggered by directives on
-      // descendants (like the divider's x-on:pointerdown) get $el bound to
-      // that descendant instead, so everything below uses these captured refs.
-      //
-      // containerEl (container-type:size host) is used for size/orientation
-      // measurement. gridEl (the nested .cdash-pane-grid) is where
-      // --cdash-split and .cdash-animating actually need to live, since the
-      // grid's own template lives there -- see styles.css for why the grid
-      // isn't on containerEl itself.
-      this.containerEl = this.$el;
-      this.gridEl = this.containerEl.querySelector('.cdash-pane-grid');
-      this.gridEl.style.setProperty('--cdash-split', this.splitPct + '%');
+    return {
+      orientation: 'wide',
+      splitPct: DEFAULT_OPEN_PCT,
+      lastOpenPct: DEFAULT_OPEN_PCT,
+      mapCollapsed: false,
+      browseCollapsed: false,
 
-      const onResize = () => {
-        const isTall = this.containerEl.offsetHeight >= this.containerEl.offsetWidth;
-        const next = isTall ? 'tall' : 'wide';
-        if (next !== this.orientation) {
-          if (this.dragState) {
-            this.dragState = null;
-          }
-          this.orientation = next;
-        }
+      init() {
+        containerEl = this.$el;
+        gridEl = containerEl.querySelector('.cdash-pane-grid');
 
-        // A collapsed pane is pinned to a fixed COLLAPSED_PX, not a fixed
-        // percentage -- since --cdash-split is a percentage, its equivalent
-        // value drifts whenever the container resizes. Re-pin it here,
-        // without animating, so the collapsed footprint stays exactly
-        // COLLAPSED_PX regardless of container size.
-        if (this.mapCollapsed) {
-          this.setSplit(this.pxToPct(COLLAPSED_PX), false);
-        } else if (this.browseCollapsed) {
-          this.setSplit(100 - this.pxToPct(COLLAPSED_PX), false);
-        }
-      };
-
-      onResize();
-      new ResizeObserver(onResize).observe(this.containerEl);
-    },
-
-    axisSize() {
-      return this.orientation === 'wide' ? this.containerEl.offsetWidth : this.containerEl.offsetHeight;
-    },
-
-    pxToPct(px) {
-      return (px / this.axisSize()) * 100;
-    },
-
-    pointerAxisPos(e) {
-      return this.orientation === 'wide' ? e.clientX : e.clientY;
-    },
-
-    setSplit(pct, animated) {
-      this.splitPct = Math.max(0, Math.min(100, pct));
-      this.gridEl.classList.toggle('cdash-animating', !!animated);
-      this.gridEl.style.setProperty('--cdash-split', this.splitPct + '%');
-      if (animated) {
-        const clear = () => {
-          this.gridEl.classList.remove('cdash-animating');
-          this.gridEl.removeEventListener('transitionend', clear);
+        const onResize = () => {
+          const isTall = containerEl.offsetHeight >= containerEl.offsetWidth;
+          this.orientation = isTall ? 'tall' : 'wide';
         };
-        this.gridEl.addEventListener('transitionend', clear);
-      }
-    },
+        onResize();
+        new ResizeObserver(onResize).observe(containerEl);
 
-    onDividerPointerDown(e) {
-      e.target.setPointerCapture(e.pointerId);
-      this.dragState = {
-        startPos: this.pointerAxisPos(e),
-        startSplitPct: this.splitPct,
-        axisSize: this.axisSize(),
-      };
+        // A reload always starts with both panes open, at the remembered split.
+        this.lastOpenPct = this.clampOpen(storedPct('split'));
+        this.setSplit(this.lastOpenPct, false);
+      },
 
-      const onMove = (moveEvent) => {
-        if (!this.dragState) return;
-        const delta = this.pointerAxisPos(moveEvent) - this.dragState.startPos;
-        const deltaPct = (delta / this.dragState.axisSize) * 100;
-        this.setSplit(this.dragState.startSplitPct + deltaPct, false);
-      };
+      axisSize() {
+        return this.orientation === 'wide' ? containerEl.offsetWidth : containerEl.offsetHeight;
+      },
 
-      const onUp = (upEvent) => {
-        e.target.releasePointerCapture(upEvent.pointerId);
-        e.target.removeEventListener('pointermove', onMove);
-        e.target.removeEventListener('pointerup', onUp);
-        this.finishDrag();
-      };
+      // Keeps both panes at least SNAP_PX, so a split remembered on a big
+      // screen cannot open a pane past usefulness on a small one.
+      clampOpen(pct) {
+        const min = (SNAP_PX / this.axisSize()) * 100;
+        return min >= 50 ? 50 : clamp(pct, min, 100 - min);
+      },
 
-      e.target.addEventListener('pointermove', onMove);
-      e.target.addEventListener('pointerup', onUp);
-    },
+      setSplit(pct, animated) {
+        this.splitPct = clamp(pct, 0, 100);
+        applyPct(gridEl, '--cdash-split', 'cdash-animating', this.splitPct, animated);
+      },
 
-    finishDrag() {
-      this.dragState = null;
+      collapse(which) {
+        this.mapCollapsed = which === 'map';
+        this.browseCollapsed = which === 'browse';
+        this.setSplit(which === 'map' ? 0 : 100, true);
+        handOffFocus(this, containerEl.querySelector('.cdash-pane-divider'), '.cdash-pane-tab-' + which);
+      },
 
-      if (!this.mapCollapsed && !this.browseCollapsed) {
-        if (this.splitPct < 15) {
-          this.mapCollapsed = true;
-          this.collapsedEdge = 'start';
-          this.setSplit(this.pxToPct(COLLAPSED_PX), true);
-        } else if (this.splitPct > 85) {
-          this.browseCollapsed = true;
-          this.collapsedEdge = 'end';
-          this.setSplit(100 - this.pxToPct(COLLAPSED_PX), true);
-        }
-        return;
-      }
-
-      const pinnedPct = this.collapsedEdge === 'start' ? this.pxToPct(COLLAPSED_PX) : 100 - this.pxToPct(COLLAPSED_PX);
-      if (Math.abs(this.splitPct - pinnedPct) > 20) {
-        const releasedPct = this.splitPct;
+      open() {
+        const tab = containerEl.querySelector(this.mapCollapsed ? '.cdash-pane-tab-map' : '.cdash-pane-tab-browse');
         this.mapCollapsed = false;
         this.browseCollapsed = false;
-        this.collapsedEdge = null;
-        this.setSplit(releasedPct, true);
-      } else {
-        this.setSplit(pinnedPct, true);
-      }
-    },
-  }));
+        this.setSplit(this.clampOpen(this.lastOpenPct), true);
+        handOffFocus(this, tab, '.cdash-pane-divider');
+      },
+
+      // Where a drag or key press comes to rest: shut if either pane ended up
+      // under SNAP_PX, otherwise open here, and remember it.
+      settle(pct) {
+        pct = clamp(pct, 0, 100);
+        const size = this.axisSize();
+        if ((pct / 100) * size < SNAP_PX) return this.collapse('map');
+        if (((100 - pct) / 100) * size < SNAP_PX) return this.collapse('browse');
+
+        this.mapCollapsed = false;
+        this.browseCollapsed = false;
+        this.lastOpenPct = pct;
+        saveLayout('split', pct);
+        this.setSplit(pct, false);
+      },
+
+      // Shared by the divider and both pane tabs: all of them move the same
+      // edge, from wherever it currently is.
+      startDrag(e, onClick) {
+        if (e.button !== 0) return;
+        const startPct = this.splitPct;
+        const size = this.axisSize();
+        const axisPos = this.orientation === 'wide' ? (ev) => ev.clientX : (ev) => ev.clientY;
+
+        trackDrag(e, axisPos,
+          (delta) => this.setSplit(startPct + (delta / size) * 100, false),
+          (moved, cancelled) => {
+            if (moved) this.settle(this.splitPct);
+            else if (!cancelled && onClick) onClick();
+          });
+      },
+
+      onDividerPointerDown(e) {
+        this.startDrag(e, null);
+      },
+
+      onTabPointerDown(e) {
+        this.startDrag(e, () => this.open());
+      },
+
+      onDividerKeydown(e) {
+        const dec = this.orientation === 'wide' ? 'ArrowLeft' : 'ArrowUp';
+        const inc = this.orientation === 'wide' ? 'ArrowRight' : 'ArrowDown';
+        if (e.key !== dec && e.key !== inc) return;
+        e.preventDefault();
+        const step = e.shiftKey ? KEY_BIG_STEP_PCT : KEY_STEP_PCT;
+        this.settle(this.splitPct + (e.key === inc ? step : -step));
+      },
+    };
+  });
 
   // side: 'start' (Layers, anchored to the Map pane's left/outer edge) or
   // 'end' (Filters, anchored to the Browse pane's right/outer edge). Each
@@ -187,9 +282,9 @@ document.addEventListener('alpine:init', () => {
     return {
       side,
       openPct: 0,
+      lastOpenPct: DEFAULT_OPEN_PCT,
       collapsed: true,
       parentCollapsed: false,
-      dragState: null,
 
       init() {
         pulloutEl = document.querySelector(
@@ -200,95 +295,84 @@ document.addEventListener('alpine:init', () => {
         // only ever a fraction of the pane's.
         paneEl = pulloutEl.parentElement;
 
-        const onResize = () => {
-          // Same reasoning as paneResizer's onResize: a collapsed drawer is
-          // pinned to a fixed COLLAPSED_PX, not a fixed percentage, so the
-          // equivalent percentage must be recomputed whenever the pane resizes.
-          if (this.collapsed) {
-            this.setOpen(this.pxToPct(COLLAPSED_PX), false);
-          }
-        };
-
-        onResize();
-        new ResizeObserver(onResize).observe(paneEl);
+        this.lastOpenPct = storedPct(this.storageKey());
+        this.setOpen(0, false);
 
         this.$watch('parentCollapsed', (val) => {
-          if (val && !this.collapsed) {
-            this.collapsed = true;
-            this.setOpen(this.pxToPct(COLLAPSED_PX), true);
-          }
+          if (val && !this.collapsed) this.collapse();
         });
+      },
+
+      storageKey() {
+        return this.side === 'start' ? 'layers' : 'filters';
       },
 
       axisSize() {
         return paneEl.offsetWidth;
       },
 
-      pxToPct(px) {
-        return (px / this.axisSize()) * 100;
+      clampOpen(pct) {
+        const min = (SNAP_PX / this.axisSize()) * 100;
+        return min >= DRAWER_MAX_PCT ? DRAWER_MAX_PCT : clamp(pct, min, DRAWER_MAX_PCT);
       },
 
       setOpen(pct, animated) {
-        const collapsedPct = this.pxToPct(COLLAPSED_PX);
-        this.openPct = Math.max(collapsedPct, Math.min(95, pct));
-        pulloutEl.classList.toggle('cdash-pullout-animating', !!animated);
-        pulloutEl.style.setProperty('--cdash-pullout-w', this.openPct + '%');
-        if (animated) {
-          const clear = () => {
-            pulloutEl.classList.remove('cdash-pullout-animating');
-            pulloutEl.removeEventListener('transitionend', clear);
-          };
-          pulloutEl.addEventListener('transitionend', clear);
-        }
+        this.openPct = clamp(pct, 0, DRAWER_MAX_PCT);
+        applyPct(pulloutEl, '--cdash-pullout-w', 'cdash-pullout-animating', this.openPct, animated);
       },
 
-      onHandlePointerDown(e) {
-        e.target.setPointerCapture(e.pointerId);
-        this.dragState = {
-          startPos: e.clientX,
-          startOpenPct: this.openPct,
-          axisSize: this.axisSize(),
-        };
+      collapse() {
+        this.collapsed = true;
+        this.setOpen(0, true);
+        handOffFocus(this, pulloutEl.querySelector('.cdash-pullout-edge'), '#' + pulloutEl.id + ' .cdash-pullout-handle');
+      },
+
+      open() {
+        this.collapsed = false;
+        this.setOpen(this.clampOpen(this.lastOpenPct), true);
+        handOffFocus(this, pulloutEl.querySelector('.cdash-pullout-handle'), '#' + pulloutEl.id + ' .cdash-pullout-edge');
+      },
+
+      settle(pct) {
+        pct = clamp(pct, 0, DRAWER_MAX_PCT);
+        if ((pct / 100) * this.axisSize() < SNAP_PX) return this.collapse();
+
+        this.collapsed = false;
+        this.lastOpenPct = pct;
+        saveLayout(this.storageKey(), pct);
+        this.setOpen(pct, false);
+      },
+
+      startDrag(e, onClick) {
+        if (e.button !== 0) return;
+        const startPct = this.openPct;
+        const size = this.axisSize();
         // Dragging toward the divider always means "opening", regardless of
         // whether that's a +x or -x pointer motion -- flip the sign per side.
         const sign = this.side === 'start' ? 1 : -1;
 
-        const onMove = (moveEvent) => {
-          if (!this.dragState) return;
-          const delta = sign * (moveEvent.clientX - this.dragState.startPos);
-          const deltaPct = (delta / this.dragState.axisSize) * 100;
-          this.setOpen(this.dragState.startOpenPct + deltaPct, false);
-        };
-
-        const onUp = (upEvent) => {
-          e.target.releasePointerCapture(upEvent.pointerId);
-          e.target.removeEventListener('pointermove', onMove);
-          e.target.removeEventListener('pointerup', onUp);
-          this.finishDrag();
-        };
-
-        e.target.addEventListener('pointermove', onMove);
-        e.target.addEventListener('pointerup', onUp);
+        trackDrag(e, (ev) => ev.clientX,
+          (delta) => this.setOpen(startPct + ((sign * delta) / size) * 100, false),
+          (moved, cancelled) => {
+            if (moved) this.settle(this.openPct);
+            else if (!cancelled && onClick) onClick();
+          });
       },
 
-      finishDrag() {
-        this.dragState = null;
-        const collapsedPct = this.pxToPct(COLLAPSED_PX);
+      onEdgePointerDown(e) {
+        this.startDrag(e, null);
+      },
 
-        if (!this.collapsed) {
-          if (this.openPct < 15) {
-            this.collapsed = true;
-            this.setOpen(collapsedPct, true);
-          }
-          return;
-        }
+      onTabPointerDown(e) {
+        this.startDrag(e, () => this.open());
+      },
 
-        if (Math.abs(this.openPct - collapsedPct) > 20) {
-          this.collapsed = false;
-          this.setOpen(this.openPct, true);
-        } else {
-          this.setOpen(collapsedPct, true);
-        }
+      onEdgeKeydown(e) {
+        if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+        e.preventDefault();
+        const step = e.shiftKey ? KEY_BIG_STEP_PCT : KEY_STEP_PCT;
+        const opening = (e.key === 'ArrowRight') === (this.side === 'start');
+        this.settle(this.openPct + (opening ? step : -step));
       },
     };
   });
