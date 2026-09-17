@@ -338,6 +338,164 @@ document.body.addEventListener('htmx:replacedInHistory', writeMapHash);
 
 
 // ---------------------------------------------------------------------------
+// Find my location.
+//
+// A page cannot tell whether a device's GPS is switched on, so "show it when
+// GPS is engaged" becomes the nearest thing that can be known: a touch device,
+// on a secure page (geolocation is refused elsewhere), whose location
+// permission has not been denied. A GPS that turns out to be off surfaces as a
+// locationerror on tap, and gets a message rather than a hidden button.
+//
+// Touch only, on purpose: desktop positions come from Wi-Fi and are often
+// hundreds of metres out -- misleading at survey zoom.
+//
+// One tap starts watching and centres on the first fix. The dot then follows
+// the device but the map does not, so the user can browse around it. Tap again
+// to re-centre; tap while already centred to stop -- the Google/Apple Maps
+// idiom. Nothing is stored and there is no hash token; centring fires moveend,
+// which writes the hash like any other move.
+// ---------------------------------------------------------------------------
+var CDASH_LOCATE_MAX_ZOOM = 18;
+
+var cdashCanLocate = 'geolocation' in navigator
+  && window.isSecureContext
+  && window.matchMedia('(pointer: coarse)').matches;
+
+if (cdashCanLocate) {
+  var LocateControl = L.Control.extend({
+    options: { position: 'topleft' },
+
+    onAdd: function (map) {
+      var container = L.DomUtil.create('div', 'leaflet-bar cdash-locate');
+      var button = L.DomUtil.create('button', 'cdash-locate-button', container);
+      button.type = 'button';
+      button.title = 'Show my location';
+      button.setAttribute('aria-label', 'Show my location');
+      button.setAttribute('aria-pressed', 'false');
+
+      var message = L.DomUtil.create('div', 'cdash-locate-message', container);
+      message.setAttribute('role', 'status');
+      message.hidden = true;
+
+      L.DomEvent.disableClickPropagation(container);
+
+      var dot = L.circleMarker([0, 0], {
+        radius: 7, weight: 2, color: '#fff', fillColor: '#1a73e8', fillOpacity: 1,
+        interactive: false,
+      });
+      var accuracy = L.circle([0, 0], {
+        radius: 0, weight: 1, color: '#1a73e8', fillColor: '#1a73e8', fillOpacity: 0.12,
+        interactive: false,
+      });
+      var marks = L.layerGroup([accuracy, dot]);
+
+      var active = false;     // watching the device position
+      var following = false;  // map is centred on the latest fix
+      var lastFix = null;
+      var messageTimer = null;
+
+      function setState() {
+        L.DomUtil[active ? 'addClass' : 'removeClass'](button, 'is-active');
+        L.DomUtil[following ? 'addClass' : 'removeClass'](button, 'is-following');
+        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+      }
+
+      function showMessage(text) {
+        message.textContent = text;
+        message.hidden = false;
+        clearTimeout(messageTimer);
+        messageTimer = setTimeout(function () { message.hidden = true; }, 6000);
+      }
+
+      function centre() {
+        if (!lastFix) return;
+        // Fit the accuracy circle, but never closer than the cap: a precise
+        // fix should not dive to maxZoom.
+        var zoom = Math.min(CDASH_LOCATE_MAX_ZOOM, map.getBoundsZoom(lastFix.bounds));
+        following = true;
+        map.setView(lastFix.latlng, zoom);
+        setState();
+      }
+
+      function start() {
+        active = true;
+        following = false;
+        lastFix = null;
+        setState();
+        map.locate({ watch: true, setView: false, enableHighAccuracy: true });
+      }
+
+      function stop() {
+        map.stopLocate();
+        map.removeLayer(marks);
+        active = false;
+        following = false;
+        lastFix = null;
+        setState();
+      }
+
+      L.DomEvent.on(button, 'click', function () {
+        message.hidden = true;
+        if (!active) start();
+        else if (!following) centre();
+        else stop();
+      });
+
+      L.DomEvent.on(message, 'click', function () { message.hidden = true; });
+
+      map.on('locationfound', function (e) {
+        if (!active) return;
+        var first = !lastFix;
+        lastFix = e;
+        dot.setLatLng(e.latlng);
+        accuracy.setLatLng(e.latlng).setRadius(e.accuracy);
+        if (!map.hasLayer(marks)) map.addLayer(marks);
+        if (first) centre();
+      });
+
+      map.on('locationerror', function (e) {
+        stop();
+        // e.code follows GeolocationPositionError: 1 denied, 2 unavailable,
+        // 3 timeout.
+        if (e.code === 1) {
+          showMessage('Location access is blocked for this site.');
+        } else {
+          showMessage('Your location is not available. Check that location services are on.');
+        }
+      });
+
+      // The user moving the map themselves ends "following", so the next tap
+      // re-centres instead of stopping.
+      map.on('dragstart', function () {
+        if (following) {
+          following = false;
+          setState();
+        }
+      });
+
+      // Hide the control once permission is denied, and bring it back if it is
+      // granted again from the browser's settings. Not every browser supports
+      // querying geolocation, so failure just leaves the button showing.
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then(function (status) {
+          var apply = function () {
+            container.hidden = status.state === 'denied';
+            if (status.state === 'denied' && active) stop();
+          };
+          apply();
+          status.addEventListener('change', apply);
+        }).catch(function () {});
+      }
+
+      return container;
+    },
+  });
+
+  map.addControl(new LocateControl());
+}
+
+
+// ---------------------------------------------------------------------------
 // Featured marker: the red dot for whatever the browse pane is showing.
 //
 // The Mapping module writes coordinates into the item's HTML as a

@@ -35,3 +35,6 @@
 @use "panes";
 @use "drawers";
 @use "tall-case";
+
+// Controls the theme adds to the Leaflet map.
+@use "map-controls";

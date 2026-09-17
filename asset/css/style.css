@@ -2085,4 +2085,80 @@ html, body {
   cursor: row-resize;
 }
 
+/* Leaflet's own display rules would otherwise beat the UA's [hidden], and the
+   control relies on hidden for both itself and its message. */
+.cdash-locate[hidden],
+.cdash-locate [hidden] {
+  display: none;
+}
+
+.cdash-locate {
+  position: relative;
+}
+
+/* Sized like Leaflet's touch zoom buttons, and reset from the global button
+   styling in _screen.scss. */
+.cdash-locate-button {
+  display: block;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background-color: #fff;
+  cursor: pointer;
+}
+
+.cdash-locate-button:hover {
+  background-color: #f4f4f4;
+}
+
+.cdash-locate-button:focus-visible {
+  outline: 2px solid var(--cdash-link);
+  outline-offset: 2px;
+}
+
+/* The icon is a mask, so its colour is plain background-color and can follow
+   the state and --cdash-link. Prefixed by hand: autoprefixer is off. */
+.cdash-locate-button::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  margin: 5px;
+  background-color: #444;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='7'/%3E%3Ccircle cx='12' cy='12' r='2.5' fill='black'/%3E%3Cpath d='M12 1v4M12 19v4M1 12h4M19 12h4'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='12' cy='12' r='7'/%3E%3Ccircle cx='12' cy='12' r='2.5' fill='black'/%3E%3Cpath d='M12 1v4M12 19v4M1 12h4M19 12h4'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+
+/* Watching, but the map has been moved away from the dot. */
+.cdash-locate-button.is-active::before {
+  background-color: var(--cdash-link);
+}
+
+/* Watching and centred: a filled look, so the next tap reads as "stop". */
+.cdash-locate-button.is-following {
+  background-color: var(--cdash-link);
+}
+
+.cdash-locate-button.is-following::before {
+  background-color: #fff;
+}
+
+.cdash-locate-message {
+  position: absolute;
+  top: 0;
+  left: calc(100% + 8px);
+  width: max-content;
+  max-width: 14rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 0.85rem;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
 /*# sourceMappingURL=style.css.map */
