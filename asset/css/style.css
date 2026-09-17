@@ -2146,6 +2146,46 @@ html, body {
   background-color: #fff;
 }
 
+/* ---- The location marker ----
+   A divIcon, not a circleMarker, so the heading cone can be turned with a CSS
+   transform. The icon box is 80x80 anchored at its centre, so the dot sits on
+   the position and the cone radiates from it. */
+.cdash-locate-marker {
+  pointer-events: none;
+}
+
+.cdash-locate-cone {
+  position: absolute;
+  inset: 0;
+  /* The wedge points up at rotation 0, which is north: Leaflet never rotates
+     the map, so the heading in degrees is the rotation in degrees. */
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+
+.cdash-locate-cone[hidden] {
+  display: none;
+}
+
+.cdash-locate-cone svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.cdash-locate-dot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #1a73e8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
 .cdash-locate-message {
   position: absolute;
   top: 0;

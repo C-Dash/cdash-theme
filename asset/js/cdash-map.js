@@ -357,6 +357,35 @@ document.body.addEventListener('htmx:replacedInHistory', writeMapHash);
 // ---------------------------------------------------------------------------
 var CDASH_LOCATE_MAX_ZOOM = 18;
 
+// Magnetic declination for Cambridge, east-positive: magnetic north is about
+// 14 degrees west of true north here, and the basemaps are true-north, so a
+// raw compass heading would point the cone at the wrong side of the street.
+// One constant is enough for a single-city site.
+var CDASH_MAGNETIC_DECLINATION = -14;
+
+// A compass reading older than this is stale, and GPS course-over-ground may
+// stand in for it -- see the heading fallback in locationfound.
+var CDASH_COMPASS_STALE_MS = 2000;
+
+// Fraction of the remaining angle closed per frame. Compass readings jitter by
+// several degrees; easing toward them costs a little lag and buys a cone that
+// does not twitch while the phone is held still.
+var CDASH_HEADING_EASE = 0.25;
+
+function cdashNormalizeDeg(deg) {
+  return ((deg % 360) + 360) % 360;
+}
+
+// Which way the page is rotated inside the device. Compass readings are
+// relative to the device's own top edge, so without this the cone is 90 degrees
+// out as soon as the phone is turned landscape.
+function cdashScreenAngle() {
+  if (window.screen && window.screen.orientation && typeof window.screen.orientation.angle === 'number') {
+    return window.screen.orientation.angle;
+  }
+  return typeof window.orientation === 'number' ? window.orientation : 0;
+}
+
 var cdashCanLocate = 'geolocation' in navigator
   && window.isSecureContext
   && window.matchMedia('(pointer: coarse)').matches;
@@ -379,9 +408,35 @@ if (cdashCanLocate) {
 
       L.DomEvent.disableClickPropagation(container);
 
-      var dot = L.circleMarker([0, 0], {
-        radius: 7, weight: 2, color: '#fff', fillColor: '#1a73e8', fillOpacity: 1,
+      // The dot is a divIcon rather than a circleMarker so the heading cone can
+      // sit in the same element and be turned with a CSS transform: an SVG
+      // circleMarker cannot be rotated, and re-drawing a wedge polygon on every
+      // compass reading would mean recomputing geometry many times a second.
+      //
+      // The cone points up (north) at rotation 0, which is also the map's
+      // orientation -- Leaflet never rotates the map, so a heading in degrees
+      // is the rotation in degrees, with nothing to convert.
+      var dot = L.marker([0, 0], {
         interactive: false,
+        keyboard: false,
+        zIndexOffset: 1000,
+        icon: L.divIcon({
+          className: 'cdash-locate-marker',
+          iconSize: [80, 80],
+          iconAnchor: [40, 40],
+          html:
+            '<div class="cdash-locate-cone" hidden>' +
+              '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+                '<defs><radialGradient id="cdash-cone-fade">' +
+                  '<stop offset="0" stop-color="#1a73e8" stop-opacity="0.5"/>' +
+                  '<stop offset="1" stop-color="#1a73e8" stop-opacity="0"/>' +
+                '</radialGradient></defs>' +
+                // A 60-degree wedge from the centre, opening upward.
+                '<path d="M50,50 L25,6.7 A50,50 0 0,1 75,6.7 Z" fill="url(#cdash-cone-fade)"/>' +
+              '</svg>' +
+            '</div>' +
+            '<div class="cdash-locate-dot"></div>',
+        }),
       });
       var accuracy = L.circle([0, 0], {
         radius: 0, weight: 1, color: '#1a73e8', fillColor: '#1a73e8', fillOpacity: 0.12,
@@ -394,6 +449,12 @@ if (cdashCanLocate) {
       var lastFix = null;
       var messageTimer = null;
 
+      var headingDeg = null;    // what the cone is showing
+      var targetHeading = null; // what the sensor last said
+      var headingFrame = null;
+      var compassEvent = null;  // the event actually subscribed to, if any
+      var lastCompassAt = 0;
+
       function setState() {
         L.DomUtil[active ? 'addClass' : 'removeClass'](button, 'is-active');
         L.DomUtil[following ? 'addClass' : 'removeClass'](button, 'is-following');
@@ -405,6 +466,100 @@ if (cdashCanLocate) {
         message.hidden = false;
         clearTimeout(messageTimer);
         messageTimer = setTimeout(function () { message.hidden = true; }, 6000);
+      }
+
+      // ---- Heading cone ----
+
+      // The icon's elements exist only while the marker is on the map, so they
+      // are looked up per paint rather than held.
+      function coneElement() {
+        var el = dot.getElement();
+        return el ? el.querySelector('.cdash-locate-cone') : null;
+      }
+
+      function paintHeading() {
+        var cone = coneElement();
+        if (!cone || headingDeg === null) return;
+        cone.style.transform = 'rotate(' + headingDeg.toFixed(1) + 'deg)';
+        cone.hidden = false;
+      }
+
+      // Eases toward the newest reading, the short way round, so crossing north
+      // does not spin the cone the long way. Repaints at most once a frame.
+      function stepHeading() {
+        headingFrame = null;
+        if (targetHeading === null) return;
+
+        if (headingDeg === null) {
+          headingDeg = targetHeading;
+        } else {
+          var diff = ((targetHeading - headingDeg + 540) % 360) - 180;
+          headingDeg = cdashNormalizeDeg(headingDeg + diff * CDASH_HEADING_EASE);
+          if (Math.abs(diff) > 0.5) headingFrame = requestAnimationFrame(stepHeading);
+        }
+        paintHeading();
+      }
+
+      function setHeading(deg) {
+        if (typeof deg !== 'number' || isNaN(deg)) return;
+        targetHeading = cdashNormalizeDeg(deg);
+        if (headingFrame === null) headingFrame = requestAnimationFrame(stepHeading);
+      }
+
+      function onOrientation(e) {
+        var deg = null;
+        if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+          // iOS: already a clockwise heading from magnetic north.
+          deg = e.webkitCompassHeading;
+        } else if (e.absolute === true && typeof e.alpha === 'number') {
+          // Everyone else: alpha runs anticlockwise from north. A reading that
+          // is not absolute is relative to wherever the device happened to be
+          // when it started, which is not a compass at all -- so it is ignored.
+          deg = 360 - e.alpha;
+        }
+        if (deg === null) return;
+
+        lastCompassAt = Date.now();
+        setHeading(deg + cdashScreenAngle() + CDASH_MAGNETIC_DECLINATION);
+      }
+
+      function listenForOrientation() {
+        if (compassEvent) return;
+        compassEvent = 'ondeviceorientationabsolute' in window
+          ? 'deviceorientationabsolute'
+          : 'deviceorientation';
+        window.addEventListener(compassEvent, onOrientation);
+      }
+
+      // iOS requires permission, and only grants it when asked during a user
+      // gesture -- hence this being called first thing in the tap handler,
+      // before map.locate. A refusal is not worth a message: the dot still
+      // works, and only the cone is missing.
+      function startCompass() {
+        var request = window.DeviceOrientationEvent && window.DeviceOrientationEvent.requestPermission;
+        if (typeof request === 'function') {
+          request.call(window.DeviceOrientationEvent).then(function (state) {
+            if (state === 'granted') listenForOrientation();
+          }).catch(function () {});
+          return;
+        }
+        listenForOrientation();
+      }
+
+      function stopCompass() {
+        if (compassEvent) {
+          window.removeEventListener(compassEvent, onOrientation);
+          compassEvent = null;
+        }
+        if (headingFrame !== null) {
+          cancelAnimationFrame(headingFrame);
+          headingFrame = null;
+        }
+        headingDeg = null;
+        targetHeading = null;
+        lastCompassAt = 0;
+        var cone = coneElement();
+        if (cone) cone.hidden = true;
       }
 
       function centre() {
@@ -422,11 +577,14 @@ if (cdashCanLocate) {
         following = false;
         lastFix = null;
         setState();
+        // Before map.locate, so iOS still counts it as part of the tap.
+        startCompass();
         map.locate({ watch: true, setView: false, enableHighAccuracy: true });
       }
 
       function stop() {
         map.stopLocate();
+        stopCompass();
         map.removeLayer(marks);
         active = false;
         following = false;
@@ -450,6 +608,19 @@ if (cdashCanLocate) {
         dot.setLatLng(e.latlng);
         accuracy.setLatLng(e.latlng).setRadius(e.accuracy);
         if (!map.hasLayer(marks)) map.addLayer(marks);
+
+        // With no compass -- or none reporting lately -- course over ground is
+        // the next best thing, but only while actually moving: standing still,
+        // GPS heading is noise. Leaflet copies the numeric coords onto the
+        // event, so heading and speed arrive here without extra wiring.
+        if (Date.now() - lastCompassAt > CDASH_COMPASS_STALE_MS
+            && typeof e.speed === 'number' && e.speed > 1) {
+          setHeading(e.heading);
+        }
+
+        // The icon element only exists once the marker has been added, so the
+        // first paint has to come after that.
+        paintHeading();
         if (first) centre();
       });
 
