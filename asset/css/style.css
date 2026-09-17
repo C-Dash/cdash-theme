@@ -2201,4 +2201,56 @@ html, body {
   cursor: pointer;
 }
 
+/* ---- The table, re-flowed as a wrapping grid ----
+   tr is display:contents so each td becomes the grid item directly. The
+   template renders exactly one td per row, the class column having been
+   commented out for CDASH. */
+#linked-resources table {
+  display: block;
+}
+
+#linked-resources tbody {
+  display: grid;
+  /* min() rather than a bare 200px: the browse pane is resizable and can be
+     narrower than one column, where a fixed minimum would overflow it. */
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 1rem;
+}
+
+#linked-resources tr.linked-resource {
+  display: contents;
+}
+
+#linked-resources td {
+  display: block;
+}
+
+/* ---- The card ----
+   .resource-link is already flex, from _screen.scss; this turns it upright so
+   the title sits under the thumbnail rather than beside it. */
+#linked-resources .resource-link {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+}
+
+/* Titles are long ("Photograph of 1 Main Street, rear elevation, 1972"), so
+   they wrap rather than stretching the column. */
+#linked-resources .resource-link .resource-name {
+  display: block;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+}
+
+/* Overrides the small thumbnail from _screen.scss and _desktop.scss, inside
+   this block only: .resource-link images elsewhere, in item values, stay as
+   they are. height:auto keeps the medium derivative's own proportions. */
+#linked-resources .resource-link img {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  align-self: flex-start;
+}
+
 /*# sourceMappingURL=style.css.map */

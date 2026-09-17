@@ -83,7 +83,11 @@ $caption = sprintf(
     <tbody>
         <?php foreach ($values as $value): ?>
         <tr class="linked-resource">
-            <td><?php echo $value['val']->resource()->linkPretty('square', null, null, null, ($filterLocale ? $lang : null)); ?></td>
+            <?php // 'medium' rather than stock's 'square': these are shown at
+                  // 200px in a grid (see asset/sass/_linked-resources.scss), and
+                  // the square derivative is a crop, which cuts the top off a
+                  // tall photograph or a plan. Medium keeps the proportions. ?>
+            <td><?php echo $value['val']->resource()->linkPretty('medium', null, null, null, ($filterLocale ? $lang : null)); ?></td>
             <?php /* Commentd this out for CDASH class is boring 
             <td>
                 <?php if ($value['val']->resource()->resourceClass()): ?>

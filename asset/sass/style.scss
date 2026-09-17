@@ -38,3 +38,8 @@
 
 // Controls the theme adds to the Leaflet map.
 @use "map-controls";
+
+// The Linked Resources block, re-flowed into a thumbnail grid. After
+// "desktop", whose #content .resource-link img rule it has to beat on source
+// order rather than specificity.
+@use "linked-resources";
