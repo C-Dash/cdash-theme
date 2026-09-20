@@ -1,0 +1,88 @@
+<?php
+/**
+ * One card in a CDASH card grid.
+ *
+ * Rendered by both blocks that show a grid of resources -- the Linked
+ * Resources block on an item page (view/common/linked-resources.phtml) and the
+ * search/folder result list (view/omeka/site/item/browse.phtml) -- so the card
+ * markup and the caption rules exist once rather than in two templates that
+ * drift. Styled by asset/sass/_resource-list.scss.
+ *
+ * Variables:
+ *   $resource     the item to render (required)
+ *   $titlePrefix  optional text before the caption, separated by " - ". The
+ *                 result list passes the parent Place's title, because those
+ *                 cards mix Documents from many Places and the type alone
+ *                 would not identify them. Linked Resources passes nothing:
+ *                 the page is already the Place.
+ *   $valueLang    optional language filter, passed through to displayTitle()
+ *   $description  optional body text shown under the link, clamped by the
+ *                 stylesheet. The result list passes the site's configured
+ *                 browse body property; Linked Resources passes nothing.
+ *
+ * A Document is identified by its resource class, bibo:Document, which is what
+ * the question actually is. term(), not label(): the label is editable in
+ * admin and passes through translation, so a rename would quietly send every
+ * Document down the Place branch.
+ */
+
+$escape = $this->plugin('escapeHtml');
+$valueLang = $valueLang ?? null;
+$titlePrefix = $titlePrefix ?? '';
+$description = $description ?? '';
+
+$resourceClass = $resource->resourceClass();
+$isDocument = $resourceClass && 'bibo:Document' === $resourceClass->term();
+
+if ($isDocument):
+    // "Exterior View, 3 pp." -- the type says what the document is, the page
+    // count how much of it there is. The item's own title is a fallback only:
+    // it repeats the Place name, which is redundant wherever these cards are
+    // shown beneath or beside that Place.
+    $type = $resource->value('dcterms:type');
+    $caption = $type ? (string) $type : $resource->displayTitle(null, $valueLang);
+
+    $pages = $resource->value('bibo:numPages');
+    if ($pages) {
+        $count = (int) (string) $pages;
+        if ($count > 0) {
+            $caption .= sprintf(', %d %s', $count, $count === 1 ? 'p.' : 'pp.');
+        }
+    }
+
+    if ($titlePrefix !== '') {
+        $caption = $titlePrefix . ' - ' . $caption;
+    }
+
+    $cardClass = 'cdash-card-document';
+    $media = $this->thumbnail($resource, 'medium', ['class' => 'cdash-card-thumb']);
+else:
+    // Places carry no media, so they get their map marker instead of an empty
+    // thumbnail slot. Two variants, as on the map itself.
+    $caption = $resource->displayTitle(null, $valueLang);
+    if ($titlePrefix !== '') {
+        $caption = $titlePrefix . ' - ' . $caption;
+    }
+
+    $markerFile = ($resource->value('cdash:placeType') == 'Address')
+        ? 'img/sepia_marker_hollow2.png'
+        : 'img/sepia_marker_hollow_yello_halo.png';
+
+    $cardClass = 'cdash-card-place';
+    $media = sprintf(
+        '<img class="cdash-place-marker" src="%s" alt="">',
+        $escape($this->assetUrl($markerFile))
+    );
+endif;
+?>
+<div class="cdash-card <?php echo $cardClass; ?>">
+    <?php echo $resource->linkRaw(
+        $media . '<span class="cdash-card-title">' . $escape($caption) . '</span>',
+        null,
+        ['class' => 'cdash-card-link']
+    ); ?>
+
+    <?php if ((string) $description !== ''): ?>
+    <div class="cdash-card-description"><?php echo $escape($description); ?></div>
+    <?php endif; ?>
+</div>

@@ -39,12 +39,6 @@
 // Controls the theme adds to the Leaflet map.
 @use "map-controls";
 
-// The Linked Resources block, re-flowed into a thumbnail grid. After
-// "desktop", whose #content .resource-link img rule it has to beat on source
-// order rather than specificity.
-@use "linked-resources";
-
-// Search results and item-set contents, given the same card-grid treatment.
-// After "screen" and "desktop" for the same reason as linked-resources: it
-// wins on source order, not specificity.
+// The card grid: search results, folder contents and the Linked Resources
+// block, which all render the same cards from view/common/cdash-card.phtml.
 @use "resource-list";

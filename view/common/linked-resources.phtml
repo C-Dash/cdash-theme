@@ -70,35 +70,31 @@ $caption = sprintf(
     $objectResource->displayTitle()
 );
 ?>
-<table>
-<?php /* Commentd this out for CDASH class is boring 
-    <caption class="linked-resource-property"><?php echo $this->escapeHtml($caption); ?></caption>
-    <thead>
-        <tr>
-            <th><?php echo $this->translate('Title'); ?></th>
-            <th><?php echo $this->translate('Class'); ?></th> 
-        </tr>
-    </thead>
-    */ ?>
-    <tbody>
-        <?php foreach ($values as $value): ?>
-        <tr class="linked-resource">
-            <?php // 'medium' rather than stock's 'square': these are shown at
-                  // 200px in a grid (see asset/sass/_linked-resources.scss), and
-                  // the square derivative is a crop, which cuts the top off a
-                  // tall photograph or a plan. Medium keeps the proportions. ?>
-            <td><?php echo $value['val']->resource()->linkPretty('medium', null, null, null, ($filterLocale ? $lang : null)); ?></td>
-            <?php /* Commentd this out for CDASH class is boring 
-            <td>
-                <?php if ($value['val']->resource()->resourceClass()): ?>
-                <span class="resource-class"><?php echo $this->escapeHtml($this->translate($value['val']->resource()->resourceClass()->label())); ?></span>
-                <?php endif; ?>
-            </td>
-            */ ?>
-        </tr>
-        <?php endforeach; ?>
-    </tbody>
-</table>
+<?php
+/**
+ * Stock Omeka renders each group as a <table> -- one row per linked resource,
+ * columns for Title and Class -- and the CDASH copy had both the caption and
+ * the Class column commented out, leaving a one-column layout table that the
+ * stylesheet then had to re-flow into a grid.
+ *
+ * These are cards now, rendered by common/cdash-card.phtml, the same partial
+ * the search/folder result list uses. That is what lets the caption say
+ * "Exterior View, 3 pp." rather than the linked item's title: stock reaches
+ * this through linkPretty(), which can only print a title.
+ *
+ * What Omeka actually revises between versions is untouched above and below --
+ * the pagination setup, the locale filtering, the property select and the
+ * $subjectValues grouping loop. Only the markup inside the loop is ours.
+ */
+?>
+<div class="cdash-card-grid">
+    <?php foreach ($values as $value): ?>
+    <?php echo $this->partial('common/cdash-card', [
+        'resource' => $value['val']->resource(),
+        'valueLang' => $filterLocale ? $lang : null,
+    ]); ?>
+    <?php endforeach; ?>
+</div>
 <?php endforeach; ?>
 
 <?php echo ($totalCount > $perPage) ? '<div class="linked-footer">' . $pagination . '</div>' : ''; ?>

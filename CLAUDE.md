@@ -248,10 +248,40 @@ both.
    `trackResize: false`; the ResizeObserver covers window resizes instead.
    A canvas poisoned some other way still needs a reload. Collapse-to-zero
    depends on that floor: do not remove it.
-6. **`asset/php/geosync copy.php`** — untracked leftover.
-7. **13 Dependabot alerts** on the default branch; they clear when the
+6. **Two card blocks, one card — resolved.** The card grid appears twice:
+   Linked Resources on a Place page, and search results/folder contents. Both
+   now render `view/common/cdash-card.phtml`, so the markup, the Document /
+   Place split and the caption rules exist once. `asset/sass/_resource-list.scss`
+   styles both; `_linked-resources.scss` and its `<table>` re-flow are gone.
+
+   This was held open for a while in favour of staying close to stock. What
+   settled it was a caption: "Exterior View, 3 pp." cannot come from
+   `linkPretty()`, which only prints a title, so the template had to build its
+   own link — the divergence itself — and the caption logic would otherwise
+   have been written twice.
+
+   What is still stock in `linked-resources.phtml` is what actually changes
+   between Omeka versions: the pagination setup, the locale filtering, the
+   property select, and the `$subjectValues` loop — values *grouped by the
+   property pointing at this item*, which is why it iterates groups. Only the
+   markup inside that loop is ours.
+
+   Neither template renders `ul.resource-list`, and that is not a style
+   choice. `ul.resource-list .resource img` (0,2,2) and
+   `#content .resource-link img` (1,1,1) out-specify any class-only rule, so
+   restyling that markup in place cannot win regardless of source order. Theme
+   class names sidestep all of it — note the card link is `cdash-card-link`,
+   never `resource-link`, for exactly that reason. Lists elsewhere that still
+   render `ul.resource-list` (site page preview blocks, the item-set index)
+   keep the inherited styling untouched.
+
+   One asymmetry in the data, worth knowing before hunting a bug that is not
+   there: every resource link points *at* a Place, so only Place pages have a
+   Linked Resources block. Document pages have none.
+7. **`asset/php/geosync copy.php`** — untracked leftover.
+8. **13 Dependabot alerts** on the default branch; they clear when the
    `package-lock.json` deletion merges to `main`.
-8. **No PR yet** — styling first, by decision.
+9. **No PR yet** — styling first, by decision.
 
 ## Longer-term
 

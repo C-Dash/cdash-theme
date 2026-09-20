@@ -1,17 +1,20 @@
-// The card grid on search results and item-set (Folder) contents, rendered by
-// view/omeka/site/item/browse.phtml.
+// The card grid, wherever it appears: search results and item-set (Folder)
+// contents (view/omeka/site/item/browse.phtml) and the Linked Resources block
+// on an item page (view/common/linked-resources.phtml). Both render the same
+// cards, from view/common/cdash-card.phtml, so both are styled here -- there
+// used to be a second partial, _linked-resources.scss, carrying a parallel
+// selector set and the CSS needed to re-flow a stock <table> into a grid.
+// Neither is needed now that the markup is one thing.
 //
-// That template deliberately does NOT render Omeka's ul.resource-list markup.
-// The inherited rules for it -- `ul.resource-list .resource img` in
-// _desktop.scss at (0,2,2), `#content .resource-link img` at (1,1,1) -- out-
-// specify anything a class-only rule can say, so the old 72px floated-right
-// thumbnail would win here regardless of source order. The markup carries
-// theme class names instead, which no inherited rule mentions: every selector
-// below is class-only, and there is no specificity contest left to lose.
+// Neither template renders Omeka's ul.resource-list markup, and that is
+// deliberate. The inherited rules for it -- `ul.resource-list .resource img`
+// in _desktop.scss at (0,2,2), `#content .resource-link img` at (1,1,1) --
+// out-specify anything a class-only rule can say, so the old 72px floated-
+// right thumbnail would win regardless of source order. Theme class names are
+// out of reach of all of them: every selector below is class-only, and there
+// is no specificity contest left to lose.
 //
-// The grid and the cards come from _cards.scss, the same source the Linked
-// Resources block uses -- that shared source is what makes the two blocks the
-// same grid rather than two that merely resemble each other.
+// Dimensions come from _cards.scss.
 
 @use "base";
 @use "cards";
