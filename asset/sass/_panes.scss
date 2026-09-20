@@ -102,6 +102,17 @@
   border-left-width: 0;
 }
 
+/* A second, narrower container than "panes" above, so content inside the
+   browse pane can respond to how wide THAT pane has been dragged. The "panes"
+   container measures both panes and the divider together, which says nothing
+   about the split -- see _linked-resources.scss, the first caller.
+   inline-size, not size: it contains the inline axis only, so the wrapper's
+   height still comes from the pane, as the rules above it require. */
+.cdash-browse-pane .cdash-pane-content {
+  container-type: inline-size;
+  container-name: browse;
+}
+
 /* A collapsed pane sits in a 0 track. border-box cannot shrink a box below its
    own borders, so any border left on it would spill 3px into the other pane. */
 .cdash-pane.cdash-pane-collapsed {
@@ -301,7 +312,13 @@
    pane's left edge instead of spanning it, taking #user-bar down with it. */
 #showresult {
   display: grid;
-  grid-template-columns: 1fr;
+  /* minmax(0, 1fr), not 1fr. A bare 1fr is minmax(AUTO, 1fr), and that auto
+     minimum is #content's min-content width -- which item media and linked
+     thumbnails set from their intrinsic pixel width. #content then grows wider
+     than the pane no matter what width:100% says, and everything sized against
+     it overflows with it: a 400px thumbnail cannot fit a block that is itself
+     too wide. Zero lets the column take its size from the pane instead. */
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows: 1fr auto;
   width: 100%;
   height: 100%;
@@ -331,4 +348,8 @@
   height: auto;
   margin: 0;
   padding: 10px 30px 10px 10px;
+
+  /* The grid item carries the same auto minimum as the track above, and is the
+     other place intrinsic content width can push the pane open. */
+  min-width: 0;
 }
