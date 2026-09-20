@@ -43,3 +43,8 @@
 // "desktop", whose #content .resource-link img rule it has to beat on source
 // order rather than specificity.
 @use "linked-resources";
+
+// Search results and item-set contents, given the same card-grid treatment.
+// After "screen" and "desktop" for the same reason as linked-resources: it
+// wins on source order, not specificity.
+@use "resource-list";

@@ -1,0 +1,101 @@
+// The card grid on search results and item-set (Folder) contents, rendered by
+// view/omeka/site/item/browse.phtml.
+//
+// That template deliberately does NOT render Omeka's ul.resource-list markup.
+// The inherited rules for it -- `ul.resource-list .resource img` in
+// _desktop.scss at (0,2,2), `#content .resource-link img` at (1,1,1) -- out-
+// specify anything a class-only rule can say, so the old 72px floated-right
+// thumbnail would win here regardless of source order. The markup carries
+// theme class names instead, which no inherited rule mentions: every selector
+// below is class-only, and there is no specificity contest left to lose.
+//
+// The grid and the cards come from _cards.scss, the same source the Linked
+// Resources block uses -- that shared source is what makes the two blocks the
+// same grid rather than two that merely resemble each other.
+
+@use "base";
+@use "cards";
+
+.cdash-card-grid {
+  @include cards.grid;
+
+  /* ul.resource-list carried the top margin that separated the list from the
+     search filters above it, via `.resource-list + .pagination` and the list's
+     own margins in _screen.scss. Restated here, since none of those selectors
+     match this markup. */
+  margin: base.$spacing-l 0;
+}
+
+.cdash-card {
+  @include cards.card-shell;
+  border-bottom: 1px solid var(--cdash-light);
+  padding-bottom: base.$spacing-s - 1px;
+}
+
+/* ---- Document cards: thumbnail on top, title below ---- */
+.cdash-card-document .cdash-card-link {
+  @include cards.card;
+}
+
+.cdash-card-thumb {
+  @include cards.card-thumb;
+}
+
+/* ---- Place cards: marker at the top left, title beside it ----
+   Block flow, not flex: the float is what sets the title alongside the marker
+   and lets a long title's later lines wrap underneath it. A float has no
+   effect on a flex child. */
+.cdash-card-place .cdash-card-link {
+  display: block;
+}
+
+/* Two lines high, as a height rather than a width: the width then follows from
+   the image's proportions. Both markers are square today, so this renders 36px
+   square -- but a future non-square marker would still be two lines tall. */
+.cdash-place-marker {
+  float: left;
+  height: 2 * base.$spacing-l;
+  width: auto;
+  margin: 0 base.$spacing-m base.$spacing-s 0;
+}
+
+.cdash-card-title {
+  @include cards.card-title;
+}
+
+/* Clamped to roughly three lines, with a fade at the foot -- what
+   ul.resource-list .resource .description did for the old markup. */
+.cdash-card-description {
+  max-height: 3 * base.$spacing-l;
+  overflow: hidden;
+  position: relative;
+  font-size: 0.85rem;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 1.75 * base.$spacing-l;
+    left: 0;
+    right: 0;
+    height: 1.25 * base.$spacing-l;
+    background: linear-gradient(to top, var(--cdash-page), rgb(255 255 255 / 0));
+  }
+}
+
+/* ---- Narrow browse pane: one full-width column ----
+   The "browse" container is declared on the browse pane's content wrapper in
+   _panes.scss. Place cards need nothing here: a 36px marker with text beside
+   it works at any width. */
+@container browse (max-width: #{cards.$breakpoint}) {
+  .cdash-card-grid {
+    @include cards.grid-narrow;
+  }
+
+  .cdash-card {
+    min-width: 0;
+  }
+
+  .cdash-card-thumb {
+    max-width: none;
+  }
+}

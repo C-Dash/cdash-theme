@@ -9,11 +9,16 @@
 // The one change in the template is the thumbnail derivative: 'medium', so
 // these are not cropped.
 //
+// The grid, the cards and the narrow-pane behaviour all come from _cards.scss,
+// which the search/item-set result list uses too: the two blocks are meant to
+// look and behave alike, so they read from one source rather than from two
+// copies that can drift.
+//
 // Must be @use'd after "desktop": #content .resource-link img there sets the
 // small size at the same specificity (1,1,1) as the rules below, so source
 // order is what decides it.
 
-$cdash-linked-thumb: 200px;
+@use "cards";
 
 /* ---- The table, re-flowed as a wrapping grid ----
    tr is display:contents so each td becomes the grid item directly. The
@@ -24,11 +29,7 @@ $cdash-linked-thumb: 200px;
 }
 
 #linked-resources tbody {
-  display: grid;
-  /* min() rather than a bare 200px: the browse pane is resizable and can be
-     narrower than one column, where a fixed minimum would overflow it. */
-  grid-template-columns: repeat(auto-fill, minmax(min(#{$cdash-linked-thumb}, 100%), 1fr));
-  gap: 1rem;
+  @include cards.grid;
 }
 
 #linked-resources tr.linked-resource {
@@ -36,34 +37,25 @@ $cdash-linked-thumb: 200px;
 }
 
 #linked-resources td {
-  display: block;
+  @include cards.card-shell;
 }
 
 /* ---- The card ----
    .resource-link is already flex, from _screen.scss; this turns it upright so
    the title sits under the thumbnail rather than beside it. */
 #linked-resources .resource-link {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.35rem;
+  @include cards.card;
 }
 
-/* Titles are long ("Photograph of 1 Main Street, rear elevation, 1972"), so
-   they wrap rather than stretching the column. */
 #linked-resources .resource-link .resource-name {
-  display: block;
-  line-height: 1.3;
-  overflow-wrap: break-word;
+  @include cards.card-title;
 }
 
 /* Overrides the small thumbnail from _screen.scss and _desktop.scss, inside
    this block only: .resource-link images elsewhere, in item values, stay as
-   they are. height:auto keeps the medium derivative's own proportions. */
+   they are. */
 #linked-resources .resource-link img {
-  width: 100%;
-  max-width: $cdash-linked-thumb;
-  height: auto;
+  @include cards.card-thumb;
   align-self: flex-start;
 }
 
@@ -73,21 +65,16 @@ $cdash-linked-thumb: 200px;
    is exactly the case a media query would miss. The container is declared on
    the browse pane's content wrapper in _panes.scss.
 
-   Both rules are needed. Collapsing to one column while the 200px cap stands
-   would leave each thumbnail stranded at the left of a much wider column,
-   which is the dead margin this is here to remove. */
-@container browse (max-width: 500px) {
-  /* minmax(0, 1fr), not 1fr. A bare 1fr means minmax(AUTO, 1fr), and that auto
-     minimum is the content's own minimum size -- for a medium derivative, its
-     400px intrinsic width. The column then refuses to shrink past 400px and
-     overruns the block, with the image's width:100% never getting a say,
-     because the column it fills is already too wide. */
+   All three rules are needed. Collapsing to one column while the 200px cap
+   stands would leave each thumbnail stranded at the left of a much wider
+   column, which is the dead margin this is here to remove. */
+@container browse (max-width: #{cards.$breakpoint}) {
   #linked-resources tbody {
-    grid-template-columns: minmax(0, 1fr);
+    @include cards.grid-narrow;
   }
 
-  /* The grid item carries the same auto minimum, and is the other place that
-     intrinsic width can re-assert itself. */
+  /* The grid item carries the same auto minimum as the track, and is the other
+     place intrinsic width can re-assert itself. */
   #linked-resources td {
     min-width: 0;
   }

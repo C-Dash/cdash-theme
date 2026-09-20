@@ -45,7 +45,29 @@ endif;
 
 
 <?php $this->trigger('view.browse.before'); ?>
-<ul class="resource-list">
+<?php
+/**
+ * Not <ul class="resource-list">, which is what stock Omeka renders here.
+ *
+ * These cards are meant to match the Linked Resources block, and the theme's
+ * inherited rules for that class make it unwinnable: `ul.resource-list
+ * .resource img` in _desktop.scss (0,2,2) and `#content .resource-link img`
+ * (1,1,1) both out-specify anything a class-only rule can say, so the old 72px
+ * floated-right thumbnail survives whatever is declared later. Specificity
+ * beats source order.
+ *
+ * So this markup carries theme class names of its own and is simply out of
+ * reach of those selectors -- no escalation, no !important. The class names
+ * deliberately avoid "resource-link" for the same reason. Other lists that
+ * still render as ul.resource-list -- site page preview blocks, the item-set
+ * index -- keep the inherited styling untouched.
+ *
+ * The cards are styled by asset/sass/_resource-list.scss from the shared
+ * mixins in _cards.scss, which is what makes them the same grid as the Linked
+ * Resources block rather than merely a similar one.
+ */
+?>
+<div class="cdash-card-grid">
 <?php
 $headingTerm = $this->siteSetting('browse_heading_property_term');
 $bodyTerm = $this->siteSetting('browse_body_property_term');
@@ -53,27 +75,54 @@ foreach ($items as $item):
     $heading = $headingTerm ? $item->value($headingTerm, ['default' => $translate('[Untitled]'), 'lang' => $valueLang]) : $item->displayTitle(null, $valueLang);
     $body = $bodyTerm ? $item->value($bodyTerm, ['lang' => $valueLang]) : $item->displayDescription(null, $valueLang);
 ?>
-    <li class="item resource">
+    <?php
+    /**
+     * Documents render as a thumbnail card, Places as a marker card -- the
+     * stylesheet tells them apart by the class on the card, and sizes the
+     * images from the class on each <img>, because Omeka's thumbnail() helper
+     * emits a bare <img src alt> with no class of its own.
+     *
+     * The test is the resource class, which is what "this is a Document"
+     * actually means. It used to be `value('cdash:placeItem')->type() ==
+     * 'resource'` -- a property that happens to be there, standing in for the
+     * question, and a fatal error (method call on null) for any item without
+     * it. term(), not label(): the label is editable in admin and passes
+     * through translation, so a rename would quietly send every Document down
+     * the Place branch.
+     */
+    $resourceClass = $item->resourceClass();
+    $isDocument = $resourceClass && 'bibo:Document' === $resourceClass->term();
+    ?>
+    <div class="cdash-card <?php echo $isDocument ? 'cdash-card-document' : 'cdash-card-place'; ?>">
         <?php
-        $linkContent = sprintf('%s<span class="resource-name">%s</span>',
-            $thumbnail($item, 'medium'),
-            $escape($heading));
-        /*echo $item->linkRaw($linkContent, null, ['class' => 'resource-link']);*/
+        if ($isDocument):
+            // The parent Place's title names the card; an unlinked Document
+            // falls back to its own title rather than taking the page down.
+            $placeValue = $item->value('cdash:placeItem');
+            $cardTitle = ($placeValue && 'resource' === $placeValue->type())
+                ? $placeValue->valueResource()->displayTitle()
+                : $item->displayTitle(null, $valueLang);
+            $type = $item->value('dcterms:type');
 
-         if ($item->value('cdash:placeItem')->type() == 'resource'):
+            $linkContent = sprintf(
+                '%s<span class="cdash-card-title">%s</span>',
+                $this->thumbnail($item, 'medium', ['class' => 'cdash-card-thumb']),
+                $escape($type ? $cardTitle . ' - ' . $type : $cardTitle)
+            );
+        else:
+            $markerFile = ($item->value('cdash:placeType') == 'Address')
+                ? 'img/sepia_marker_hollow2.png'
+                : 'img/sepia_marker_hollow_yello_halo.png';
 
+            $linkContent = sprintf(
+                '<img class="cdash-place-marker" src="%s" alt="">'
+                    . '<span class="cdash-card-title">%s</span>',
+                $escape($this->assetUrl($markerFile)),
+                $escape($item->displayTitle(null, $valueLang))
+            );
+        endif;
 
-
-             echo $item->linkRaw($this->thumbnail($item, 'medium') . $item->value('cdash:placeItem')->valueResource()->displayTitle() . " - " . $item->value('dcterms:type'), null, ['class' => 'resource-link']);
-         else:
-            if ($item->value('cdash:placeType') == 'Address'):
-                $marker = "<img src=" . $this->assetUrl('img/sepia_marker_hollow2.png') . "\>" ;
-            else:
-                $marker = "<img src=" . $this->assetUrl('img/sepia_marker_hollow_yello_halo.png') . "/>" ;
-            endif;
-            echo $item->linkRaw($marker . $item->displayTitle(null, $valueLang), null, ['class' => 'resource-link']); 
-        endif; 
-        /*echo $item->linkRaw('Hello', null, ['class' => 'resource-link']);*/
+        echo $item->linkRaw($linkContent, null, ['class' => 'cdash-card-link']);
         ?>
 
 
@@ -81,11 +130,11 @@ foreach ($items as $item):
 
 
         <?php if ($body): ?>
-        <div class="description"><?php echo $escape($body); ?></div>
+        <div class="cdash-card-description"><?php echo $escape($body); ?></div>
         <?php endif; ?>
-    </li>
+    </div>
 <?php endforeach; ?>
-</ul>
+</div>
 <?php echo ($itemSetShow) ? '</div>' : ''; ?>
 <?php $this->trigger('view.browse.after'); ?>
 <?php echo $this->pagination(); ?>
