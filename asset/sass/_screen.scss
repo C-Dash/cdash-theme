@@ -882,21 +882,39 @@ order: 0;
 
 /* @group ----- Show ----- */
 
-body.resource #content > h2:first-of-type + h3 {
-    font-size: .75 * base.$base-font-size;
-    text-transform: uppercase;
-    margin: -(base.$spacing-l) 0 base.$spacing-l;
+// The item header: title, and a line saying what this is and how big it is.
+// Sticky, so it stays at the top of the browse pane while the page scrolls --
+// #showresult is the scroll container and #content is its grid item, so there
+// is nothing else to arrange.
+//
+// The negative margins cancel #content's own padding (10px 30px 10px 10px) so
+// the band spans the full pane and content cannot show past its edges while
+// scrolling underneath; the padding then puts the text back in line with the
+// content below. The background does the actual hiding, and is declared
+// unconditionally -- nothing changes as the header becomes stuck, so nothing
+// shifts.
+body.resource #content > .cdash-item-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--cdash-page);
+    border-bottom: 1px solid var(--cdash-light);
+    margin: -10px -30px base.$spacing-m -10px;
+    padding: 10px 30px base.$spacing-s 10px;
 }
 
-// The item's class -- "Place" or "Document" -- in the slot above, which stock
-// Omeka used for a bare "Item" heading. Ordinary sentence case rather than the
-// small uppercase treatment that slot carries, which would render "PLACE".
-// The margin is inherited from the rule above, so it still tucks under the
-// title instead of floating in the gap.
-body.resource #content > .cdash-item-class {
+// "Place" or "Document", then the size. Title case as stored, deliberately not
+// the small-uppercase treatment stock Omeka gave this slot for its bare "Item"
+// heading -- that rule is gone, since nothing renders an h3 there any more.
+body.resource #content > .cdash-item-header .cdash-item-meta {
     font-size: base.$base-font-size;
-    text-transform: none;
     font-weight: normal;
+    color: var(--cdash-darkgray);
+    margin: 0;
+}
+
+.cdash-item-meta-sep {
+    margin: 0 .25em;
 }
 
 /*

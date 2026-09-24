@@ -22,10 +22,44 @@ $resourceClass = $item->resourceClass();
 $classLabels = [
     'dcterms:Location' => 'Place', // @translate
 ];
+$isDocument = $resourceClass && 'bibo:Document' === $resourceClass->term();
 $classLabel = '';
 if ($resourceClass) {
     $classLabel = $classLabels[$resourceClass->term()] ?? $resourceClass->label();
     $classLabel = $translate($classLabel);
+}
+
+/**
+ * ...and how big it is: pages for a Document, linked Documents for a Place.
+ *
+ * subjectValueTotalCount() is Omeka's own count of resources pointing AT this
+ * one, which is what the Linked Resources block lists below. Site scoping has
+ * to match that block exactly or the header can claim documents the list does
+ * not show: it passes a site id only when exclude_resources_not_in_site is on
+ * (see Omeka's common/resource-page-block-layout/linked-resources.phtml), so
+ * this does the same. That matters here -- a site whose item pool is empty
+ * renders an empty list, and a header disagreeing with it would send the next
+ * person hunting the wrong bug.
+ *
+ * A count of zero prints nothing rather than "0 documents".
+ */
+$itemMeta = '';
+if ($isDocument) {
+    $pages = (int) (string) $item->value('bibo:numPages');
+    if ($pages > 0) {
+        $itemMeta = sprintf($translate($pages === 1 ? '%d p.' : '%d pp.'), $pages);
+    }
+} elseif ($resourceClass) {
+    $siteId = $this->siteSetting('exclude_resources_not_in_site')
+        ? $this->currentSite()->id()
+        : null;
+    $documents = $item->subjectValueTotalCount(null, 'items', $siteId);
+    if ($documents > 0) {
+        $itemMeta = sprintf(
+            $translate($documents === 1 ? '%d document' : '%d documents'),
+            $documents
+        );
+    }
 }
 
 /**
@@ -47,12 +81,29 @@ $itemFooter = [
     'Rights' => 'Rights status not evaluated.', // @translate
 ];
 ?>
-<?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
-<?php // The slot stock Omeka filled with a bare "Item" heading, which CDASH
-      // had commented out. It says something worth reading now. ?>
-<?php if ($classLabel !== ''): ?>
-<h3 class="cdash-item-class"><?php echo $escape($classLabel); ?></h3>
-<?php endif; ?>
+<?php
+/**
+ * Sticky header: what you are looking at stays visible while the page scrolls.
+ *
+ * A div, NOT a <header>: print.scss hides the `header` element outright, for
+ * the site banner, and would take the item title off paper with it.
+ *
+ * Breadcrumbs are meant to go above the title later; this wrapper is where
+ * they will land.
+ */
+?>
+<div class="cdash-item-header">
+    <?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
+    <?php if ($classLabel !== ''): ?>
+    <p class="cdash-item-meta">
+        <?php echo $escape($classLabel); ?>
+        <?php if ($itemMeta !== ''): ?>
+        <span class="cdash-item-meta-sep" aria-hidden="true">&middot;</span>
+        <?php echo $escape($itemMeta); ?>
+        <?php endif; ?>
+    </p>
+    <?php endif; ?>
+</div>
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>

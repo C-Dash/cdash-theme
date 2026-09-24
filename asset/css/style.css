@@ -884,16 +884,25 @@ ul.resource-list > li > A > img {
 
 /* @end */
 /* @group ----- Show ----- */
-body.resource #content > h2:first-of-type + h3 {
-  font-size: 11.25px;
-  text-transform: uppercase;
-  margin: -18px 0 18px;
+body.resource #content > .cdash-item-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--cdash-page);
+  border-bottom: 1px solid var(--cdash-light);
+  margin: -10px -30px 9px -10px;
+  padding: 10px 30px 4.5px 10px;
 }
 
-body.resource #content > .cdash-item-class {
+body.resource #content > .cdash-item-header .cdash-item-meta {
   font-size: 15px;
-  text-transform: none;
   font-weight: normal;
+  color: var(--cdash-darkgray);
+  margin: 0;
+}
+
+.cdash-item-meta-sep {
+  margin: 0 0.25em;
 }
 
 /*
