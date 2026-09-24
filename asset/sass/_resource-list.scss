@@ -35,13 +35,49 @@
   padding-bottom: base.$spacing-s - 1px;
 }
 
-/* ---- Document cards: thumbnail on top, title below ---- */
-.cdash-card-document .cdash-card-link {
-  @include cards.card;
+/* ---- The link ----
+   The whole tile -- image and caption -- is one anchor, outlined on hover.
+
+   The anchor must stay a full-width block. Shrink-wrapping it to the image
+   (width: fit-content) breaks the grid: the thumbnail's own `width: 100%`
+   then resolves against a shrink-to-fit box rather than the column, so it
+   stops resizing with the column and falls back to its intrinsic width --
+   400px in the narrow case, where the 200px cap is lifted.
+
+   The border is transparent at rest rather than absent, so nothing moves when
+   it colours in; declaring all four sides also cancels the
+   `border-bottom: 1px dotted` that _screen.scss gives every a:link, which
+   would otherwise draw a dotted line across each card. The padding gives the
+   outline a little room, and the matching negative margin keeps the tiles
+   aligned with each other and with the text below them. */
+.cdash-card-link {
+  display: block;
+  border: 1px solid transparent;
+  padding: 4px;
+  margin: -4px;
 }
+
+/* Hover is scoped to pointers that have one. A touch device never enters a
+   hover state -- the finger arrives already pressing -- so on those the rule
+   below would be the tile's only affordance and would never fire. Keyboard
+   focus and the press itself are not pointer-dependent, so they stay outside
+   the query. */
+@media (hover: hover) {
+  .cdash-card-link:hover {
+    border-color: var(--cdash-link);
+  }
+}
+
+.cdash-card-link:focus-visible,
+.cdash-card-link:active {
+  border-color: var(--cdash-link);
+  outline: none;
+}
+
 
 .cdash-card-thumb {
   @include cards.card-thumb;
+  display: block;
 }
 
 /* ---- Place cards: marker at the top left, title beside it ----
@@ -62,8 +98,20 @@
   margin: 0 base.$spacing-m base.$spacing-s 0;
 }
 
+/* Underlined at rest, on every device. This is the tile's affordance: a
+   hover border cannot be one on a touch screen, where there is no hover to
+   enter, and the standing border that stood in for it turned a grid of
+   thumbnails into a grid of boxes. An underlined caption says "link" the way
+   every other link on the web does, before anything is touched, and needs no
+   pointer-type branching to do it.
+
+   Set explicitly because _screen.scss gives every a:link
+   text-decoration: none. */
 .cdash-card-title {
   @include cards.card-title;
+  margin-top: 0.35rem;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* Clamped to roughly three lines, with a fade at the foot -- what

@@ -76,11 +76,22 @@ else:
 endif;
 ?>
 <div class="cdash-card <?php echo $cardClass; ?>">
-    <?php echo $resource->linkRaw(
+    <?php
+    /**
+     * Image and caption are one link, and the hover border is drawn round the
+     * whole of it -- a 200px tile outlined, rather than an underline under the
+     * caption, which is barely visible beside an image that size.
+     *
+     * The caption inside the anchor is also what gives the link its accessible
+     * name. Linking the thumbnail alone was tried; it left the anchor holding
+     * nothing but an <img>, needing an aria-label to say anything at all.
+     */
+    echo $resource->linkRaw(
         $media . '<span class="cdash-card-title">' . $escape($caption) . '</span>',
         null,
         ['class' => 'cdash-card-link']
-    ); ?>
+    );
+    ?>
 
     <?php if ((string) $description !== ''): ?>
     <div class="cdash-card-description"><?php echo $escape($description); ?></div>
