@@ -903,6 +903,15 @@ body.resource #content > .cdash-item-header {
     padding: 10px 30px base.$spacing-s 10px;
 }
 
+// "Return to ...", inserted by cdash-layout.js above the title. Small and
+// quiet: it is a way back, not part of the item's identity.
+body.resource #content > .cdash-item-header > .cdash-breadcrumb {
+    display: block;
+    margin-bottom: base.$spacing-s;
+    font-size: .75 * base.$base-font-size;
+    border-bottom: 0;
+}
+
 // "Place" or "Document", then the size. Title case as stored, deliberately not
 // the small-uppercase treatment stock Omeka gave this slot for its bare "Item"
 // heading -- that rule is gone, since nothing renders an h3 there any more.

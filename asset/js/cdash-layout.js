@@ -378,3 +378,97 @@ document.addEventListener('alpine:init', () => {
   });
 
 });
+
+// ---------------------------------------------------------------------------
+// "Return to ..." breadcrumb in the item header.
+//
+// Outside alpine:init on purpose: this is not an Alpine component, just a
+// listener pair, and it must run whether or not Alpine has booted.
+//
+// The server cannot render this. Omeka builds each page on its own, and
+// Referer is missing or stale on history navigation, so where the visitor came
+// from is only known in the browser. The line is inserted into the sticky
+// header, which was left with room above the title for it.
+//
+// Only LISTINGS and PLACES are remembered as return targets, never Documents.
+// An item page is reached from a listing, a Place, the map or a direct link --
+// Documents never link to each other, since every resource link in the data
+// points at a Place -- so one remembered entry is enough, with no stack. The
+// exclusion is what stops Back from a Document to another Document producing
+// "Return to Exterior View", which is not one of the three things this says.
+// ---------------------------------------------------------------------------
+(function () {
+  const RETURN_KEY = 'cdash.returnTo';
+
+  function read() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem(RETURN_KEY));
+      return v && v.url && v.label ? v : null;
+    } catch (err) {
+      return null;
+    }
+  }
+
+  function write(entry) {
+    try {
+      sessionStorage.setItem(RETURN_KEY, JSON.stringify(entry));
+    } catch (err) {
+      // No breadcrumb this session; everything else still works.
+    }
+  }
+
+  // What is on screen right now, read from the rendered page rather than
+  // re-derived from the URL alone -- the page itself is the one source of
+  // truth about what kind of page it is.
+  function currentPage() {
+    const path = window.location.pathname;
+    const header = document.querySelector('.cdash-item-header');
+
+    if (/\/item-set\/\d+/.test(path)) {
+      return { url: window.location.href, label: 'Folder Listing' };
+    }
+    if (/\/item\/?$/.test(path)) {
+      return { url: window.location.href, label: 'Search Results' };
+    }
+    if (header) {
+      const meta = header.querySelector('.cdash-item-meta');
+      const title = header.querySelector('h2');
+      // Only a Place is worth returning to; a Document is a leaf.
+      if (meta && /^\s*Place\b/.test(meta.textContent) && title) {
+        return { url: window.location.href, label: title.textContent.trim() };
+      }
+    }
+    return null;
+  }
+
+  function render() {
+    const header = document.querySelector('.cdash-item-header');
+    const existing = document.querySelector('.cdash-breadcrumb');
+    if (existing) existing.remove();
+    if (!header) return;
+
+    const entry = read();
+    if (!entry) return;
+    // Never offer a return to the page already being shown.
+    if (entry.url === window.location.href) return;
+
+    const link = document.createElement('a');
+    link.className = 'cdash-breadcrumb';
+    link.href = entry.url;
+    link.textContent = 'Return to ' + entry.label;
+    header.prepend(link);
+  }
+
+  // Record the page being left, while it is still the page.
+  document.body.addEventListener('htmx:beforeRequest', function () {
+    const page = currentPage();
+    if (page) write(page);
+  });
+
+  // afterSwap covers forward navigation; historyRestore covers Back and
+  // Forward, which do NOT fire afterSwap -- the recurring hazard in this
+  // theme, where everything that once happened per page now happens per swap.
+  document.body.addEventListener('htmx:afterSwap', render);
+  document.body.addEventListener('htmx:historyRestore', render);
+  render();
+})();

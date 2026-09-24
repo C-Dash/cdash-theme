@@ -3,7 +3,8 @@
 .cdash-pane-divider,
 .cdash-pane-tab,
 .cdash-pullout,
-.cdash-navbar {
+.cdash-navbar,
+.cdash-breadcrumb {
   display: none;
 }
 
