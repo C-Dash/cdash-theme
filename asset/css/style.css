@@ -890,6 +890,12 @@ body.resource #content > h2:first-of-type + h3 {
   margin: -18px 0 18px;
 }
 
+body.resource #content > .cdash-item-class {
+  font-size: 15px;
+  text-transform: none;
+  font-weight: normal;
+}
+
 /*
 
 .property h4 {

@@ -1,15 +1,39 @@
 <?php
 $translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
 $this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css', 'Omeka'));
 $this->htmlElement('body')->appendAttribute('class', 'item resource show');
 $filterLocale = (bool) $this->siteSetting('filter_locale_values');
 $lang = $this->lang();
 $valueLang = $filterLocale ? [$lang, ''] : null;
+
+/**
+ * Whether this is a Place or a Document -- the distinction the whole site is
+ * built around, and one a visitor arriving from a marker or a search result
+ * cannot read off the title.
+ *
+ * Only the terms whose stored label is wrong for CDASH are mapped:
+ * bibo:Document already labels itself "Document", while dcterms:Location
+ * labels itself "Location", which is not what this site calls it anywhere
+ * else. An unclassed item, or a class added later, falls back to its own
+ * translated label rather than rendering an empty line.
+ */
+$resourceClass = $item->resourceClass();
+$classLabels = [
+    'dcterms:Location' => 'Place', // @translate
+];
+$classLabel = '';
+if ($resourceClass) {
+    $classLabel = $classLabels[$resourceClass->term()] ?? $resourceClass->label();
+    $classLabel = $translate($classLabel);
+}
 ?>
 <?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
-<!-- CDASH Custom: remove this item heading 
-<h3><?php echo $translate('Item'); ?></h3>
--->
+<?php // The slot stock Omeka filled with a bare "Item" heading, which CDASH
+      // had commented out. It says something worth reading now. ?>
+<?php if ($classLabel !== ''): ?>
+<h3 class="cdash-item-class"><?php echo $escape($classLabel); ?></h3>
+<?php endif; ?>
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>

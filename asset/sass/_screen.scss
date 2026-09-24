@@ -888,6 +888,17 @@ body.resource #content > h2:first-of-type + h3 {
     margin: -(base.$spacing-l) 0 base.$spacing-l;
 }
 
+// The item's class -- "Place" or "Document" -- in the slot above, which stock
+// Omeka used for a bare "Item" heading. Ordinary sentence case rather than the
+// small uppercase treatment that slot carries, which would render "PLACE".
+// The margin is inherited from the rule above, so it still tucks under the
+// title instead of floating in the gap.
+body.resource #content > .cdash-item-class {
+    font-size: base.$base-font-size;
+    text-transform: none;
+    font-weight: normal;
+}
+
 /*
 
 .property h4 {
