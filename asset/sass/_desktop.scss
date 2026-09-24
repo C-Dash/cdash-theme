@@ -119,45 +119,84 @@ html, body {
         /*margin-right: 60px;*/
     }
 
+    // The property list on an item show page, rendered by
+    // view/common/resource-values.phtml as dl > div.property > dt + dd...
+    //
+    // It used to reserve a fixed 8.5em label column and indent every dd by
+    // 9em, inside a dl that was always two properties wide. The labels in this
+    // data are single words -- Citation, Pages, Rights, Folder -- and the
+    // values are sentences, so that indent was almost entirely empty space,
+    // and halving a narrow browse pane on top of it left a sentence about
+    // 55px to wrap in. Both fixed measurements are gone: the dl fits its
+    // columns to the space, and each property sizes its label column to its
+    // own label.
     .property dt {
         margin-bottom: 0;
         font-size: 1 * base.$base-font-size;
         font-weight: bold;
-        width: 8.5em ;  
 
         &:first-child {
             margin-top: 0;
         }
     }
 
-    .property value-content {
-        margin-bottom: 0;
-        font-size: .75 * base.$base-font-size;
-        font-weight: bold;
-        
-    }
+    // `.property value-content` stood here, selecting an ELEMENT named
+    // value-content when the markup is <span class="value-content">. It never
+    // matched anything, so removing it changes nothing rendered -- the same
+    // mistake the old print CSS carried, recorded in CLAUDE.md.
 
     .resource-link img {
         height: 35px;
         width: 30px;
         margin-right: 4px;
     }
+
+    // auto-fit rather than a fixed 2: two columns when each can have ~22rem,
+    // one otherwise, with no breakpoint to maintain. min(22rem, 100%) is the
+    // same guard the card grids use -- a bare 22rem minimum would overflow a
+    // pane narrower than that instead of dropping to one column.
     dl {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        /*grid-auto-rows: minmax(100px, auto);*/
-        grid-gap: 2px;
+        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+        column-gap: base.$spacing-l;
+        row-gap: base.$spacing-s;
+    }
+
+    // max-content: the label column is exactly as wide as that property's
+    // label and no wider, which is what removes the dead space. A property
+    // with several values puts each dd on its own row in the value column,
+    // from the grid's ordinary auto-placement.
+    .property {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        column-gap: base.$spacing-m;
+        align-items: baseline;
     }
 
     dt {
-        float: left;
-        clear: left;
-        width: 8.5em;
+        grid-column: 1;
+    }
+
+    dd {
+        grid-column: 2;
+        margin: 0;
+        padding: 0 0 0.2em 0;
+    }
+
+    // Below this the pane is too narrow to give a sentence a usable column
+    // beside its label, so the label moves above its value and the value gets
+    // the full width. The "browse" container is declared on the browse pane's
+    // content wrapper in _panes.scss.
+    @container browse (max-width: 500px) {
+        .property {
+            grid-template-columns: 1fr;
         }
-     dd {
-        margin: 0 0 0 9em;
-         padding: 0 0 0.2em 0;
+
+        dt,
+        dd {
+            grid-column: 1;
         }
+    }
 
     table {
         /*display: grid;

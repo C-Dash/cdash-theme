@@ -29,6 +29,12 @@ if ($this->status()->isSiteRequest()) {
         and ($propertyData['property']->term() != 'cdash:streetAddress')
         and ($propertyData['property']->term() != 'cdash:Folder')
         and ($propertyData['property']->term() != 'cdash:houseNum')
+        and ($propertyData['property']->term() != 'cdash:Neighborhood')
+        and ($propertyData['property']->term() != 'cdash:chcDist')
+        and ($propertyData['property']->term() != 'cdash:placeType')
+        and ($propertyData['property']->term() != 'cdash:placeItem')
+        and ($propertyData['property']->term() != 'cdash:placeName')
+        and ($propertyData['property']->term() != 'dcterms:type')
        ): ?>
 
     <div class="property">
