@@ -175,6 +175,26 @@ document.addEventListener('alpine:init', () => {
         // A reload always starts with both panes open, at the remembered split.
         this.lastOpenPct = this.clampOpen(storedPct('split'));
         this.setSplit(this.lastOpenPct, false);
+
+        // Content is about to arrive in the browse pane, and a collapsed pane
+        // cannot show it. Every route to that content -- a nav link, the
+        // search form, the Filters form, the breadcrumb, and a marker click,
+        // which issues htmx.ajax with the map div as its source -- fires this
+        // one event, and all of them are inside the shell, so it reaches here.
+        // That is why the map needs no part in this: it does not have to know
+        // the layout exists.
+        //
+        // open() is the method the tab calls, reused rather than reproduced,
+        // so "the same as clicking the tab" holds by construction -- same
+        // animation, same remembered size. beforeRequest rather than
+        // afterSwap, so the pane starts opening on the click and the 300ms
+        // animation overlaps the request instead of following it.
+        //
+        // Only the browse pane. A collapsed MAP pane is left as the user left
+        // it: nothing being loaded here needs the map.
+        document.body.addEventListener('htmx:beforeRequest', () => {
+          if (this.browseCollapsed) this.open();
+        });
       },
 
       axisSize() {
