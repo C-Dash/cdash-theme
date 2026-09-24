@@ -35,6 +35,12 @@ if ($this->status()->isSiteRequest()) {
         and ($propertyData['property']->term() != 'cdash:placeItem')
         and ($propertyData['property']->term() != 'cdash:placeName')
         and ($propertyData['property']->term() != 'dcterms:type')
+        /* Shown once, as fixed text, in the footer block at the end of
+           view/omeka/site/item/show.phtml -- which puts them on Place pages
+           too, where neither value is stored. Left visible here they would
+           appear twice on every Document. */
+        and ($propertyData['property']->term() != 'dcterms:bibliographicCitation')
+        and ($propertyData['property']->term() != 'dcterms:rights')
        ): ?>
 
     <div class="property">

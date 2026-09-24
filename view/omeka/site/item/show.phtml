@@ -27,6 +27,25 @@ if ($resourceClass) {
     $classLabel = $classLabels[$resourceClass->term()] ?? $resourceClass->label();
     $classLabel = $translate($classLabel);
 }
+
+/**
+ * The credit and rights statement, shown at the foot of every item page.
+ *
+ * Fixed text rather than the item's own values, deliberately. Both lines exist
+ * in the data as dcterms:bibliographicCitation and dcterms:rights, but only on
+ * Documents, and with one distinct value each across all of them -- boilerplate
+ * stored per item. Taking it from the theme puts the credit on Place pages too,
+ * where there is no stored value to read. Both terms are therefore hidden in
+ * view/common/resource-values.phtml, or a Document would show each line twice.
+ *
+ * This is the one place to edit the wording. If it starts changing often, the
+ * next step is a theme setting in config/theme.ini, beside the banner and the
+ * accent colour.
+ */
+$itemFooter = [
+    'Citation' => 'Cambridge Historical Commission, Digital Architectural Survey and History.', // @translate
+    'Rights' => 'Rights status not evaluated.', // @translate
+];
 ?>
 <?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
 <?php // The slot stock Omeka filled with a bare "Item" heading, which CDASH
@@ -37,6 +56,24 @@ if ($resourceClass) {
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>
+
+<?php // Same dl > div.property > dt + dd markup as the property list, on
+      // purpose: #content dl and #content .property in _desktop.scss carry the
+      // auto-fit columns, the max-content label column and the stack-below-
+      // 500px behaviour, so this block inherits all of it and needs no layout
+      // rules of its own. ?>
+<div class="cdash-item-footer">
+    <dl>
+        <?php foreach ($itemFooter as $label => $text): ?>
+        <div class="property">
+            <dt><?php echo $escape($translate($label)); ?><b>:</b></dt>
+            <dd class="value">
+                <span class="value-content"><?php echo $escape($translate($text)); ?></span>
+            </dd>
+        </div>
+        <?php endforeach; ?>
+    </dl>
+</div>
 
 <!-- The media-embed block wraps each image in a link to the original TIF, which
      CDASH strips so the right-click menu can be used to save or open the

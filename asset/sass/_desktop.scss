@@ -183,6 +183,17 @@ html, body {
         padding: 0 0 0.2em 0;
     }
 
+    // The credit and rights block at the foot of an item page. Its markup is
+    // the property list's, so the grid rules above already place it; this is
+    // only the separation from the blocks it follows, and a smaller size,
+    // since it is a standing statement rather than this item's own metadata.
+    .cdash-item-footer {
+        margin-top: 1.5 * base.$spacing-l;
+        padding-top: base.$spacing-m;
+        border-top: 1px solid var(--cdash-light);
+        font-size: .75 * base.$base-font-size;
+    }
+
     // Below this the pane is too narrow to give a sentence a usable column
     // beside its label, so the label moves above its value and the value gets
     // the full width. The "browse" container is declared on the browse pane's
