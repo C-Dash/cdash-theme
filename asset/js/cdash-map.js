@@ -723,28 +723,14 @@ function updateFeaturedMarker() {
   featuredMarkers.bringToFront();
 }
 
-// ---------------------------------------------------------------------------
-// Fixups applied to swapped-in content.
-//
-// This lived as an inline <script> at the bottom of item/show.phtml. htmx does
-// execute scripts inside swapped content, so it would probably still have
-// fired -- but relying on that is relying on swap semantics for something that
-// is really just a DOM fixup. Calling it explicitly makes the order certain
-// and puts every post-swap concern in one place.
-// ---------------------------------------------------------------------------
-function applyContentFixups() {
-  // The media-embed block wraps each image in a link to the original TIFF.
-  // Removing the href leaves the right-click menu usable for saving or opening
-  // the thumbnail, which is what CDASH wants.
-  var images = document.querySelectorAll("#content .media-render.file a, #content .media-render a");
-  images.forEach(function (anchor) {
-    anchor.removeAttribute("href");
-  });
-}
-
+// A DOM fixup used to run here too: the media-embeds block wrapped every page
+// thumbnail in a link to the original TIF, and this stripped the href after
+// each swap. The block template does not render the anchor at all now -- see
+// view/common/resource-page-block-layout/media-embeds.phtml -- so there is
+// nothing left to strip, and a fixup that quietly does nothing is worse than
+// no fixup at all.
 function refreshFromBrowsePane() {
   updateFeaturedMarker();
-  applyContentFixups();
 }
 
 refreshFromBrowsePane();

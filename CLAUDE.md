@@ -278,10 +278,36 @@ both.
    One asymmetry in the data, worth knowing before hunting a bug that is not
    there: every resource link points *at* a Place, so only Place pages have a
    Linked Resources block. Document pages have none.
-7. **`asset/php/geosync copy.php`** — untracked leftover.
-8. **13 Dependabot alerts** on the default branch; they clear when the
+7. **Original TIFs are unlinked, not protected.** Page thumbnails no longer
+   link to the original: the theme's copy of
+   `view/common/resource-page-block-layout/media-embeds.phtml` passes
+   `['link' => null]` to `$media->render()`, and Omeka's `ThumbnailRenderer`
+   then returns the bare `<img>`. That replaced a JS fixup which stripped the
+   `href` after every swap, so the anchor is now absent from the markup rather
+   than removed from it.
+
+   **The file is still public**, and that is the part left undone:
+
+   - `/files/original/<hash>.tif` returns 200 to anyone who asks;
+   - the REST API hands out the path — `/api/media/<id>` includes
+     `o:original_url` — so the link being gone from the page hides nothing
+     from anything that reads the API.
+
+   Blocking the path at the web server is not the fix it looks like: Apache
+   cannot tell a logged-in editor from a visitor, so a deny rule takes staff
+   downloads in the admin UI with it. (For the dev instance that rule would go
+   in the persist volume at `config/apache2/.htaccess_dev`, which is symlinked
+   as the docroot `.htaccess`.) The module that does this properly is
+   **Access** (Daniel-KM), which serves files through a permission-checking
+   controller. Deferred deliberately, pending appetite for another module.
+
+   Any other media block enabled later — `media-list`, the lightbox pair —
+   calls `$media->render()` the same way and will link originals again until
+   given the same option.
+8. **`asset/php/geosync copy.php`** — untracked leftover.
+9. **13 Dependabot alerts** on the default branch; they clear when the
    `package-lock.json` deletion merges to `main`.
-9. **No PR yet** — styling first, by decision.
+10. **No PR yet** — styling first, by decision.
 
 ## Longer-term
 

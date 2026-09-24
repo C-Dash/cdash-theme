@@ -75,10 +75,13 @@ $itemFooter = [
     </dl>
 </div>
 
-<!-- The media-embed block wraps each image in a link to the original TIF, which
-     CDASH strips so the right-click menu can be used to save or open the
-     thumbnail. That used to be an inline <script> here. It now lives in
-     applyContentFixups() in cdash/cdash-map-5.phtml, which runs on load and
-     again after every browse-pane swap -- this template is no longer
-     re-executed on navigation, so a script here would only fire on a full
-     page load. -->
+<!-- Stock Omeka wraps each page thumbnail in a link to the original TIF. CDASH
+     does not want that link, and it is no longer rendered: the theme's copy of
+     the block template passes `link => null` to $media->render(), so the
+     anchor is absent from the markup. See
+     view/common/resource-page-block-layout/media-embeds.phtml.
+
+     This was an inline <script> here, then a JS fixup that stripped the href
+     after every browse-pane swap. Both are gone -- the second was only needed
+     because the first could not run on a swap, and neither is needed once the
+     server stops emitting the anchor. -->
