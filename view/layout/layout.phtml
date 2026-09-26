@@ -211,6 +211,29 @@ $userBar = $this->userBar();
      hx-boost="true"
      hx-target="#content"
      hx-select="#content"
+     <?php
+     /**
+      * The admin bar sits outside #content, so swaps never replaced it and its
+      * View and Edit links went stale the moment you navigated -- still
+      * pointing at whatever item the last full page load had rendered.
+      *
+      * Omeka's UserBar helper builds those links from the route it is
+      * rendering, so every swap response already carries a correct bar; it was
+      * just being discarded with the rest of the response. This keeps it, out
+      * of band, which beats rewriting hrefs in JavaScript: item vs item set vs
+      * media vs page, the plural label, the View link and whether this user may
+      * edit THIS resource all come right without being reimplemented here.
+      *
+      * htmx resolves this attribute by inheritance from the element issuing the
+      * request, so marker clicks -- which pass mapDiv as their source -- are
+      * covered by the same line.
+      *
+      * Emitted only when there is a bar to swap. An anonymous visitor's page
+      * has no #user-bar in the response or the DOM, and htmx warns on every
+      * navigation when an OOB target is missing.
+      */
+     ?>
+     <?php echo !empty($userBar) ? 'hx-select-oob="#user-bar"' : ''; ?>
      hx-swap="outerHTML scroll:#showresult:top"
      hx-push-url="true">
 
@@ -342,12 +365,12 @@ $userBar = $this->userBar();
               <p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p>
             </div>
 
+            <?php // The GeoSync and GeoAudit links used to be appended here by
+                  // an inline script, which ran once per page load and so would
+                  // be lost the first time htmx replaced this bar. They are
+                  // part of view/common/user-bar.phtml now. ?>
             <?php if (!empty($userBar)): ?>
               <?php echo $userBar; ?>
-              <script type="text/javascript">
-                document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML +=
-                  '<span class="admin"><a href="<?php echo $this->assetUrl('php/geosync.php'); ?>" target="geosync">GeoSync</a></span> <span class="admin"><a href="<?php echo $this->assetUrl('php/geoaudit.php'); ?>" target="geoaudit">GeoAudit</a></span>';
-              </script>
             <?php endif; ?>
           </div>
         </div>
