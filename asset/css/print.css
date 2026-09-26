@@ -4,7 +4,9 @@
 .cdash-pane-tab,
 .cdash-pullout,
 .cdash-navbar,
-.cdash-breadcrumb {
+.cdash-breadcrumb,
+.cdash-visit-place,
+.cdash-crumb-sep {
   display: none;
 }
 

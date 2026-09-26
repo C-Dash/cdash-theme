@@ -461,22 +461,52 @@ document.addEventListener('alpine:init', () => {
     return null;
   }
 
+  // The crumb row holds up to two links, answering different questions:
+  //
+  //   Visit <Place>       where this Document belongs. Server-rendered in
+  //                       show.phtml, so it survives a shared link and JS off.
+  //   Return to <...>     where the visitor came from. Only known here.
+  //
+  // Both, in that order, separated by a diamond. Never two links to the same
+  // Place: when the return entry names the Place the Visit link points at, the
+  // Visit link goes -- "Return to" is the better of the two words there, and
+  // the server cannot make that call, having no idea where anyone has been.
   function render() {
     const header = document.querySelector('.cdash-item-header');
-    const existing = document.querySelector('.cdash-breadcrumb');
-    if (existing) existing.remove();
+    const stale = document.querySelectorAll('.cdash-breadcrumb, .cdash-crumb-sep');
+    stale.forEach((el) => el.remove());
     if (!header) return;
 
+    const visit = header.querySelector('.cdash-visit-place');
     const entry = read();
-    if (!entry) return;
     // Never offer a return to the page already being shown.
-    if (entry.url === window.location.href) return;
+    const useEntry = entry && entry.url !== window.location.href;
+
+    // Hidden, not removed. htmx caches the pane's HTML for Back and Forward,
+    // and a snapshot taken after a removal would be missing the link for good
+    // -- it is server-rendered, so nothing here could put it back.
+    if (visit) {
+      visit.hidden = !!(useEntry && visit.dataset.placeUrl === entry.url);
+    }
+
+    if (!useEntry) return;
 
     const link = document.createElement('a');
     link.className = 'cdash-breadcrumb';
     link.href = entry.url;
     link.textContent = 'Return to ' + entry.label;
-    header.prepend(link);
+
+    const lead = visit && !visit.hidden ? visit : null;
+    if (lead) {
+      const sep = document.createElement('span');
+      sep.className = 'cdash-crumb-sep';
+      sep.setAttribute('aria-hidden', 'true');
+      sep.textContent = '◆';
+      lead.after(sep);
+      sep.after(link);
+    } else {
+      header.prepend(link);
+    }
   }
 
   // Record the page being left, while it is still the page.

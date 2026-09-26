@@ -27,8 +27,10 @@
 .cdash-pane-tab,
 .cdash-pullout,
 .cdash-navbar,
-// "Return to ..." means nothing on paper.
-.cdash-breadcrumb {
+// Ways out of the page mean nothing on paper.
+.cdash-breadcrumb,
+.cdash-visit-place,
+.cdash-crumb-sep {
     display: none;
 }
 

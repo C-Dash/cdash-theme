@@ -903,13 +903,30 @@ body.resource #content > .cdash-item-header {
     padding: 10px 30px base.$spacing-s 10px;
 }
 
-// "Return to ...", inserted by cdash-layout.js above the title. Small and
-// quiet: it is a way back, not part of the item's identity.
-body.resource #content > .cdash-item-header > .cdash-breadcrumb {
-    display: block;
-    margin-bottom: base.$spacing-s;
+// The crumb row above the title: "Visit <Place>" from show.phtml, and
+// "Return to ..." inserted by cdash-layout.js. Small and quiet -- these are
+// ways out of the page, not part of the item's identity.
+//
+// inline, so the two sit on one line with the diamond between them, and the
+// row wraps rather than overflowing when a Place title is long.
+body.resource #content > .cdash-item-header > .cdash-breadcrumb,
+body.resource #content > .cdash-item-header > .cdash-visit-place {
+    display: inline;
     font-size: .75 * base.$base-font-size;
     border-bottom: 0;
+}
+
+// Explicit, because the display above would otherwise beat the UA's [hidden].
+// cdash-layout.js hides this one rather than removing it when the return link
+// already names the same Place.
+body.resource #content > .cdash-item-header > .cdash-visit-place[hidden] {
+    display: none;
+}
+
+.cdash-crumb-sep {
+    margin: 0 .4em;
+    font-size: .75 * base.$base-font-size;
+    color: var(--cdash-darkgray);
 }
 
 // "Place" or "Document", then the size. Title case as stored, deliberately not

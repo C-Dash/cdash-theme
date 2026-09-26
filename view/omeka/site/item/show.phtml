@@ -80,6 +80,33 @@ $itemFooter = [
     'Citation' => 'Cambridge Historical Commission, Digital Architectural Survey and History.', // @translate
     'Rights' => 'Rights status not evaluated.', // @translate
 ];
+
+/**
+ * The Place a Document belongs to, as a link up to it.
+ *
+ * Server-rendered, unlike the "Return to ..." breadcrumb beside it, because
+ * the two answer different questions from different sources: where this
+ * Document belongs is a fact about the item, while where the visitor came from
+ * is session state only the browser knows. Stating the fact here means it
+ * holds on a shared link, with JavaScript off, and in the page source -- and
+ * it covers the case the breadcrumb alone misses, a Document reached by
+ * clicking a map marker, which otherwise offers no way up at all.
+ *
+ * cdash-layout.js removes this link when the return breadcrumb already points
+ * at the same Place, so the row never reads "Visit X - Return to X". That
+ * comparison needs the stored return URL, which is why it is not done here.
+ */
+$placeLink = null;
+if ($isDocument) {
+    $placeValue = $item->value('cdash:placeItem');
+    if ($placeValue && 'resource' === $placeValue->type()) {
+        $place = $placeValue->valueResource();
+        $placeLink = [
+            'url' => $place->url(),
+            'title' => $place->displayTitle(null, $valueLang),
+        ];
+    }
+}
 ?>
 <?php
 /**
@@ -88,11 +115,17 @@ $itemFooter = [
  * A div, NOT a <header>: print.scss hides the `header` element outright, for
  * the site banner, and would take the item title off paper with it.
  *
- * Breadcrumbs are meant to go above the title later; this wrapper is where
- * they will land.
+ * The crumb row sits above the title: the Place link below, and the
+ * "Return to ..." breadcrumb that cdash-layout.js inserts beside it.
  */
 ?>
 <div class="cdash-item-header">
+    <?php if ($placeLink): ?>
+    <a class="cdash-visit-place" href="<?php echo $escape($placeLink['url']); ?>"
+       data-place-url="<?php echo $escape($placeLink['url']); ?>"><?php
+        echo $escape(sprintf($translate('Visit %s'), $placeLink['title']));
+    ?></a>
+    <?php endif; ?>
     <?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
     <?php if ($classLabel !== ''): ?>
     <p class="cdash-item-meta">
