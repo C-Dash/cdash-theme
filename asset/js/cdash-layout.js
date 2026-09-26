@@ -410,12 +410,18 @@ document.addEventListener('alpine:init', () => {
 // from is only known in the browser. The line is inserted into the sticky
 // header, which was left with room above the title for it.
 //
-// Only LISTINGS and PLACES are remembered as return targets, never Documents.
-// An item page is reached from a listing, a Place, the map or a direct link --
-// Documents never link to each other, since every resource link in the data
-// points at a Place -- so one remembered entry is enough, with no stack. The
-// exclusion is what stops Back from a Document to another Document producing
-// "Return to Exterior View", which is not one of the three things this says.
+// Every page that can be named is remembered, but what may be OFFERED depends
+// on the page doing the offering:
+//
+//   on an item page      a listing or a Place -- never a Document
+//   on a listing page    any of them, a Document included
+//
+// The exclusion on item pages is deliberate. Documents never link to each
+// other, since every resource link in the data points at a Place, so the only
+// way a Document becomes "previous" there is Back from one Document to
+// another -- and "Return to Exterior View" is not something this should ever
+// say. A listing reached FROM a Document is different: "Return to <that
+// document>" is exactly the way back the visitor wants.
 // ---------------------------------------------------------------------------
 (function () {
   const RETURN_KEY = 'cdash.returnTo';
@@ -437,6 +443,24 @@ document.addEventListener('alpine:init', () => {
     }
   }
 
+  // Which page a URL names, as one comparable string.
+  //
+  // Comparing URLs directly does not work here, for two reasons that both bite.
+  // show.phtml emits a PATH in data-place-url ("/s/cdash5/item/13333") while
+  // what is stored is an absolute href, so string equality is false even for
+  // the same page. And every URL in the browse pane carries the map hash, which
+  // cdash-map.js rewrites continuously as the map moves -- so two hrefs for one
+  // page rarely match either. Path and query identify the page; the hash is the
+  // map's business, not the breadcrumb's.
+  function pageKey(url) {
+    try {
+      const u = new URL(url, window.location.href);
+      return u.pathname + u.search;
+    } catch (err) {
+      return String(url);
+    }
+  }
+
   // What is on screen right now, read from the rendered page rather than
   // re-derived from the URL alone -- the page itself is the one source of
   // truth about what kind of page it is.
@@ -445,20 +469,35 @@ document.addEventListener('alpine:init', () => {
     const header = document.querySelector('.cdash-item-header');
 
     if (/\/item-set\/\d+/.test(path)) {
-      return { url: window.location.href, label: 'Folder Listing' };
+      return { url: window.location.href, label: 'Folder Listing', kind: 'listing' };
     }
     if (/\/item\/?$/.test(path)) {
-      return { url: window.location.href, label: 'Search Results' };
+      return { url: window.location.href, label: 'Search Results', kind: 'listing' };
     }
     if (header) {
       const meta = header.querySelector('.cdash-item-meta');
       const title = header.querySelector('h2');
-      // Only a Place is worth returning to; a Document is a leaf.
-      if (meta && /^\s*Place\b/.test(meta.textContent) && title) {
-        return { url: window.location.href, label: title.textContent.trim() };
-      }
+      if (!title) return null;
+      // The meta line already says which this is; no need to ask the server
+      // again or re-read the resource class here.
+      const isPlace = meta && /^\s*Place\b/.test(meta.textContent);
+      return {
+        url: window.location.href,
+        label: title.textContent.trim(),
+        kind: isPlace ? 'place' : 'document',
+      };
     }
     return null;
+  }
+
+  // Which return targets this page may offer. An item page will not offer a
+  // Document; a listing will offer anything.
+  function allows(page, entry) {
+    // Entries written before kinds existed were only ever listings or Places,
+    // both of which are allowed everywhere.
+    const kind = entry.kind || 'listing';
+    if (page && page.kind === 'listing') return true;
+    return kind !== 'document';
   }
 
   // The crumb row holds up to two links, answering different questions:
@@ -472,21 +511,29 @@ document.addEventListener('alpine:init', () => {
   // Visit link goes -- "Return to" is the better of the two words there, and
   // the server cannot make that call, having no idea where anyone has been.
   function render() {
-    const header = document.querySelector('.cdash-item-header');
     const stale = document.querySelectorAll('.cdash-breadcrumb, .cdash-crumb-sep');
     stale.forEach((el) => el.remove());
-    if (!header) return;
 
-    const visit = header.querySelector('.cdash-visit-place');
+    const page = currentPage();
+    const header = document.querySelector('.cdash-item-header');
+    // The crumb goes in the sticky header on an item page, and at the top of
+    // #content on a listing, which has no header of its own. Anything else --
+    // a site page, the home page -- gets none.
+    const host = header || (page && page.kind === 'listing' ? document.getElementById('content') : null);
+    if (!host) return;
+
+    const visit = header ? header.querySelector('.cdash-visit-place') : null;
     const entry = read();
-    // Never offer a return to the page already being shown.
-    const useEntry = entry && entry.url !== window.location.href;
+    const here = pageKey(window.location.href);
+    // Never offer a return to the page already being shown, and never offer a
+    // kind this page will not have.
+    const useEntry = entry && pageKey(entry.url) !== here && allows(page, entry);
 
     // Hidden, not removed. htmx caches the pane's HTML for Back and Forward,
     // and a snapshot taken after a removal would be missing the link for good
     // -- it is server-rendered, so nothing here could put it back.
     if (visit) {
-      visit.hidden = !!(useEntry && visit.dataset.placeUrl === entry.url);
+      visit.hidden = !!(useEntry && pageKey(visit.dataset.placeUrl) === pageKey(entry.url));
     }
 
     if (!useEntry) return;
@@ -505,7 +552,7 @@ document.addEventListener('alpine:init', () => {
       lead.after(sep);
       sep.after(link);
     } else {
-      header.prepend(link);
+      host.prepend(link);
     }
   }
 

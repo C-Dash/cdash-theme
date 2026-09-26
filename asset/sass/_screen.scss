@@ -916,6 +916,16 @@ body.resource #content > .cdash-item-header > .cdash-visit-place {
     border-bottom: 0;
 }
 
+// On a listing -- search results, or a folder's contents -- there is no sticky
+// header, so the crumb sits at the top of #content instead. Block rather than
+// inline: it stands alone there, with nothing to share a line with.
+body.resource #content > .cdash-breadcrumb {
+    display: block;
+    margin-bottom: base.$spacing-s;
+    font-size: .75 * base.$base-font-size;
+    border-bottom: 0;
+}
+
 // Explicit, because the display above would otherwise beat the UA's [hidden].
 // cdash-layout.js hides this one rather than removing it when the return link
 // already names the same Place.
