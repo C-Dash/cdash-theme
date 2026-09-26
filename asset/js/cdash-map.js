@@ -685,6 +685,11 @@ if (cdashCanLocate) {
   let featuredMarkers = new L.FeatureGroup();
   map.addLayer(featuredMarkers);
 
+  // True until the first pass over the browse pane completes. It separates
+  // "this page was just opened" from "the visitor navigated here", which is
+  // the difference between honouring a shared hash and leaving the map alone.
+  var cdashFirstRefresh = true;
+
 function updateFeaturedMarker() {
   var $popups = $('#content .mapping-marker-popup-content');
 
@@ -713,11 +718,33 @@ function updateFeaturedMarker() {
       featuredMarkers.addLayer(featuredMarker);
   });
 
+  // Whether to MOVE the map is a separate question from where to draw the
+  // marker, and the answer used to be "always", which quietly made the URL
+  // hash useless. The hash is written from moveend, so a pan on every
+  // navigation meant the URL recorded where the ITEM was and never where the
+  // visitor had put the map -- and a shared link could not even reproduce its
+  // own framing, since the hash was applied on load and then panned away from.
+  //
+  // Three cases now:
   if (markerCenter) {
-    // 4.1.1 called panTo(center, mapZoom). panTo's second argument is an
-    // options object, not a zoom level, so the zoom was never actually
-    // applied -- panning at the current zoom is what it always did.
-    map.panTo(markerCenter);
+    if (cdashFirstRefresh && cdashInitialState) {
+      // A view was shared with us. It wins: honour the hash exactly, and let
+      // the marker sit wherever in that frame the item happens to fall. A bare
+      // item URL has no hash, so cdashInitialState is null and the next test
+      // centres on the item as before.
+    } else if (!map.getBounds().contains(L.latLng(markerCenter))) {
+      // Off-screen: staying put would leave the marker somewhere unseen, with
+      // nothing to say where. Note the bounds are the map PANE's, so a narrow
+      // or nearly-collapsed pane counts less as visible -- which is the right
+      // answer anyway, since little of it can be seen.
+      //
+      // 4.1.1 called panTo(center, mapZoom). panTo's second argument is an
+      // options object, not a zoom level, so the zoom was never actually
+      // applied -- panning at the current zoom is what it always did.
+      map.panTo(markerCenter);
+    }
+    // Otherwise the marker is already in view: leave the map alone, which is
+    // what keeps the visitor's extent in the URL.
   }
 
   featuredMarkers.bringToFront();
@@ -731,6 +758,11 @@ function updateFeaturedMarker() {
 // no fixup at all.
 function refreshFromBrowsePane() {
   updateFeaturedMarker();
+  // Cleared here rather than inside updateFeaturedMarker, which returns early
+  // on a page with no coordinates. Left to that function, a first load on a
+  // site page would leave the flag standing and the next item visited would be
+  // mistaken for a fresh arrival.
+  cdashFirstRefresh = false;
 }
 
 refreshFromBrowsePane();

@@ -209,9 +209,31 @@ both.
    `sass-migrator` 2.6.1 is vendored beside dart-sass at
    `../tools/sass-migrator/`.
 
-3. **Item-page centring.** A shared hash URL restores zoom and layers, but the
-   featured-marker logic then pans to the item's own marker, so the framing is
-   not reproduced. Deliberate; may want revisiting.
+3. **Item-page centring — resolved.** The featured-marker logic used to pan on
+   every navigation, which made the hash near useless: the hash is written from
+   `moveend`, so the URL recorded where the *item* was rather than where the
+   visitor had put the map, and a shared link could not reproduce its own
+   framing — the hash was applied on load and then panned away from.
+
+   Panning is now conditional, in `updateFeaturedMarker()`:
+
+   - **first pass with a hash present** → no pan. The shared view wins, and the
+     red circle sits wherever in that frame the item falls.
+   - **marker outside the map pane's bounds** → pan to it, or the circle is
+     somewhere unseen with nothing to say where. The bounds are the *pane's*,
+     so a narrow pane counts less as visible, which is the right answer.
+   - **marker already in view** → no pan. This is what keeps the visitor's own
+     extent in the URL.
+
+   A bare item URL still centres on its item: no hash means no shared view to
+   honour. The marker itself is always drawn at the item's coordinates —
+   drawing it and moving the map are separate questions, and conflating them
+   was the bug.
+
+   `cdashFirstRefresh` is cleared in `refreshFromBrowsePane()`, not in
+   `updateFeaturedMarker()`, which returns early on a page with no
+   coordinates — otherwise a first load on a site page leaves the flag standing
+   and the next item looks like a fresh arrival.
 4. **Real-device phone check.** The `100dvh` fix addresses the collapsing mobile
    URL bar and is desktop-verified only.
 5. **Slide-collapse-restore — redesigned.** Panes and
