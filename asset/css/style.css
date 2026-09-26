@@ -922,6 +922,19 @@ body.resource #content > .cdash-item-header .cdash-item-meta {
   margin: 0 0.25em;
 }
 
+body.resource #content > .cdash-item-header h2 {
+  font-size: 22.5px;
+  line-height: 22.5px;
+  margin-block-start: 5px;
+  margin-block-end: 5px;
+}
+
+@container browse (max-width: 500px) {
+  body.resource #content > .cdash-item-header h2 {
+    font-size: 20px;
+    line-height: 20px;
+  }
+}
 /*
 
 .property h4 {
