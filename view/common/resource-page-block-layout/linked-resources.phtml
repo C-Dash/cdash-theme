@@ -1,0 +1,33 @@
+<?php
+/**
+ * Copy of Omeka's block-layout partial. The ONLY edit is the heading:
+ * "Linked resources" reads as "Linked Documents" here.
+ *
+ * That wording is safe rather than merely apt today. Every resource link in
+ * the data points AT a Place, so this block appears on Place pages only and
+ * lists nothing but Documents -- there is no item type it could mislabel.
+ *
+ * Everything else is verbatim on purpose, the site scoping especially: the
+ * document count in the sticky header (view/omeka/site/item/show.phtml) was
+ * written to mirror this exact condition, so changing it here would let the
+ * header disagree with the list underneath it.
+ *
+ * The cards themselves come from view/common/linked-resources.phtml, which the
+ * theme also overrides.
+ */
+$options = [
+    'page' => $this->params()->fromQuery('page', 1),
+    'perPage' => 25,
+    'resourceProperty' => $this->params()->fromQuery('resource_property'),
+];
+if ($this->siteSetting('exclude_resources_not_in_site')) {
+    $options['siteId'] = $this->currentSite()->id();
+}
+$subjectValues = $resource->displaySubjectValues($options);
+?>
+<?php if ($subjectValues): ?>
+<div id="resources-linked">
+    <h3><?php echo $this->translate('Linked Documents'); ?></h3>
+    <?php echo $subjectValues; ?>
+</div>
+<?php endif; ?>
