@@ -382,11 +382,25 @@ both.
    Any other media block enabled later — `media-list`, the lightbox pair —
    calls `$media->render()` the same way and will link originals again until
    given the same option.
-8. **Two commits not yet checked in a browser**, as of the last session:
-   `a7b2064` (the URL keeping the visitor's map extent rather than the item's)
-   and `e2cb3e5` (the admin bar's View/Edit links following the swapped page).
-   The second could not be checked from the command line at all — it only
-   exists when logged in. Verify before building on either.
+8. **The admin bar — links now follow the page, presentation does not.**
+   `e2cb3e5` fixed the stale View/Edit links and that part is confirmed
+   working; `a7b2064`, the URL keeping the visitor's map extent rather than the
+   item's, is confirmed too. What is left on the bar is undecided:
+
+   - **Styling.** Not yet judged. The theme owns
+     `view/common/user-bar.phtml` now, so the markup is ours to change, and the
+     two CDASH tools carry `class="admin cdash-tool"` if they want
+     distinguishing. The bar sits in `#showresult`'s auto row — see the sticky
+     footer comment in `_panes.scss` — so its height comes out of the browse
+     pane.
+   - **Whether admin links should open a new tab.** Following Edit in the same
+     tab leaves the public site, which means the persistent shell, the map and
+     ~2000 markers are all torn down and rebuilt on return — the one thing this
+     theme is built to avoid. GeoSync and GeoAudit already open named windows
+     (`target="geosync"`, `target="geoaudit"`). Giving the bar's own links a
+     target is a one-line change in that override, passing `['target' => …]` to
+     the `$hyperlink` call. Decide deliberately: a new tab per edit accumulates
+     tabs, a single named admin window does not.
 9. **Breadcrumb scroll depth — deferred, and not free.** "Return to …" returns
    to the right page at the top, not to where the visitor was. htmx 2.0.4 keeps
    no scroll positions in its history cache, and the swap spec forces
