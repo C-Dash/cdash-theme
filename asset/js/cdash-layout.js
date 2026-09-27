@@ -571,3 +571,25 @@ document.addEventListener('alpine:init', () => {
   document.body.addEventListener('htmx:historyRestore', render);
   render();
 })();
+
+// ---------------------------------------------------------------------------
+// Back and Forward land at the top of the browse pane, as every other
+// navigation does.
+//
+// A forward swap is told to, by `scroll:#showresult:top` in its swap spec
+// (layout.phtml, and the marker click in cdash-map.js). A history restore
+// takes no swap spec: htmx rewrites #showresult's innerHTML and leaves the
+// element -- and so its scrollTop -- as it was. The restored page then
+// inherits the offset of the page being left, and when it is the shorter of
+// the two the browser clamps that to its end: Back from the foot of a long
+// listing opened the site page at its bottom.
+//
+// Top, not the position the visitor left: htmx 2.0.4 keeps no per-pane
+// scroll in its history cache, and restoring depth is the deferred
+// "breadcrumb scroll depth" item in CLAUDE.md. When that lands, this is the
+// handler it replaces.
+// ---------------------------------------------------------------------------
+document.body.addEventListener('htmx:historyRestore', function () {
+  const pane = document.getElementById('showresult');
+  if (pane) pane.scrollTop = 0;
+});
