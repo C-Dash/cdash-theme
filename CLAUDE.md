@@ -418,12 +418,13 @@ both.
    modifiers go, positions are saved per URL, and top becomes a default rather
    than a rule. That is why it was split off rather than shipped with the
    breadcrumb.
-10. **The backlog is in three untracked notes** — `browse_pane_dynamics.md`,
-    `browse_grid_brainstorming.md`, `cdash5_layout_dynamics.md`. They hold the
-    outstanding wishes: a Print button in the breadcrumb bar that applies
-    `print.css` to the browse pane alone, an unfinished "Search Results"
-    section, and the remaining layout-dynamics items. Untracked, they are
-    invisible to a fresh clone — commit them or fold them into this file.
+10. **The backlog is in three notes, two still untracked.**
+    `browse_pane_dynamics.md` is committed; `browse_grid_brainstorming.md` and
+    `cdash5_layout_dynamics.md` are not. They hold the outstanding wishes: a
+    Print button in the breadcrumb bar that applies `print.css` to the browse
+    pane alone, an unfinished "Search Results" section, and the remaining
+    layout-dynamics items. The untracked two are invisible to a fresh clone —
+    commit them or fold them into this file.
 11. **`asset/php/geosync copy.php`** — untracked leftover.
 12. **13 Dependabot alerts** on the default branch; they clear when the
     `package-lock.json` deletion merges to `main`.
