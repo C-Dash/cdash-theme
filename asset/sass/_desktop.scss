@@ -580,67 +580,6 @@ ul.resource-list .resource img {
 
 /* @end */
 
-/* @group ----- Item Set ----- */
-
-// Keyed to #content's data-cdash-page rather than <body>'s class, which is
-// fixed at the last full page load -- see layout.phtml. Nothing currently
-// renders item-set there together with .metadata or .item-set-items (the
-// folder listing is item/browse.phtml, which does not add item-set), so these
-// rules match nothing today.
-
-#content[data-cdash-page~="item-set"][data-cdash-page~="item"] {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: flex-end;
-
-    & > h2,
-    & > h3 {
-        width: 100%;
-    }
-}
-
-// span() is Susy's -- and susy has been commented out of this theme since
-// before 4.1.1 (checked: identical dead width:span(...) there too, same susy
-// config commented out in its _base.scss). Sass passes an unknown function
-// through as literal CSS, so these two `width` lines compile to
-// `width: span(...)`, which every browser discards as invalid -- the same
-// bug class gutter() had, left unfixed here rather than fixed, on purpose.
-//
-// Restoring susy would not be enough to fix it, either: span() used as a
-// function (`width: span(...)`), rather than susy's own `@include span(...)`
-// mixin, only ever returns a percentage -- it does not add the float/flex
-// that would be needed to make .metadata and its sibling sit side by side.
-// Neither element has one. So even a working width would still just be a
-// narrower stacked box, not the two-column metadata sidebar this looks like
-// it was going for. That is real layout work, not a value to restore --
-// tracked as a possible future feature, not attempted here.
-#content[data-cdash-page~="item-set"] .metadata {
-    border-left: 5px solid var(--cdash-light);
-    padding-left: base.$spacing-m;
-    margin-right: base.$spacing-m;
-}
-
-#content[data-cdash-page~="item-set"] .metadata h4:first-of-type {
-    margin-top: 0;
-}
-
-#content[data-cdash-page~="item-set"] .metadata ~ * {
-    border-left: 1px solid var(--cdash-light);
-    padding-left: base.$spacing-m;
-}
-
-#content[data-cdash-page~="item-set"] .item-set-items h3 {
-    margin-top: 0;
-}
-
-#content[data-cdash-page~="item-set"] .metadata ~ nav.pagination:first-of-type {
-    margin-bottom: 0;
-}
-
-
-/* @end */
-
 /* @group ----- Page and blocks ----- */
 
 .preview-block {

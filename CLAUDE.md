@@ -74,12 +74,14 @@ one responsive lever and one rule about where state lives.
   resizable, so a phone and a divider dragged halfway across are the same
   problem, and a viewport query answers only the first. Used by the card grids,
   the property list and the sticky header. Reach for this, not `@media`.
-- **The sticky item header**, `.cdash-item-header` in
-  `view/omeka/site/item/show.phtml`: breadcrumbs, title, then "Place · 6
-  documents" or "Document · 3 pp." A `div`, never a `<header>` — `print.scss`
-  hides that element for the banner and would take the title off paper with it.
-  Every pixel of it is item page that cannot be scrolled to, hence the tight
-  type.
+- **The sticky page header**, `.cdash-page-header`, is one partial,
+  `view/common/cdash-page-header.phtml`, rendered by the item page and both
+  listings: breadcrumbs, title, then "Place · 6 documents", "Document · 3
+  pp.", "Folder · 42 items", or just "120 items" under "Search Results". Callers
+  compute the words and the partial lays them out. A `div`, never a `<header>` —
+  `print.scss` hides that element for the banner and would take the title off
+  paper with it. Every pixel of it is page that cannot be scrolled to, hence
+  the tight type, and why pagination and the filter chips stay out of it.
 - **Two links above the title, from different places on purpose.**
   `Visit [Place]` is a fact about the item (`cdash:placeItem`), so
   `show.phtml` renders it — correct on a shared link and with JS off.

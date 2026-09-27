@@ -466,17 +466,20 @@ document.addEventListener('alpine:init', () => {
   // truth about what kind of page it is.
   function currentPage() {
     const path = window.location.pathname;
-    const header = document.querySelector('.cdash-item-header');
+    const header = document.querySelector('.cdash-page-header');
+    const title = header ? header.querySelector('h2') : null;
 
+    // A folder is remembered by its own name -- "Return to Harvard Square
+    // Survey" says where that is; "Return to Folder Listing" does not.
     if (/\/item-set\/\d+/.test(path)) {
-      return { url: window.location.href, label: 'Folder Listing', kind: 'listing' };
+      const name = title ? title.textContent.trim() : '';
+      return { url: window.location.href, label: name || 'Folder Listing', kind: 'listing' };
     }
     if (/\/item\/?$/.test(path)) {
       return { url: window.location.href, label: 'Search Results', kind: 'listing' };
     }
     if (header) {
-      const meta = header.querySelector('.cdash-item-meta');
-      const title = header.querySelector('h2');
+      const meta = header.querySelector('.cdash-page-meta');
       if (!title) return null;
       // The meta line already says which this is; no need to ask the server
       // again or re-read the resource class here.
@@ -515,14 +518,13 @@ document.addEventListener('alpine:init', () => {
     stale.forEach((el) => el.remove());
 
     const page = currentPage();
-    const header = document.querySelector('.cdash-item-header');
-    // The crumb goes in the sticky header on an item page, and at the top of
-    // #content on a listing, which has no header of its own. Anything else --
-    // a site page, the home page -- gets none.
-    const host = header || (page && page.kind === 'listing' ? document.getElementById('content') : null);
-    if (!host) return;
+    // The crumb goes in the sticky header, which the item page and both
+    // listings render. Anything else -- a site page, the home page -- has none
+    // and gets no crumb.
+    const header = document.querySelector('.cdash-page-header');
+    if (!header) return;
 
-    const visit = header ? header.querySelector('.cdash-visit-place') : null;
+    const visit = header.querySelector('.cdash-visit-place');
     const entry = read();
     const here = pageKey(window.location.href);
     // Never offer a return to the page already being shown, and never offer a
@@ -552,7 +554,7 @@ document.addEventListener('alpine:init', () => {
       lead.after(sep);
       sep.after(link);
     } else {
-      host.prepend(link);
+      header.prepend(link);
     }
   }
 

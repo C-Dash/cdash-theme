@@ -12,23 +12,48 @@ $query = $this->params()->fromQuery();
 $itemSetShow = isset($itemSet);
 if ($itemSetShow):
     $this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css', 'Omeka'));
-    /*$this->htmlElement('body')->appendAttribute('class', 'item-set');*/
+    // Tells a folder's contents apart from search results. It reaches CSS as
+    // #content[data-cdash-page~="item-set"] -- see layout.phtml.
+    $this->htmlElement('body')->appendAttribute('class', 'item-set');
     $query['item_set_id'] = $itemSet->id();
 endif;
+
+// The whole result set, not this page of it. Omeka's ItemController hands the
+// API's total to the paginator, which is what the pagination nav counts too.
+$total = $this->pagination()->getPaginator()->getTotalCount();
+$countLabel = $total
+    ? sprintf($translate($total === 1 ? '%d item' : '%d items'), $total)
+    : $translate('No items');
+?>
+
+<?php
+// The same sticky header as an item page -- common/cdash-page-header.phtml.
+// Title, kind and count only: the Advanced search link, the filter chips and
+// the pagination stay in the scrolling content, since every pixel of a sticky
+// band is page that can never be scrolled into view.
+if ($itemSetShow) {
+    echo $this->partial('common/cdash-page-header', [
+        'title' => $itemSet->displayTitle(null, $valueLang),
+        'kind' => $translate('Folder'),
+        'detail' => $countLabel,
+    ]);
+} else {
+    echo $this->partial('common/cdash-page-header', [
+        'title' => $translate('Search Results'),
+        'detail' => $countLabel,
+    ]);
+}
 ?>
 
 <?php if ($itemSetShow): ?>
-    <?php echo $this->pageTitle($itemSet->displayTitle(null, $valueLang), 2); ?>
-    <!-- Commented out for CDASH Causes big blank areas. 
+    <!-- Commented out for CDASH Causes big blank areas.
     <h3><?php echo $translate('Item Set'); ?></h3>
     <div class="metadata">
         <?php /*echo $this->resourcePageBlocks($itemSet)->getBlocks(); */ ?>
     </div> -->
     <div class="item-set-items">
-    <?php echo '<h3>' . $escape($translate('Folder Contents')) . '</h3>'; ?>
 <?php else: ?>
-    <?php echo $this->pageTitle($translate('Items'), 2); ?>
-    <?php echo $this->hyperlink($translate('Advanced search'), $this->url('site/resource', ['controller' => 'item', 'action' => 'search'], ['query' => $query], true), ['class' => 'advanced-search']); echo('<br><br>') ; ?>
+    <?php echo $this->hyperlink($translate('Advanced search'), $this->url('site/resource', ['controller' => 'item', 'action' => 'search'], ['query' => $query], true), ['class' => 'advanced-search']); ?>
 <?php endif; ?>
 
 

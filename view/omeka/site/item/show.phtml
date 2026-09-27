@@ -109,34 +109,16 @@ if ($isDocument) {
 }
 ?>
 <?php
-/**
- * Sticky header: what you are looking at stays visible while the page scrolls.
- *
- * A div, NOT a <header>: print.scss hides the `header` element outright, for
- * the site banner, and would take the item title off paper with it.
- *
- * The crumb row sits above the title: the Place link below, and the
- * "Return to ..." breadcrumb that cdash-layout.js inserts beside it.
- */
+// The sticky header, shared with the listings in browse.phtml. The meta line
+// is only shown for a classed item, as before: a size with no kind beside it
+// ("3 pp.") says too little on its own.
+echo $this->partial('common/cdash-page-header', [
+    'title' => $item->displayTitle(null, $valueLang),
+    'kind' => $classLabel,
+    'detail' => $classLabel !== '' ? $itemMeta : '',
+    'visit' => $placeLink,
+]);
 ?>
-<div class="cdash-item-header">
-    <?php if ($placeLink): ?>
-    <a class="cdash-visit-place" href="<?php echo $escape($placeLink['url']); ?>"
-       data-place-url="<?php echo $escape($placeLink['url']); ?>"><?php
-        echo $escape(sprintf($translate('Visit %s'), $placeLink['title']));
-    ?></a>
-    <?php endif; ?>
-    <?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
-    <?php if ($classLabel !== ''): ?>
-    <p class="cdash-item-meta">
-        <?php echo $escape($classLabel); ?>
-        <?php if ($itemMeta !== ''): ?>
-        <span class="cdash-item-meta-sep" aria-hidden="true">&middot;</span>
-        <?php echo $escape($itemMeta); ?>
-        <?php endif; ?>
-    </p>
-    <?php endif; ?>
-</div>
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>

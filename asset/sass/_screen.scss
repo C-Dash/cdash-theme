@@ -874,18 +874,24 @@ order: 0;
     flex-wrap: wrap;
 }
 
+// A block with its own margin, standing in for the <br><br> that used to
+// follow it in browse.phtml.
 .advanced-search {
+    display: block;
+    margin-bottom: base.$spacing-m;
     line-height: 1.5 * base.$base-line-height;
 }
 
 /* @end */
 
-/* @group ----- Show ----- */
+/* @group ----- Page header ----- */
 
-// The item header: title, and a line saying what this is and how big it is.
-// Sticky, so it stays at the top of the browse pane while the page scrolls --
-// #showresult is the scroll container and #content is its grid item, so there
-// is nothing else to arrange.
+// The sticky page header, common/cdash-page-header.phtml: the item page, a
+// folder's contents and search results all render it. Crumb row, title, and a
+// line saying what this is and how big it is. Sticky, so it stays at the top
+// of the browse pane while the page scrolls -- #showresult is the scroll
+// container and #content is its grid item, so there is nothing else to
+// arrange.
 //
 // The negative margins cancel #content's own padding (10px 30px 10px 10px) so
 // the band spans the full pane and content cannot show past its edges while
@@ -894,11 +900,12 @@ order: 0;
 // unconditionally -- nothing changes as the header becomes stuck, so nothing
 // shifts.
 //
-// Keyed to #content's data-cdash-page, never to a class on <body>. <body> is
-// rendered only on a full page load and htmx swaps just #content, so a body
-// class names whichever page was loaded last in full: arrive on the home page
-// and every item page after it lost this header. See layout.phtml.
-#content[data-cdash-page~="resource"] > .cdash-item-header {
+// No page-type qualifier: the header exists only where a template renders it.
+// If one is ever needed, key it to #content's data-cdash-page, never to a
+// class on <body> -- <body> is rendered only on a full load and htmx swaps just
+// #content, so a body class names whichever page was loaded last in full. That
+// is how this header once came unstuck. See layout.phtml.
+#content > .cdash-page-header {
     position: sticky;
     top: 0;
     z-index: 1;
@@ -908,25 +915,15 @@ order: 0;
     padding: 10px 30px base.$spacing-s 10px;
 }
 
-// The crumb row above the title: "Visit <Place>" from show.phtml, and
+// The crumb row above the title: "Visit <Place>" from the partial, and
 // "Return to ..." inserted by cdash-layout.js. Small and quiet -- these are
-// ways out of the page, not part of the item's identity.
+// ways out of the page, not part of its identity.
 //
 // inline, so the two sit on one line with the diamond between them, and the
 // row wraps rather than overflowing when a Place title is long.
-#content[data-cdash-page~="resource"] > .cdash-item-header > .cdash-breadcrumb,
-#content[data-cdash-page~="resource"] > .cdash-item-header > .cdash-visit-place {
+#content > .cdash-page-header > .cdash-breadcrumb,
+#content > .cdash-page-header > .cdash-visit-place {
     display: inline;
-    font-size: .75 * base.$base-font-size;
-    border-bottom: 0;
-}
-
-// On a listing -- search results, or a folder's contents -- there is no sticky
-// header, so the crumb sits at the top of #content instead. Block rather than
-// inline: it stands alone there, with nothing to share a line with.
-#content[data-cdash-page~="resource"] > .cdash-breadcrumb {
-    display: block;
-    margin-bottom: base.$spacing-s;
     font-size: .75 * base.$base-font-size;
     border-bottom: 0;
 }
@@ -934,7 +931,7 @@ order: 0;
 // Explicit, because the display above would otherwise beat the UA's [hidden].
 // cdash-layout.js hides this one rather than removing it when the return link
 // already names the same Place.
-#content[data-cdash-page~="resource"] > .cdash-item-header > .cdash-visit-place[hidden] {
+#content > .cdash-page-header > .cdash-visit-place[hidden] {
     display: none;
 }
 
@@ -944,25 +941,26 @@ order: 0;
     color: var(--cdash-darkgray);
 }
 
-// "Place" or "Document", then the size. Title case as stored, deliberately not
-// the small-uppercase treatment stock Omeka gave this slot for its bare "Item"
-// heading -- that rule is gone, since nothing renders an h3 there any more.
-#content[data-cdash-page~="resource"] > .cdash-item-header .cdash-item-meta {
+// "Place", "Document" or "Folder", then the size. Title case as stored,
+// deliberately not the small-uppercase treatment stock Omeka gave this slot
+// for its bare "Item" heading -- that rule is gone, since nothing renders an h3
+// there any more.
+#content > .cdash-page-header .cdash-page-meta {
     font-size: base.$base-font-size;
     font-weight: normal;
     color: var(--cdash-darkgray);
     margin: 0;
 }
 
-.cdash-item-meta-sep {
+.cdash-page-meta-sep {
     margin: 0 .25em;
 }
 
-// The header is sticky, so every pixel of it is pixels of item page that can
-// never be scrolled into view. The title is therefore smaller and tighter here
-// than the 27px h2 elsewhere, at every width, with 5px margins in place of the
+// The header is sticky, so every pixel of it is pixels of page that can never
+// be scrolled into view. The title is therefore smaller and tighter here than
+// the 27px h2 elsewhere, at every width, with 5px margins in place of the
 // usual 10px.
-#content[data-cdash-page~="resource"] > .cdash-item-header h2 {
+#content > .cdash-page-header h2 {
     font-size: 22.5px;
     line-height: 22.5px;
     margin-block-start: 5px;
@@ -975,7 +973,7 @@ order: 0;
 // desktop pane are the same problem. Only the type shrinks; the margins above
 // are already as tight as they go.
 @container browse (max-width: 500px) {
-    #content[data-cdash-page~="resource"] > .cdash-item-header h2 {
+    #content > .cdash-page-header h2 {
         font-size: 20px;
         line-height: 20px;
     }
