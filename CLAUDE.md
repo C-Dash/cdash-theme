@@ -62,6 +62,14 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   have to reimplement item vs item set vs media vs page, the labels, and
   per-resource edit permission. Anything added to the bar must be
   server-rendered, in `view/common/user-bar.phtml`, or the first swap drops it.
+- **`scrollIntoViewOnBoost` is off** (`htmx-config` meta in `layout.phtml`).
+  Scrolling is the swap spec's job, `scroll:#showresult:top`. htmx's implicit
+  `show:top` for boosted links targets the *first* swapped element, and
+  `hx-select-oob` swaps run first — so logged in, it scrolled `#user-bar`, at
+  the foot of the pane, into view, and every nav click opened at the bottom.
+  Invisible when anonymous. **Back/Forward** take no swap spec at all:
+  `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
+  handler in `cdash-layout.js` resets it.
 
 ## The browse pane's furniture
 

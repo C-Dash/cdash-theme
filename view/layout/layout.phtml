@@ -68,6 +68,17 @@ $this->headScript()->appendFile($this->assetUrl('vendor/alpine/alpine.min.js'), 
 // DOMContentLoaded, so it does not need to run before the body parses.
 $this->headScript()->appendFile($this->assetUrl('vendor/htmx/htmx.min.js'), 'text/javascript', ['defer' => true]);
 
+// scrollIntoViewOnBoost off. The swap spec below scrolls the browse pane
+// itself -- scroll:#showresult:top -- and htmx's implicit show:top for boosted
+// links has no target of its own, so it calls scrollIntoView on the FIRST
+// swapped element. hx-select-oob swaps run before the main swap, so for a
+// logged-in visitor that element is #user-bar, pinned to the foot of the pane:
+// every nav-bar click scrolled the new page straight to its bottom. Anonymous
+// visitors have no bar and never saw it. scrollIntoView also scrolls every
+// ancestor, the overflow:hidden pane wrappers included, which nothing here
+// wants moved.
+$this->headMeta()->appendName('htmx-config', json_encode(['scrollIntoViewOnBoost' => false]));
+
 // The Filters drawer renders common/advanced-search, which registers these two
 // assets itself -- but it does so during body render, by which point the head
 // has already been emitted and the registration is silently dropped. Declaring
