@@ -1,0 +1,44 @@
+<?php
+/**
+ * The sticky page header, shared by the item page and both listings -- a
+ * folder's contents and search results. What you are looking at stays visible
+ * while the page scrolls.
+ *
+ *   $title   the page's name: an item, a folder, or "Search Results"
+ *   $kind    what sort of thing it is -- "Place", "Document", "Folder" -- or ''
+ *   $detail  how big it is -- "6 documents", "3 pp.", "42 items" -- or ''
+ *   $visit   ['url' => ..., 'title' => ...] for a Document's Place, or null
+ *
+ * Callers pass these already translated; this only lays them out. Either half
+ * of the meta line may be empty, and the line is dropped when both are.
+ *
+ * A div, NOT a <header>: print.scss hides the `header` element outright, for
+ * the site banner, and would take the title off paper with it.
+ *
+ * The crumb row sits above the title: the Place link below, and the
+ * "Return to ..." breadcrumb that cdash-layout.js inserts beside it.
+ */
+$escape = $this->plugin('escapeHtml');
+$translate = $this->plugin('translate');
+$kind = $kind ?? '';
+$detail = $detail ?? '';
+$visit = $visit ?? null;
+?>
+<div class="cdash-page-header">
+    <?php if ($visit): ?>
+    <a class="cdash-visit-place" href="<?php echo $escape($visit['url']); ?>"
+       data-place-url="<?php echo $escape($visit['url']); ?>"><?php
+        echo $escape(sprintf($translate('Visit %s'), $visit['title']));
+    ?></a>
+    <?php endif; ?>
+    <?php echo $this->pageTitle($title, 2); ?>
+    <?php if ($kind !== '' || $detail !== ''): ?>
+    <p class="cdash-page-meta">
+        <?php echo $escape($kind); ?>
+        <?php if ($kind !== '' && $detail !== ''): ?>
+        <span class="cdash-page-meta-sep" aria-hidden="true">&middot;</span>
+        <?php endif; ?>
+        <?php echo $escape($detail); ?>
+    </p>
+    <?php endif; ?>
+</div>

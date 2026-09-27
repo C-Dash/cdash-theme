@@ -120,18 +120,12 @@ inner join resource on resource.id = dm.item_id AND resource_template_id = 5;
 
 /* THIS IS THE SOLUTION */
 
-UPDATE mapping_marker dm
-inner join resource r on  r.id = dm.item_id
-SET lat = 42.3662, lng = -71.07339
-where r.resource_template_id = 5;
 
-drop view if exists cdash_docgeo;
-create view cdash_docgeo as 
-select a.value_resource_id place_id, a.resource_id doc_id, lat place_lat, lng place_lng, b.value neighborhood, c.value chcDist
-from value a
-inner join mapping_marker on value_resource_id = item_id and property_id = (select id from property where local_name = 'placeItem')
-inner join value b on b.resource_id = item_id and b.property_id = (select id from property where local_name = 'spatial')
-inner join value c on c.resource_id = item_id and c.property_id = (select id from property where local_name = 'chcDist');
+"CREATE OR REPLACE VIEW cdash_docgeo as 
+select a.resource_id doc_id, a.value_resource_id place_id, lat place_lat, lng place_lng 
+from value a 
+inner join mapping_marker on a.value_resource_id = item_id
+and a.property_id = (select id from property where local_name = 'placeItem');";
 
 update mapping_marker
 inner join cdash_docgeo on item_id = doc_id
@@ -182,38 +176,32 @@ set lat = place_lat, lng = place_lng;";
 *** New Stuff:  Lets create a cdash_places view, that will bring together the critical properties of places
     that we want to push onto the documents related to the place. 
 
-drop view if exists cdash_places_view;
-create view cdash_places_view as
-SELECT item_id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, e.value as neighborhood, f.value as chcDist, c.value as streetAddress, trim(replace(c.value, g.value, "")) as houseNum, replace(CONCAT(g.value, "_", REPEAT("0",9 - REGEXP_INSTR( c.value,  '[^0-9]')),trim(replace(c.value, g.value, ""))),"-","_") as streetSort, lat, lng 
+
+CREATE OR REPLACE VIEW cdash_places_view as
+SELECT item_id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, c.value as streetAddress, trim(replace(c.value, g.value, "")) as houseNum, replace(CONCAT(g.value, "_", REPEAT("0",9 - REGEXP_INSTR( c.value,  '[^0-9]')),trim(replace(c.value, g.value, ""))),"-","_") as streetSort, lat, lng 
 FROM mapping_marker
 JOIN resource
   ON mapping_marker.item_id = resource.id
   AND resource_template_id = (select id from resource_template where label = 'CDASH Place')
-JOIN value 
+LEFT OUTER JOIN value 
   on resource.id = resource_id
   AND property_id = (select id from property where local_name = 'placeType')
-JOIN value d
+LEFT OUTER JOIN value d
   on resource.id = d.resource_id
   AND d.property_id = (select id from property where local_name = 'placeName')
-JOIN value e
-  on resource.id = e.resource_id
-  AND e.property_id = (select id from property where local_name = 'Neighborhood')
-JOIN value f
-  on resource.id = f.resource_id
-  AND f.property_id = (select id from property where local_name = 'chcDist')
-JOIN value c
+LEFT OUTER JOIN value c
   on resource.id = c.resource_id
   AND c.property_id = (select id from property where local_name = 'streetAddress')
-JOIN value g
+LEFT OUTER JOIN value g
   on resource.id = g.resource_id
   AND g.property_id = (select id from property where local_name = 'streetName');
 
 
 ### And a cdash_docs view (not to be confused with cdash_docgeo)
 
-drop view if exists cdash_docs;
-create view cdash_docs as
-select value.resource_id as doc_id, concat(ps.title, " - ", d.value) as doctitle, concat(ps.streetsort,d.value) as docsort, value.value_resource_id as place_id, ps.placeName as placeName, ps.lat as place_lat, ps.lng as place_lng 
+
+CREATE OR REPLACE VIEW cdash_docs_view as
+select value.resource_id as doc_id, concat(ps.title, " - ", d.value) as doctitle, concat(ps.streetsort,d.value) as streetSort, value.value_resource_id as place_id, ps.placeName as placeName, ps.lat as place_lat, ps.lng as place_lng 
 from value 
 inner join mapping_marker on value.value_resource_id = item_id
 and property_id = (select id from property where local_name = 'placeItem')
@@ -222,13 +210,51 @@ JOIN value d
   AND d.property_id = (select id from property where local_name = 'type')
 JOIN cdash_places_view ps
   on value.value_resource_id = ps.item_id
-  
+
+
+TEST
+
+CREATE OR REPLACE VIEW cdash_docs_view as
+select value.resource_id as doc_id, concat(ps.title, " - ", d.value) as doctitle, concat(ps.streetsort,d.value) as streetSort, value.value_resource_id as place_id, ps.placeName as placeName, d.value as doctype, ps.streetAddress as streetAddress, ps.lat as place_lat, ps.lng as place_lng 
+from value 
+inner join mapping_marker on value.value_resource_id = item_id
+and property_id = (select id from property where local_name = 'placeItem')
+JOIN value d
+  on value.resource_id = d.resource_id
+  AND d.property_id = (select id from property where local_name = 'type')
+JOIN cdash_places_view ps
+  on value.value_resource_id = ps.item_id
+
+
+### Doc Update Queries
+
+/* StreetSort */
+update value  
+inner JOIN cdash_docs_view ON resource_id = doc_id
+set value.value = cdash_docs_view.streetSort 
+where property_id = (select id from property where local_name = "streetSort");
+
+/* Title /*
+update value  
+inner JOIN cdash_docs_view ON resource_id = doc_id
+set value.value = cdash_docs_view.doctitle 
+where property_id = (select id from property where local_name = "title" and comment = "A name given to the resource.");
+
 
 ### Audit queries
 
 ## Count eligible items that do not have markers
 
-select id from resource WHERE id NOT IN (SELECT item_id FROM mapping_marker) and resource_template_id in (4,5)
+/* Select Place Items with No Marker */ 
+select id from resource WHERE id NOT IN (SELECT item_id FROM mapping_marker) and resource_template_id in (select id from resource_template where label = "CDASH Place");
+
+/* Select Document Items with No Marker */ 
+select id from resource WHERE id NOT IN (SELECT item_id FROM mapping_marker) and resource_template_id in (select id from resource_template where label = "CDASH Document");
+
+/* Select Place Items that have No Documents */ 
+select id 
+select item_id from cdash_places_view  
+
 
 ## Count/list eligible items that do not have streetsort or some other property
 
@@ -236,8 +262,124 @@ select id from resource
 where resource_template_id in (4,5)
 and id not in (Select resource_id from value where property_id = (select id from property where local_name = "streetSort"))
 
-### Update Queries
 
-update value where 
-set value = (select streetSort from cdash_doc_view where doc_id = 
-property_id = (select id from property where local_name = "streetSort"))
+
+Update House Numbers...  The original bulk upload did not split house numbers as a separate column in the 
+Place Items table.  But the new schema will have separate fields for House Number and street name.  
+Prepare:  House number is a field in the resource template for place items, but it needs to be populated.
+Because of the way omeka stored values  the omeks.values table, before we use SQL to populate the house number
+you first must use the bulk editing function to initialize house number for every place item.   We wil initialize these as XXX first.  Then we can use the following SQL to get the house number by subtracting the StreetName from the address, as follows. 
+
+### Logic:  
+### set value to hsenum
+
+
+update value  
+inner JOIN cdash_places_view ON resource_id = place_id
+set value.value = trim(replace(cdash_places_view.streetAddress, cdash_places_view.streetName, "")) 
+where property_id = (select id from property where local_name = 'houseNum');
+
+
+
+CREATE OR REPLACE VIEW cdash_places_view as 
+SELECT item_id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, c.value as streetAddress, h.value as houseNum, 
+CONCAT(g.value,'_', REPEAT("0",8 - IFNULL(char_length(REGEXP_SUBSTR(h.value,'^[0-9]+')), 0)),IFNULL(h.value, '')) as streetSort, 
+lat, lng, CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem 
+FROM mapping_marker
+JOIN resource
+  ON mapping_marker.item_id = resource.id
+  AND resource_template_id = (select id from resource_template where label = 'CDASH Place')
+LEFT OUTER JOIN value 
+  on resource.id = resource_id
+  AND property_id = (select id from property where local_name = 'placeType')
+LEFT OUTER JOIN value d
+  on resource.id = d.resource_id
+  AND d.property_id = (select id from property where local_name = 'placeName')
+LEFT OUTER JOIN value c
+  on resource.id = c.resource_id
+  AND c.property_id = (select id from property where local_name = 'streetAddress')
+LEFT OUTER JOIN value g
+  on resource.id = g.resource_id
+  AND g.property_id = (select id from property where local_name = 'streetName')
+LEFT OUTER JOIN value h
+  on resource.id = h.resource_id
+  AND h.property_id = (select id from property where local_name = 'houseNum');
+
+
+
+SELECT item_id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, c.value as streetAddress, h.value as houseNum, 
+CONCAT(g.value,'_', REPEAT('0',8 - IFNULL(char_length(REGEXP_SUBSTR(h.value,'^[0-9]+')), 0)),IFNULL(h.value, '')) as streetSort, 
+lat, lng, CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem 
+FROM resource
+RIGHT OUTER JOIN mapping_marker 
+  ON resource.id = mapping_marker.item_id 
+  AND resource_template_id = (select id from resource_template where label = 'CDASH Place')
+
+
+
+SELECT resource.id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, c.value as streetAddress, h.value as houseNum, 
+CONCAT(g.value,'_', REPEAT('0',8 - IFNULL(char_length(REGEXP_SUBSTR(h.value,'^[0-9]+')), 0)),IFNULL(h.value, '')) as streetSort, 
+lat, lng, CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem 
+FROM resource
+LEFT OUTER JOIN mapping_marker 
+  ON resource.id = mapping_marker.item_id 
+
+LEFT OUTER JOIN value 
+  on resource.id = resource_id
+  AND property_id = (select id from property where local_name = 'placeType')
+LEFT OUTER JOIN value d
+  on resource.id = d.resource_id
+  AND d.property_id = (select id from property where local_name = 'placeName')
+LEFT OUTER JOIN value c
+  on resource.id = c.resource_id
+  AND c.property_id = (select id from property where local_name = 'streetAddress')
+LEFT OUTER JOIN value g
+  on resource.id = g.resource_id
+  AND g.property_id = (select id from property where local_name = 'streetName')
+LEFT OUTER JOIN value h
+  on resource.id = h.resource_id
+  AND h.property_id = (select id from property where local_name = 'houseNum')
+WHERE resource_template_id = (select id from resource_template where label = 'CDASH Place');
+
+
+select resource.id as doc_id,  value.value_resource_id as placeID, cdash_places_view.placeName as placeName, concat(cdash_places_view.title, ' - ', vtype.value) as doctitle, concat(cdash_places_view.streetsort,vtype.value) as streetSort, cdash_places_view.lat,  cdash_places_view.lng
+from resource
+left outer join value on value.resource_id = resource.id and value.property_id = (select id from property where local_name = 'placeItem')
+left outer join value vtype on vtype.resource_id = resource.id 
+  AND vtype.property_id = (select id from property where local_name = 'type')
+left outer JOIN cdash_places_view on cdash_places_view.id = value.value_resource_id
+WHERE resource.resource_template_id = (select resource_template.id from resource_template where label = 'CDASH Document')
+
+
+select resource.title, resource.id, count(cdash_docs_view.doctitle) from resource
+left outer join cdash_docs_view on resource.id = cdash_docs_view.place_id
+WHERE resource_template_id = (select id from resource_template where label = 'CDASH Place')
+
+
+
+select resource.title, item_item_set.item_id, count(item_item_set.item_id) as itemcount
+ from item_set
+     left outer join item_item_set on item_set.id = item_item_set.item_set_id
+     left outer join resource on item_set.id = resource.id  
+group by  resource.title, item_item_set.item_id
+
+
+select resource.title, count(resource_title)
+from resource where resource_template_id = 8;
+group by resource.title
+having count(resource.title) > 1
+
+
+
+## Finds items that reference more than one place
+select doc_id, resource.title, count(doc_id)
+from cdash_docs_view
+ left outer join resource on doc_id = id
+group by doc_id
+having count(doc_id) > 1;
+
+
+## Find rows in the value table where values for  housenum are "0000" 
+update value set value.value = ""
+where value = "0000" and property_id = 
+(select id from property where local_name = 'houseNum'))

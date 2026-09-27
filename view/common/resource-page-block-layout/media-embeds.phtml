@@ -1,0 +1,38 @@
+<?php
+/**
+ * The media embeds block: a Document's page images.
+ *
+ * Stock calls $media->render() with no options, and Omeka's ThumbnailRenderer
+ * defaults `link` to 'original' -- so every thumbnail comes wrapped in a link
+ * to the original TIF. Passing a falsy `link` makes it return the bare <img>:
+ *
+ *     $link = array_key_exists('link', $options) ? $options['link'] : 'original';
+ *     if (!$link) { return $img; }
+ *
+ * The option travels the whole way: $media->render($options) -> the `media`
+ * view helper -> Media\Renderer\File -> ThumbnailRenderer. Only this template
+ * was dropping it.
+ *
+ * This replaces a JS fixup that stripped the href after render, so the anchor
+ * is now absent from the markup rather than removed from it -- nothing in View
+ * Source, nothing for a client without JavaScript, and no moment on load where
+ * the link is live. Right-click > Save still offers the JPEG derivative, which
+ * is what that fixup existed to protect.
+ *
+ * Presentation, not protection: the original is still served at
+ * /files/original/<hash>.tif and the REST API still hands out that path as
+ * o:original_url. See the open item in CLAUDE.md.
+ *
+ * Any other media block enabled later -- media-list, the lightbox pair --
+ * calls $media->render() the same way and will link originals again until it
+ * is given the same option.
+ */
+$resourceMedia = $resource->media();
+?>
+<?php if ($resourceMedia): ?>
+<div class="media-embeds">
+    <?php foreach ($resourceMedia as $media): ?>
+    <?php echo $media->render(['link' => null]); ?>
+    <?php endforeach; ?>
+</div>
+<?php endif; ?>

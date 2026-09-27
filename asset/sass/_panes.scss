@@ -1,0 +1,355 @@
+// Pane container, the two panes, and the drag divider.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Pane Container ----
+   container-type:size lives on this element only; the actual grid (and its
+   template-switching based on the container query) lives on the nested
+   .cdash-pane-grid child, not on this element itself. Restyling
+   grid-template-columns on the very element hosting container-type:size,
+   based on that element's own aspect-ratio query, is unreliable (observed:
+   Chrome kept the base grid-template-columns while grid-template-rows from
+   the same @container rule correctly applied) -- separating "query host"
+   from "the grid that switches" sidesteps it. */
+.cdash-pane-container {
+  container-type: size;
+  container-name: panes;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+}
+
+/* The divider track is a plain custom property rather than a literal, so the
+   collapsed state can zero it once for both orientations. A class rule that
+   restated grid-template-columns would out-specify the tall-case container
+   query and put a tall layout back into columns. */
+.cdash-pane-grid {
+  display: grid;
+  height: 100%;
+  width: 100%;
+
+  /* Containing block for the pane tabs. */
+  position: relative;
+
+  /* wide-case (default): Map | Divider | Browse */
+  grid-template-columns: var(--cdash-split, 50%) var(--cdash-divider-track, 1px) 1fr;
+  grid-template-rows: 1fr;
+}
+
+/* One pane is shut, so there is nothing left to divide. */
+.cdash-pane-grid.cdash-pane-collapsed-any {
+  --cdash-divider-track: 0px;
+}
+
+.cdash-pane-grid.cdash-animating {
+  transition: --cdash-split 300ms ease-out;
+}
+
+.cdash-pane {
+  overflow: hidden;
+  position: relative;
+  border: 3px solid transparent;
+}
+
+/* Outer wrapper clips at the pane's actual size and carries no padding of
+   its own -- with box-sizing:border-box, padding can't compress a box
+   below its own total any more than a border can, so padding must live on
+   the inner wrapper instead, or a collapsed 0px pane would force this box
+   to grow past its parent and spill content into neighbouring panes. */
+.cdash-pane-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+
+  /* Establishes a stacking context so pane CONTENT can never paint over the
+     pull-out drawers. Leaflet stacks its own panes at z-index 200-700 and its
+     controls at 800-1000; .cdash-pane is position:relative with z-index:auto,
+     which is NOT a stacking context, so without this those values compete
+     directly against .cdash-pullout (z-index 2) in the same context and bury
+     the Layers drawer completely. Isolating the content here beats raising the
+     drawer to some larger magic number, because it holds for any future pane
+     content rather than only for Leaflet's current values.
+     The prototype never hit this: its map pane held a placeholder heading. */
+  position: relative;
+  z-index: 0;
+}
+
+.cdash-pane-content-inner {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+/* Colour marks each pane's outer edges only. The divider-facing side carries
+   no border: the old 6px + 2px + 6px band there is what made the boundary
+   read as heavy. */
+.cdash-map-pane {
+  grid-column: 1;
+  grid-row: 1;
+  border-color: var(--cdash-map-boundary);
+  background: var(--cdash-map-bg);
+  border-right-width: 0;
+}
+
+.cdash-browse-pane {
+  grid-column: 3;
+  grid-row: 1;
+  border-color: var(--cdash-browse-boundary);
+  background: var(--cdash-browse-bg);
+  border-left-width: 0;
+}
+
+/* A second, narrower container than "panes" above, so content inside the
+   browse pane can respond to how wide THAT pane has been dragged. The "panes"
+   container measures both panes and the divider together, which says nothing
+   about the split -- see _linked-resources.scss, the first caller.
+   inline-size, not size: it contains the inline axis only, so the wrapper's
+   height still comes from the pane, as the rules above it require. */
+.cdash-browse-pane .cdash-pane-content {
+  container-type: inline-size;
+  container-name: browse;
+}
+
+/* A collapsed pane sits in a 0 track. border-box cannot shrink a box below its
+   own borders, so any border left on it would spill 3px into the other pane. */
+.cdash-pane.cdash-pane-collapsed {
+  border-width: 0;
+}
+
+.cdash-pane-divider {
+  grid-column: 2;
+  grid-row: 1;
+  cursor: col-resize;
+  touch-action: none;
+  background: var(--cdash-divider);
+  /* Panes are position:relative (positioned elements always paint above
+     static ones), so the divider must be elevated or its widened hit area
+     below would sit under the neighbouring pane and never see a pointer. */
+  position: relative;
+  z-index: 1;
+}
+
+/* Hidden, not display:none: it is still a grid item in column 2, and
+   visibility also takes its hit area out of play. */
+.cdash-pane-grid.cdash-pane-collapsed-any .cdash-pane-divider {
+  visibility: hidden;
+}
+
+/* The highlight: a band wider than the 1px line, drawn as a pseudo-element so
+   the track itself never changes width and nothing reflows on hover. */
+.cdash-pane-divider::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -2px;
+  right: -2px;
+  background: var(--cdash-edge-active);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.cdash-pane-divider:hover::before,
+.cdash-pane-divider:focus-visible::before,
+.cdash-pane-divider.cdash-dragging::before {
+  opacity: 1;
+}
+
+/* The band is the focus indicator. */
+.cdash-pane-divider:focus-visible {
+  outline: none;
+}
+
+/* A 1px line is no target at all, least of all on a phone. Widen the hit area
+   with a transparent overlay while leaving the line itself 1px. */
+.cdash-pane-divider::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -6px;
+  right: -6px;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider::before {
+  left: 0;
+  right: 0;
+  top: -2px;
+  bottom: -2px;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider::after {
+  left: 0;
+  right: 0;
+  top: -6px;
+  bottom: -6px;
+}
+
+/* ---- Grip ----
+   The pill at the centre of an open, movable edge: the divider here, and the
+   drawer edges in _drawers.scss. Decoration only -- pointer-events:none, so a
+   press on it lands on the edge that owns the drag. */
+.cdash-grip {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 36px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--cdash-grip-fg);
+  border-radius: 4px;
+  background-color: var(--cdash-grip-bg);
+  background-image: radial-gradient(circle, var(--cdash-grip-fg) 1px, transparent 1.5px);
+  background-size: 6px 6px;
+  background-position: center;
+  pointer-events: none;
+}
+
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider .cdash-grip {
+  width: 36px;
+  height: 8px;
+}
+
+/* ---- Pane tabs ----
+   Shown only while their pane is collapsed. They sit on --cdash-split, which
+   is 0% or 100% when collapsed, so at rest that is the screen edge; during a
+   drag they follow the pane they are opening. Wide: vertical labels on the
+   left and right edges. Tall: see _tall-case.scss. */
+.cdash-pane-tab {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 110px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  writing-mode: vertical-rl;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.3);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+}
+
+.cdash-pane-tab:hover {
+  filter: brightness(1.1);
+}
+
+.cdash-pane-tab:focus-visible {
+  outline: 2px solid var(--cdash-edge-active);
+  outline-offset: 2px;
+}
+
+/* rotate(180deg) makes the label read bottom-to-top on the left edge. The
+   radius is written before that rotation, so the rounded corners given here
+   as left-hand end up on the outer, right-hand side. */
+.cdash-pane-tab-map {
+  left: var(--cdash-split);
+  transform: translateY(-50%) rotate(180deg);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-map-tab-bg);
+  color: var(--cdash-map-tab-fg);
+}
+
+.cdash-pane-tab-browse {
+  left: var(--cdash-split);
+  transform: translate(-100%, -50%);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-browse-tab-bg);
+  color: var(--cdash-browse-tab-fg);
+}
+
+/* ---- Contents of the two panes ----
+   #drawmap, #showresult and #content are Omeka's and the map's own elements
+   rather than the shell's, but their box model belongs to the pane that holds
+   them, so it is declared here. */
+
+/* The map fills its pane. The background is #drawmap's own, from _desktop.scss,
+   so the pane does not flash white before tiles arrive. */
+#drawmap {
+  width: 100%;
+  height: 100%;
+}
+
+/* The browse pane's single scroll container -- .cdash-pane-content above it is
+   overflow:hidden precisely so there is exactly one scroller here rather than
+   two nested ones. Its own left border came from a grid that is gone; the pane
+   supplies the border now.
+
+   display:grid with a 1fr/auto row split, rather than plain block flow, is
+   deliberate: it is the CSS "sticky footer" pattern, and it is what pins
+   #user-bar (the admin toolbar, when logged in) to the pane's bottom edge
+   instead of leaving it wherever #content happens to end. On short content the
+   1fr row expands to fill the available height, so the auto row -- and
+   #user-bar in it -- lands flush at the bottom. On content taller than the
+   pane, the 1fr row's default min-height:auto lets it grow past its share, and
+   the whole grid -- content and toolbar together -- overflows and scrolls as
+   one block via this element's own overflow-y, with the toolbar at the true
+   end. 4.1.1 used exactly this shape (#showresult itself as the grid,
+   "content" 1fr / "user-bar" 50px) -- ported here with auto replacing the
+   hardcoded 50px, so the row sizes to whatever the toolbar actually renders
+   at instead of a guessed pixel value.
+
+   No grid-area is needed on the children: a single-column, two-row grid
+   places items in source order, and #content is first. #print-footer (second,
+   display:none on screen) and #user-bar (third, when present) both fall in
+   the auto row; #print-footer being invisible on screen makes that harmless.
+
+   grid-template-columns:1fr is NOT optional here. Leaving only rows declared
+   defaults the one implicit column to grid-auto-columns:auto, which sizes to
+   the column's own content rather than to the available width -- with #content
+   holding item text, that squeezed everything into a narrow column at the
+   pane's left edge instead of spanning it, taking #user-bar down with it. */
+#showresult {
+  display: grid;
+  /* minmax(0, 1fr), not 1fr. A bare 1fr is minmax(AUTO, 1fr), and that auto
+     minimum is #content's min-content width -- which item media and linked
+     thumbnails set from their intrinsic pixel width. #content then grows wider
+     than the pane no matter what width:100% says, and everything sized against
+     it overflows with it: a 400px thumbnail cannot fit a block that is itself
+     too wide. Zero lets the column take its size from the pane instead. */
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 1fr auto;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-left: none;
+  background-color: var(--cdash-page);
+
+  /* Items vary in length, so without a reserved gutter the scrollbar appears
+     and disappears as they swap in and the pane's content width jogs by ~15px
+     each time. 4.1.1 avoided this with overflow-y:scroll, which also paints a
+     dead track on short items; "stable" reserves the space without it.
+     Ignored by browsers that lack it, which just means the jog comes back. */
+  scrollbar-gutter: stable;
+}
+
+/* The admin toolbar, rendered only when logged in. Sits in #showresult's auto
+   row above -- see the comment there for why it is a grid row rather than a
+   plain block child. */
+#user-bar {
+  width: 100%;
+}
+
+/* Padding rather than margin so it cannot collapse out of the scroller. */
+#content {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 10px 30px 10px 10px;
+
+  /* The grid item carries the same auto minimum as the track above, and is the
+     other place intrinsic content width can push the pane open. */
+  min-width: 0;
+}

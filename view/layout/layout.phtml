@@ -7,7 +7,10 @@ $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1')
 $this->headTitle($siteTitle)->setSeparator(' · ');
 $this->headTitle()->append($this->setting('installation_title', 'Omeka S'));
 $this->headLink()->prependStylesheet($this->assetUrl('css/style.css'),$media = 'screen');
-$this->headLink()->prependStylesheet($this->assetUrl('css/print1.css'),$media = 'print');
+// The only stylesheet that reaches paper. Generated from asset/sass/print.scss,
+// and it now carries what used to be split between print1.css and an @media
+// print block inside cdash-shell.css.
+$this->headLink()->prependStylesheet($this->assetUrl('css/print.css'),$media = 'print');
 $this->headLink()->prependStylesheet($this->assetUrl('css/iconfonts.css', 'Omeka'));
 $this->headLink()->prependStylesheet('//fonts.googleapis.com/css?family=Open+Sans:400,400italic,600,600italic,700italic,700');
 $this->headScript()->prependFile($this->assetUrl('js/default.js'));
@@ -40,16 +43,119 @@ $this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-v3.0.12/esr
 $this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-vector-v4.2.3/esri-leaflet-vector.js'));
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.ajax.js'));
 
+// Builds Leaflet layers from view/cdash/layer-registry.php. Must load after the
+// Leaflet plugins above, since it calls into L.esri and L.GeoJSON.AJAX.
+$this->headScript()->appendFile($this->assetUrl('js/cdash-layer-factory.js'));
+
+// The map itself. Deferred so it runs after the document is parsed and the
+// #cdash-map-config island it reads exists; deferred scripts also run in source
+// order, so the layer factory above is defined by the time this needs it.
+$this->headScript()->appendFile($this->assetUrl('js/cdash-map.js'), 'text/javascript', ['defer' => true]);
+
+// Application shell: pane splitter, banner collapse, and the Layers/Filters
+// drawers. cdash-layout.js registers Alpine components on the alpine:init
+// event, so it must be parsed BEFORE Alpine boots -- hence defer on both,
+// which preserves document order, rather than Alpine's usual plain script tag.
+// The shell used to be a second stylesheet here, cdash-shell.css, loaded after
+// style.css so its rules won on source order. It is now a set of sass partials
+// -- tokens, shell, panes, drawers, tall-case, overrides -- @use'd last from
+// style.scss, which preserves that order inside the one generated file.
+$this->headScript()->appendFile($this->assetUrl('js/cdash-layout.js'), 'text/javascript', ['defer' => true]);
+$this->headScript()->appendFile($this->assetUrl('vendor/alpine/alpine.min.js'), 'text/javascript', ['defer' => true]);
+
+// htmx swaps the browse pane in place instead of reloading the document, which
+// is what lets the map survive navigation. Deferred: it processes hx-* on
+// DOMContentLoaded, so it does not need to run before the body parses.
+$this->headScript()->appendFile($this->assetUrl('vendor/htmx/htmx.min.js'), 'text/javascript', ['defer' => true]);
+
+// scrollIntoViewOnBoost off. The swap spec below scrolls the browse pane
+// itself -- scroll:#showresult:top -- and htmx's implicit show:top for boosted
+// links has no target of its own, so it calls scrollIntoView on the FIRST
+// swapped element. hx-select-oob swaps run before the main swap, so for a
+// logged-in visitor that element is #user-bar, pinned to the foot of the pane:
+// every nav-bar click scrolled the new page straight to its bottom. Anonymous
+// visitors have no bar and never saw it. scrollIntoView also scrolls every
+// ancestor, the overflow:hidden pane wrappers included, which nothing here
+// wants moved.
+$this->headMeta()->appendName('htmx-config', json_encode(['scrollIntoViewOnBoost' => false]));
+
+// The Filters drawer renders common/advanced-search, which registers these two
+// assets itself -- but it does so during body render, by which point the head
+// has already been emitted and the registration is silently dropped. Declaring
+// them here is what actually gets them onto the page.
+$this->headLink()->appendStylesheet($this->assetUrl('css/advanced-search.css', 'Omeka'));
+$this->headScript()->appendFile($this->assetUrl('js/advanced-search.js', 'Omeka'));
+
 // End of CDASH includes
 
 
 $this->jsTranslate();
 $banner = $this->themeSettingAssetUrl('banner');
-$bannerHeight = $this->themeSetting('banner_height');
-$bannerHeightMobile = $this->themeSetting('banner_height_mobile');
-$bannerPosition = ($this->themeSetting('banner_position')) ? str_replace('_','-', $this->themeSetting('banner_position')) : 'center';
+// The banner is a grid track of .cdash-app-shell whose height is the custom
+// property --cdash-banner-h, animated to 0% when the banner collapses. These
+// settings therefore feed that property rather than a height declaration --
+// setting height directly would fight the track and break the animation.
+// Empty means "not set": leave the property alone so shell.css's 15% stands.
+//
+// These land inside a <style> block, where neither escapeHtml (wrong context)
+// nor escapeCss (it would escape the "." in 1.5rem and break the value) is
+// right. Validate as a CSS length instead: anything that is not one is
+// discarded, and shell.css's default stands.
+$cssLength = function ($v) {
+    $v = trim((string) $v);
+    return preg_match('/^\d+(\.\d+)?(px|em|rem|%|vh|vw|dvh|svh|lvh|pt|pc|ch|ex|cm|mm|in|q)$/i', $v)
+        ? $v : '';
+};
+$bannerHeight = $cssLength($this->themeSetting('banner_height'));
+$bannerHeightMobile = $cssLength($this->themeSetting('banner_height_mobile'));
+
+// Same story for the accent colour, which feeds --cdash-link. The setting is
+// an Omeka ColorPicker, so a hex value is what it should hold, but it is a
+// stored string and this is a <style> block: validate rather than trust.
+$accentColor = trim((string) $this->themeSetting('accent_color'));
+$accentColor = preg_match('/^#([0-9a-f]{3}|[0-9a-f]{6})$/i', $accentColor) ? $accentColor : '';
+
+// banner_position was align-items on a flex banner. The banner image now fills
+// its track with object-fit:cover, so the equivalent is object-position: it
+// picks which part of the image survives the crop.
+//
+// The horizontal half is fixed at `left` and is not the admin's to set: the
+// shipped banner carries the roundel and title on that side, and anything else
+// crops them away. The setting's own wording -- "where to affix the banner
+// image when scaling down" -- is about the vertical axis anyway, which is what
+// align-items controlled.
+//
+// Empty means "not set", and _shell.scss's `left center` default stands. This
+// used to be emitted unconditionally, which mattered more than it looks: the
+// inline <style> below is later in the head than the stylesheet, so a hardcoded
+// `center` here silently beat anything _shell.scss said.
+$bannerPosition = [
+    'flex_start' => 'left top',
+    'flex_end'   => 'left bottom',
+    'center'     => 'left center',
+][(string) $this->themeSetting('banner_position')] ?? '';
 $this->trigger('view.layout');
 $userBar = $this->userBar();
+
+// What kind of page this is, carried on #content rather than read off <body>.
+//
+// Omeka's content templates describe the page by appending to <body>'s class
+// ("item resource show"), and <body> is only ever rendered on a full load --
+// htmx swaps #content and nothing else. So <body> goes on naming whichever page
+// was last loaded in full, for the rest of the session: arrive on the home page
+// and every item page after it looked like a site page to CSS, which is how the
+// item header came unstuck. #content is replaced whole on every swap, so what
+// is written on it is always true of the page on screen.
+//
+// Read back out of the rendered tag because HtmlElement has setters but no
+// getter. Doing it here, once, covers the stock templates this theme does not
+// override as well as its own. A data attribute rather than classes: echoing
+// "item resource" as classes onto #content would pull it into existing rules
+// such as .item.resource .caption.
+$pageTypes = '';
+if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) {
+    $pageTypes = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5);
+}
 ?>
 <?php echo $this->doctype(); ?>
 <?php echo $this->htmlElement('html'); ?>
@@ -61,161 +167,291 @@ $userBar = $this->userBar();
         <?php echo $this->headScript(); ?>
         
         <style>
-            <?php if ($accentColor = $this->themeSetting('accent_color')): ?>
-            a:link,
-            a:visited {
-                color: <?php echo $accentColor; ?>
+            <?php // Sets the palette entry rather than re-stating the rules.
+                  // This used to have to emit its own a:link/a:visited/a:hover
+                  // declarations, because the link colour was a sass variable
+                  // compiled into style.css and there was no other way past it.
+                  // Anything that comes to use --cdash-link now follows this
+                  // automatically.
+                  //
+                  // -hover is set to the accent itself, not a lightened form,
+                  // because that is what the old rules did: they paired the
+                  // flat accent colour with opacity .75, which is kept below.
+                  // Without an accent set, --cdash-link-hover stays the 20%
+                  // lightened value from _tokens.scss and no opacity applies. ?>
+            <?php if ($accentColor !== ''): ?>
+            :root {
+                --cdash-link: <?php echo $accentColor; ?>;
+                --cdash-link-hover: <?php echo $accentColor; ?>;
             }
-            
+
             a:active,
             a:hover {
-                color: <?php echo $accentColor; ?>;
                 opacity: .75;
             }
             <?php endif; ?>
 
-            .banner {
-                height: <?php echo ($bannerHeight !== '') ? $bannerHeight: 'auto'  ?>;
-                align-items: <?php echo $bannerPosition; ?>;
+            <?php // Single-class selector, so .cdash-banner-collapsed (two
+                  // classes) still wins and the collapse animation survives. ?>
+            <?php if ($bannerHeight !== ''): ?>
+            .cdash-app-shell {
+                --cdash-banner-h: <?php echo $bannerHeight; ?>;
             }
+            <?php endif; ?>
             <?php if ($bannerHeightMobile !== ''): ?>
-                @media screen and (max-width:640px) {
-                    .banner {
-                        height: <?php echo $bannerHeightMobile; ?>;
-                    }
+            @media screen and (max-width:640px) {
+                .cdash-app-shell {
+                    --cdash-banner-h: <?php echo $bannerHeightMobile; ?>;
                 }
+            }
+            <?php endif; ?>
+
+            <?php if ($bannerPosition !== ''): ?>
+            .cdash-app-shell {
+                --cdash-banner-pos: <?php echo $bannerPosition; ?>;
+            }
             <?php endif; ?>
         </style>
     </head>
 
 
 <?php echo $this->htmlElement('body'); ?>
-<?php //echo 'Hello'; ?>
-  <!-- was: div id="grid-container" -->
-  <main>
 
-  <main-header>
-  <div id="top">
-        <div id="banner">
-            <header>
-            <h1>
-                <a href="<?php echo $site->url(); ?>" class="site-title">
-                <?php if ($this->themeSetting('banner')): ?>
-                    <img src="<?php echo $this->themeSettingAssetUrl('banner'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
-                <?php else: ?>
-                    <!-- Image taken from theme's asset/images folder -->
-                    <img src="<?php echo $this->assetUrl('img/banner/c_dash_banner_manila_long.jpg'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
-                    <?php //echo $escape($siteTitle); ?>
-                <?php endif; ?>
-                </a>
-            </h1>
-                </header>
-        </div> <!-- close banner-->
+<?php
+/**
+ * hx-boost sits on the whole shell, not just the browse pane, so that nav
+ * links, the search form and the Filters form all swap the browse pane too
+ * rather than reloading the document and destroying the map.
+ *
+ * hx-select pulls #content out of the full page Omeka returns; everything
+ * else in the response -- including the map partial and its inline script --
+ * is discarded, which is exactly why the map is never rebuilt. It does mean
+ * the server renders the whole layout each time and we throw most of it away.
+ * That is the cost of keeping Omeka's normal server-rendered routes rather
+ * than inventing a fragment endpoint, and it is cheap next to re-running
+ * every layer constructor and the full marker query on every click.
+ *
+ * Links carrying target/download (all the external CDASH links do) are
+ * skipped by htmx and behave normally. With JS off, nothing is boosted and
+ * every link is an ordinary full-page navigation -- which matters on a
+ * public government site.
+ */
+?>
+<div class="cdash-app-shell" x-data="appShell"
+     :class="{ 'cdash-banner-collapsed': bannerCollapsed }"
+     hx-boost="true"
+     hx-target="#content"
+     hx-select="#content"
+     <?php
+     /**
+      * The admin bar sits outside #content, so swaps never replaced it and its
+      * View and Edit links went stale the moment you navigated -- still
+      * pointing at whatever item the last full page load had rendered.
+      *
+      * Omeka's UserBar helper builds those links from the route it is
+      * rendering, so every swap response already carries a correct bar; it was
+      * just being discarded with the rest of the response. This keeps it, out
+      * of band, which beats rewriting hrefs in JavaScript: item vs item set vs
+      * media vs page, the plural label, the View link and whether this user may
+      * edit THIS resource all come right without being reimplemented here.
+      *
+      * htmx resolves this attribute by inheritance from the element issuing the
+      * request, so marker clicks -- which pass mapDiv as their source -- are
+      * covered by the same line.
+      *
+      * Emitted only when there is a bar to swap. An anonymous visitor's page
+      * has no #user-bar in the response or the DOM, and htmx warns on every
+      * navigation when an OOB target is missing.
+      */
+     ?>
+     <?php echo !empty($userBar) ? 'hx-select-oob="#user-bar"' : ''; ?>
+     hx-swap="outerHTML scroll:#showresult:top"
+     hx-push-url="true">
 
+  <header class="cdash-banner">
+    <div class="cdash-banner-content">
+      <div id="banner">
+        <h1>
+          <a href="<?php echo $site->url(); ?>" class="site-title">
+            <?php if ($this->themeSetting('banner')): ?>
+              <img src="<?php echo $this->themeSettingAssetUrl('banner'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
+            <?php else: ?>
+              <img src="<?php echo $this->assetUrl('img/banner/c_dash_banner_manila_long.jpg'); ?>" alt="<?php echo $escape($siteTitle); ?>" />
+            <?php endif; ?>
+          </a>
+        </h1>
+      </div>
+    </div>
+  </header>
 
-        <div id="navmenu">
-            <nav>
-              <?php
-              echo $site->publicNav()->menu()->renderMenu(null, [
-                'maxDepth' => $this->themeSetting('nav_depth') - 1
-               ]);
-              ?>
-
-              </nav>
-
-              <!--div class="left"  id="advanced_search"> <a style="color: #EAE7D8; margin-top: 4px;" href="/omeka-s/s/cdash/item/search?property%5B0%5D%5Btext%5D=Detail&property%5B0%5D%5Bjoiner%5D=and&property%5B0%5D%5Bproperty%5D=1&property%5B0%5D%5Btype%5D=in&sort_by=cdash:streetSort&sort_order=asc&property%5B0%5D%5Bjoiner%5D=and&property%5B0%5D%5Bproperty%5D=1&property%5B0%5D%5Btype%5D=in&resource_template_id%5B%5D=13">Advanced Search</a> </div -->
-              <div id="search" class="left" >
-                    <!-- ?php echo $this->partial('common/places-form'); ? -->
-                    <?php echo $this->partial('common/search-form'); ?>
-              </div> 
-              </nav> <!-- closes nav -->
-              </div> <!-- closes navmenu -->
-
-    </div><!-- Close top -->
-
-    </main-header> 
-
-
-    <map>
-      <map-frame>
-    <!-- div id="cdash-map" -->
-      <!-- div id="cdmap-frame" -->
-      <?php echo $this->partial('cdash/cdash-map-5'); ?>
-      <?php /*
-          $webroot = $_SERVER['DOCUMENT_ROOT'];
-           $cdash_map_php = $webroot . "/omeka-s/themes/cdash_phoenix/view/omeka/site/index/cdash-map-5.phtml";
-           include $cdash_map_php;
-           */
+  <div class="cdash-navbar">
+    <nav id="navmenu">
+      <?php
+      echo $site->publicNav()->menu()->renderMenu(null, [
+          'maxDepth' => $this->themeSetting('nav_depth') - 1
+      ]);
       ?>
-      <!--/div --> <!-- Closes map-frame -->
-      </map-frame>
+      <div id="search" class="left">
+        <?php echo $this->partial('common/search-form'); ?>
+      </div>
+    </nav>
+  </div>
 
-      <map-tools>
-<!-- div id="cdmap-tools" -->
-<div id="layer-panel-flip"><p>Hide Layer Menu<p></div>
-      <div id="layer-panel">
-          <div id="overlay-menu">
-            <?php echo $this->partial('cdash/map-tools/overlay-menu.phtml'); ?>
-            </div>
-          <div id="basemap-menu">
-            <?php echo $this->partial('cdash/map-tools/basemap-menu.phtml'); ?>
-          </div>
-        </div> <!-- Layer Panel --> 
- 
-<!-- /div --> <!-- closes map-tools -->
-<!-- /div --> <!-- close cdash_map div --> 
-</map-tools>
-</map>
+<?php
+/**
+ * Panes and drawers share one pattern -- the sidebar/sash idiom of VS Code,
+ * JupyterLab and Google Maps:
+ *
+ *   open       a thin edge (divider, or drawer edge) with a grip at its centre;
+ *              drag to resize, release under SNAP_PX to collapse completely
+ *   collapsed  zero size, and a tab on the edge; click it to reopen at the
+ *              last size used, or drag it to open to where the pointer is
+ *
+ * The inline style="display: none" on things that start hidden stops them
+ * flashing before Alpine boots; x-show takes over from there. Tabs and edges
+ * are buttons and separators, so they work from the keyboard too.
+ */
+?>
+  <div class="cdash-pane-container" x-data="paneResizer">
+    <div class="cdash-pane-grid"
+         :class="{ 'cdash-is-tall': orientation === 'tall',
+                   'cdash-pane-collapsed-any': mapCollapsed || browseCollapsed }">
 
-<!--tab-bar>
-   <h2>I'm A Tab-Bar!</h2> 
-</tab-bar -->
-
-    <show-window>
-        <div id="showresult" >
-            <div id="detail">    
-                <div id="content" role="main">
-                    <?php echo $this->content; ?>
-                </div>
-                <?php if (!empty($userBar)): ?>
-                        <?php echo $userBar; ?>
-                        <script type="text/javascript">
-                            document.getElementById("user-bar").querySelector('div[class$="site-links"]').innerHTML += '<span class="admin"><a href="<?php echo $this->assetUrl('php/update_doc_geo.php')?>" target = "pdix">PDIX</a></span>'
-                        </script>
-                    <?php endif; ?>
-            </div> 
+      <section id="cdash-map-pane" class="cdash-pane cdash-map-pane"
+               :class="{ 'cdash-pane-collapsed': mapCollapsed }"
+               :inert="mapCollapsed">
+        <div class="cdash-pane-content">
+          <?php echo $this->partial('cdash/cdash-map-5'); ?>
         </div>
 
-    <div id='print-footer'><p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p></div>
-    <show-footer>
-       <div><b>&lt;&lt;</b> Drag to Expand / Shrink.</div>  
-       <div class="left">Powered by Omeka-S</div>
-    </show-footer> 
-</show-window>
-    </main> 
-    <!-- /div --> <!-- closes main  was: grid container --> 
-    </body>
-    <script type="text/javascript">
-    $(document).ready( function() {
-        if (sessionStorage.getItem("layer_panel_pos") == "down") {
-            $("#layer-panel").slideToggle("slow");
-            $("#layer-panel-flip").text('Show Layer Menu');
-        }
+        <div id="cdash-layers" class="cdash-pullout cdash-pullout-layers" x-data="pullOut('start')"
+             x-effect="$data.parentCollapsed = mapCollapsed"
+             :class="{ 'cdash-pullout-collapsed': collapsed }">
+          <div class="cdash-pullout-content" :inert="collapsed">
+            <div class="cdash-pullout-content-inner">
+              <div id="overlay-menu">
+                <?php echo $this->partial('cdash/map-tools/overlay-menu.phtml'); ?>
+              </div>
+              <div id="basemap-menu">
+                <?php echo $this->partial('cdash/map-tools/basemap-menu.phtml'); ?>
+              </div>
+            </div>
+          </div>
+          <div class="cdash-pullout-edge" style="display: none" x-show="!collapsed"
+               role="separator" tabindex="0" aria-controls="cdash-layers"
+               aria-label="<?php echo $escape($this->translate('Resize the Layers drawer')); ?>"
+               aria-orientation="vertical" aria-valuemin="0" aria-valuemax="95"
+               :aria-valuenow="Math.round(openPct)"
+               x-on:pointerdown="onEdgePointerDown($event)"
+               x-on:keydown="onEdgeKeydown($event)">
+            <span class="cdash-grip" aria-hidden="true"></span>
+          </div>
+          <button type="button" class="cdash-pullout-handle"
+                  x-show="collapsed && !parentCollapsed"
+                  aria-controls="cdash-layers" aria-expanded="false"
+                  x-on:pointerdown="onTabPointerDown($event)"
+                  x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Layers'); ?></button>
+        </div>
+      </section>
 
-        let showresultwidth = document.getElementById('showresult').clientWidth;
-        console.log("Result window width: " + showresultwidth);
-        $("#layer-panel-flip").click(function(){
-            //$("#layer-panel-flip").text(($("#layer-panel-flip").text() == 'Hide Layer Menu') ? 'Show Layer Menu' : 'Hide Layer Menu').fadeIn();
-            $("#layer-panel").slideToggle("slow");
-            if (sessionStorage.getItem("layer_panel_pos") == "up") {
-                sessionStorage.setItem("layer_panel_pos", "down");
-                $("#layer-panel-flip").text('Show Layer Menu');
-            } else {
-                sessionStorage.setItem("layer_panel_pos", "up");
-                $("#layer-panel-flip").text('Hide Layer Menu'); 
-            }
-            console.log("New layer panel poisition saved:" + sessionStorage.getItem("layer_panel_pos")  )
-        });
-});
-</script>
+      <div class="cdash-pane-divider"
+           role="separator" tabindex="0" aria-controls="cdash-map-pane"
+           aria-label="<?php echo $escape($this->translate('Resize the map and browse panes')); ?>"
+           aria-valuemin="0" aria-valuemax="100"
+           :aria-valuenow="Math.round(splitPct)"
+           :aria-orientation="orientation === 'wide' ? 'vertical' : 'horizontal'"
+           x-on:pointerdown="onDividerPointerDown($event)"
+           x-on:keydown="onDividerKeydown($event)">
+        <span class="cdash-grip" aria-hidden="true"></span>
+      </div>
+
+      <section id="cdash-browse-pane" class="cdash-pane cdash-browse-pane"
+               :class="{ 'cdash-pane-collapsed': browseCollapsed }"
+               :inert="browseCollapsed">
+        <div class="cdash-pane-content">
+          <?php
+          /**
+           * hx-history-elt scopes what htmx snapshots and restores on
+           * Back/Forward. Without it htmx uses document.body:
+           *
+           *     function getHistoryElement() {
+           *         return document.querySelector('[hx-history-elt]') || document.body
+           *     }
+           *
+           * so pressing Back replaced the entire body -- including #drawmap.
+           * Leaflet went on holding a node that was no longer in the document,
+           * and the map froze: still painted, but detached and inert.
+           *
+           * #showresult is the right scope. It contains the swap target
+           * (#content) but is never itself swapped, so the attribute survives,
+           * and restoring its innerHTML leaves the map pane untouched.
+           */
+          ?>
+          <div id="showresult" hx-history-elt>
+            <div id="content" role="main" data-cdash-page="<?php echo $escape($pageTypes); ?>">
+              <?php echo $this->content; ?>
+            </div>
+
+            <div id="print-footer">
+              <p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p>
+            </div>
+
+            <?php // The GeoSync and GeoAudit links used to be appended here by
+                  // an inline script, which ran once per page load and so would
+                  // be lost the first time htmx replaced this bar. They are
+                  // part of view/common/user-bar.phtml now. ?>
+            <?php if (!empty($userBar)): ?>
+              <?php echo $userBar; ?>
+            <?php endif; ?>
+          </div>
+        </div>
+
+        <div id="cdash-filters" class="cdash-pullout cdash-pullout-filters" x-data="pullOut('end')"
+             x-effect="$data.parentCollapsed = browseCollapsed"
+             :class="{ 'cdash-pullout-collapsed': collapsed }">
+          <div class="cdash-pullout-content" :inert="collapsed">
+            <div class="cdash-pullout-content-inner">
+              <form action="<?php echo $escape($site->url() . '/item'); ?>" method="GET">
+                <?php echo $this->partial('common/advanced-search', ['resourceType' => 'item']); ?>
+                <button type="submit"><?php echo $this->translate('Search'); ?></button>
+              </form>
+            </div>
+          </div>
+          <div class="cdash-pullout-edge" style="display: none" x-show="!collapsed"
+               role="separator" tabindex="0" aria-controls="cdash-filters"
+               aria-label="<?php echo $escape($this->translate('Resize the Filters drawer')); ?>"
+               aria-orientation="vertical" aria-valuemin="0" aria-valuemax="95"
+               :aria-valuenow="Math.round(openPct)"
+               x-on:pointerdown="onEdgePointerDown($event)"
+               x-on:keydown="onEdgeKeydown($event)">
+            <span class="cdash-grip" aria-hidden="true"></span>
+          </div>
+          <button type="button" class="cdash-pullout-handle"
+                  x-show="collapsed && !parentCollapsed"
+                  aria-controls="cdash-filters" aria-expanded="false"
+                  x-on:pointerdown="onTabPointerDown($event)"
+                  x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Filters'); ?></button>
+        </div>
+      </section>
+
+      <?php // Inside the grid, not the panes: a collapsed pane is zero-size and
+            // clips. They ride the edge through the inherited --cdash-split, so
+            // dragging one moves it with the pane it is opening. ?>
+      <button type="button" class="cdash-pane-tab cdash-pane-tab-map" style="display: none"
+              x-show="mapCollapsed"
+              aria-controls="cdash-map-pane" aria-expanded="false"
+              x-on:pointerdown="onTabPointerDown($event)"
+              x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Map'); ?></button>
+      <button type="button" class="cdash-pane-tab cdash-pane-tab-browse" style="display: none"
+              x-show="browseCollapsed"
+              aria-controls="cdash-browse-pane" aria-expanded="false"
+              x-on:pointerdown="onTabPointerDown($event)"
+              x-on:click="$event.detail === 0 && open()"><?php echo $this->translate('Browse'); ?></button>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
 </html>

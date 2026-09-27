@@ -1,0 +1,173 @@
+// Pull-out drawers: Layers on the Map pane, Filters on the Browse pane.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Pull-out drawers (Layers on the Map pane, Filters on the Browse
+   pane) -- always horizontal (sized/dragged along the pane's own width)
+   regardless of wide/tall orientation, so unlike the divider/panes above,
+   these need no @container tall-case override; their axis never flips. ---- */
+.cdash-pullout {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: var(--cdash-pullout-w, 0%);
+  max-width: 95%;
+  /* No overflow:hidden here -- .cdash-pullout-handle deliberately protrudes
+     outside this box so it stays grabbable when collapsed, and
+     overflow:hidden would clip that protruding part out of hit-testing, not
+     just out of view. .cdash-pullout-content clips its own overflow. */
+  z-index: 2;
+}
+
+.cdash-pullout-layers {
+  left: 0;
+  border-right: 2px solid #ccc;
+  background: var(--cdash-map-pullout-bg);
+}
+
+.cdash-pullout-filters {
+  right: 0;
+  border-left: 2px solid #ccc;
+  background: var(--cdash-browse-pullout-bg);
+}
+
+/* Fully shut: no width, and no border left behind as a sliver. */
+.cdash-pullout.cdash-pullout-collapsed {
+  border-width: 0;
+}
+
+.cdash-pullout.cdash-pullout-animating {
+  transition: --cdash-pullout-w 300ms ease-out;
+}
+
+/* Same outer-clips/inner-pads split as .cdash-pane-content, and for the
+   same reason: this outer wrapper must be able to shrink to the drawer's
+   actual collapsed width without its own padding forcing it wider. */
+.cdash-pullout-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.cdash-pullout-content-inner {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 0.5rem;
+}
+
+/* ---- Open drawer: its resize edge ----
+   A 12px hit strip centred on the drawer's 2px border, holding the grip
+   (styled in _panes.scss). The drawer box is border-box, so the border lies
+   inside its width and its centre is 1px in from the outer edge. */
+.cdash-pullout-edge {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+  touch-action: none;
+  z-index: 3;
+}
+
+.cdash-pullout-layers .cdash-pullout-edge {
+  right: -7px;
+}
+
+.cdash-pullout-filters .cdash-pullout-edge {
+  left: -7px;
+}
+
+/* Same highlight as the pane divider: a band over the border line. */
+.cdash-pullout-edge::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 4px;
+  width: 4px;
+  background: var(--cdash-edge-active);
+  opacity: 0;
+  transition: opacity 150ms ease-out;
+}
+
+.cdash-pullout-edge:hover::before,
+.cdash-pullout-edge:focus-visible::before,
+.cdash-pullout-edge.cdash-dragging::before {
+  opacity: 1;
+}
+
+.cdash-pullout-edge:focus-visible {
+  outline: none;
+}
+
+/* ---- Collapsed drawer: its tab ----
+   Protrudes from the zero-width drawer into the pane, so it stays reachable.
+   Pale, where the pane tabs are solid, so the two kinds read differently. */
+.cdash-pullout-handle {
+  position: absolute;
+  top: 50%;
+  width: 32px;
+  height: 110px;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  writing-mode: vertical-rl;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: #333;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  z-index: 3;
+}
+
+.cdash-pullout-handle:hover {
+  filter: brightness(0.96);
+}
+
+.cdash-pullout-handle:focus-visible {
+  outline: 2px solid var(--cdash-edge-active);
+  outline-offset: 2px;
+}
+
+/* The radius is written before the 180deg rotation, so left-hand corners here
+   end up rounded on the outer, right-hand side. It used to be written the
+   other way round, which rounded the corners against the drawer edge. */
+.cdash-pullout-layers .cdash-pullout-handle {
+  right: -32px;
+  border: 1px solid var(--cdash-map-boundary);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-map-drawer-tab-bg);
+  transform: translateY(-50%) rotate(180deg);
+}
+
+.cdash-pullout-filters .cdash-pullout-handle {
+  left: -32px;
+  border: 1px solid var(--cdash-browse-boundary);
+  border-radius: 8px 0 0 8px;
+  background: var(--cdash-browse-drawer-tab-bg);
+  transform: translateY(-50%);
+}
+
+/* ---- Contents of the Layers drawer ----
+   Stacked, rather than side by side as cells of the old #layer-panel grid.
+   Their padding still comes from _desktop.scss. */
+#overlay-menu,
+#basemap-menu {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cdash-layer-hint {
+  color: red;
+  font-size: smaller;
+}

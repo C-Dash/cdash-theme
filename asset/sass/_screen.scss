@@ -1,5 +1,14 @@
+@use "base";
+
+/* The padding/margin half of this reset came from _grid.scss, which was the
+   4.1.1 layout and is gone. _grid was imported immediately before this file,
+   so merging the two `*` rules leaves the cascade unchanged. Removing the
+   padding/margin reset is NOT safe on its own -- the rules below assume UA
+   margins are already zeroed and set their own where they want them. */
 * {
     box-sizing: border-box;
+    padding: 0;
+    margin: 0;
 }
 
 html {
@@ -13,10 +22,10 @@ html {
 }
 
 body {
-    background-color: $bg;
+    background-color: var(--cdash-bg);
     font-family: "Open Sans", sans-serif;
-    font-size: $base-font-size;
-    line-height: $base-line-height;
+    font-size: base.$base-font-size;
+    line-height: base.$base-line-height;
     margin: 0;
     word-wrap: break-word;
 }
@@ -24,40 +33,40 @@ body {
 a:link {
     text-decoration: none;
  
-    color: $link;
+    color: var(--cdash-link);
     border-bottom: 1px dotted;
 }
 
 a:visited {
-    color: $link;
+    color: var(--cdash-link);
 }
  
 a:active,
 a:hover {
-    color: lighten($link, 20%);
+    color: var(--cdash-link-hover);
 
 }
 
 h1 {
-    font-size: 2 * $base-font-size;
-    line-height: 2 * $base-line-height;
+    font-size: 2 * base.$base-font-size;
+    line-height: 2 * base.$base-line-height;
 }
 
 h2 {
-    font-size: 1.5 * $base-font-size;
-    line-height: 1.5 * $base-line-height;
+    font-size: 1.5 * base.$base-font-size;
+    line-height: 1.5 * base.$base-line-height;
     margin-block-start: 10px;   
     margin-block-end: 10px;     
 }
 
 h3 {
-    font-size: 1.25 * $base-font-size;
-    line-height: 1.5 * $base-line-height;
+    font-size: 1.25 * base.$base-font-size;
+    line-height: 1.5 * base.$base-line-height;
 }
 
 h4 {
-    font-size: 1.125 * $base-font-size;
-    line-height: 1.125 * $base-line-height;   
+    font-size: 1.125 * base.$base-font-size;
+    line-height: 1.125 * base.$base-line-height;   
     margin-block-start: 8px;                  
     margin-block-end: 8px;     
 }
@@ -75,8 +84,8 @@ button,
 .button,
 select {
     font-family: "Open Sans", sans-serif;
-    font-size: $base-font-size;
-    line-height: $base-line-height;
+    font-size: base.$base-font-size;
+    line-height: base.$base-line-height;
     margin: 0;
     vertical-align: top;
 }
@@ -86,30 +95,35 @@ input[type="password"],
 input[type="email"],
 input[type="url"],
 textarea {
+    /* Written out rather than left to autoprefixer, which is now off: the
+       build is a plain dart-sass run, so what is here is what ships. Matches
+       the prefixes already spelled out on the button rule below. */
     appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     border-radius: 0;
-    height: 1.5 * $spacing-l;
-    border: 1px solid $light;
-    padding: ($spacing-s - 1px) gutter();
+    height: 1.5 * base.$spacing-l;
+    border: 1px solid var(--cdash-light);
+    padding: (base.$spacing-s - 1px) base.$spacing-m;
     margin: 0;
 }
 
 textarea {
-    height: 3 * $spacing-l;
+    height: 3 * base.$spacing-l;
 }
 
 input[type="file"] {
     line-height: 1;
     vertical-align: bottom;
-    font-size: .75 * $base-font-size;
+    font-size: .75 * base.$base-font-size;
 }
 
 button,
 a.button,
 [type="submit"] {
-    background-color: $light;
+    background-color: var(--cdash-light);
     border-radius: 2px;
-    padding: $spacing-s;
+    padding: base.$spacing-s;
     display: inline-block;
     appearance: none;
     -webkit-appearance: none;
@@ -120,9 +134,9 @@ a.button,
 
 select {
     background-color: #fff;
-    padding: $spacing-s;
-    border-color: $light;
-    height: 1.5 * $spacing-l;
+    padding: base.$spacing-s;
+    border-color: var(--cdash-light);
+    height: 1.5 * base.$spacing-l;
 }
 
 ::-webkit-input-placeholder {
@@ -142,7 +156,7 @@ select {
 }
 
 .field {
-    margin: $spacing-l 0;
+    margin: base.$spacing-l 0;
     display: -webkit-flex;
     display: -ms-flexbox;
     display: flex;
@@ -153,12 +167,12 @@ select {
 
 .field .field-meta {
     width: 30%;
-    padding: $spacing-s gutter() 0 0;
+    padding: base.$spacing-s base.$spacing-m 0 0;
 }
 
 .field .inputs {
     width: 70%;
-    padding-left: gutter();
+    padding-left: base.$spacing-m;
 
     & > select,
     & > textarea,
@@ -177,15 +191,15 @@ select {
 .field.required .field-meta:after {
     content: "\f069";
     font-family: "Font Awesome 5 Free";
-    font-size: .75 * $base-font-size;
+    font-size: .75 * base.$base-font-size;
 }
 
 .field .value:not(:last-child) {
-    margin-bottom: $spacing-m;
+    margin-bottom: base.$spacing-m;
 }
 
 .field-description {
-    font-size: .75 * $base-font-size;
+    font-size: .75 * base.$base-font-size;
 }
 
 /* @end */
@@ -211,16 +225,16 @@ header nav:before {
     font-family: "Font Awesome 5 Free";
     content: "\f0c9";
     display: block;
-    width: 1.25 * $spacing-l;
-    height: 1.25 * $spacing-l;
-    border: 1px solid $light;
+    width: 1.25 * base.$spacing-l;
+    height: 1.25 * base.$spacing-l;
+    border: 1px solid var(--cdash-light);
     text-align: center;
     border-radius: 2px;
     position: absolute;
-    right: gutter();
-    top: -(1.625 * $spacing-l);
+    right: base.$spacing-m;
+    top: -(1.625 * base.$spacing-l);
     cursor: pointer;
-    line-height: 1.5 * $base-line-height;
+    line-height: 1.5 * base.$base-line-height;
 }
 
 // Removed to prevent the jumping Nav
@@ -241,16 +255,16 @@ header nav ul {
     a {
         display: inline-block;
         width: 100%;
-        padding: $spacing-s;
+        padding: base.$spacing-s;
     }
 
     a:hover {
         border-bottom: 0;
-        background-color: $light;
+        background-color: var(--cdash-light);
     }
 
     li {
-        border-top: 1px solid $light;
+        border-top: 1px solid var(--cdash-light);
         position: relative;
     }
 
@@ -267,11 +281,11 @@ header nav ul {
         content: "\f105";
         position: absolute;
         right: 0;
-        top: -(1.5 * $spacing-l);
-        color: $light;
-        width: $spacing-l;
-        height: 1.5 * $spacing-l;
-        line-height: 1.5 * $base-line-height;
+        top: -(1.5 * base.$spacing-l);
+        color: var(--cdash-light);
+        width: base.$spacing-l;
+        height: 1.5 * base.$spacing-l;
+        line-height: 1.5 * base.$base-line-height;
         text-align: center;
     }
 
@@ -280,12 +294,12 @@ header nav ul {
     }
 
     a:hover ~ ul:before {
-        color: $gray;
+        color: var(--cdash-gray);
     }
 }
 
 header nav > ul > li:last-child {
-    border-bottom: 1px solid $light;
+    border-bottom: 1px solid var(--cdash-light);
     padding-bottom: -1px;
 }
 
@@ -297,7 +311,7 @@ header nav > ul ul li {
 
 header nav > ul ul:hover > li {
     height: auto;
-    border-top: 1px solid $light;
+    border-top: 1px solid var(--cdash-light);
     padding-top: -1px;
 }
 
@@ -313,36 +327,36 @@ header nav > ul > li > ul > li.active > a:before {
 }
 
 header nav > ul > li > ul > li a {
-    padding-left: $spacing-l;
+    padding-left: base.$spacing-l;
 }
 
 /* Third level items */
 header nav > ul > li > ul > li > ul > li a {
-    padding-left: 2 * $spacing-l;
+    padding-left: 2 * base.$spacing-l;
 }
 
 .sub-menu ul {
     padding-left: 0;
     list-style-type: none;
-    margin-top: $spacing-m;
+    margin-top: base.$spacing-m;
 }
 
 .sub-menu li {
-    font-size: .75 * $base-font-size;
+    font-size: .75 * base.$base-font-size;
     font-weight: bold;
-    border-bottom: 1px solid $light;
-    padding: $spacing-s 0 ($spacing-s - 1px);
+    border-bottom: 1px solid var(--cdash-light);
+    padding: base.$spacing-s 0 (base.$spacing-s - 1px);
 
     &:first-of-type {
-        border-top: 1px solid $light;
-        padding-top: ($spacing-s - 1px);
+        border-top: 1px solid var(--cdash-light);
+        padding-top: (base.$spacing-s - 1px);
     }
 }
 
 nav.pagination {
-    margin-bottom: $spacing-l;
-    font-size: $base-font-size;
-    line-height: 1.5 * $base-line-height;
+    margin-bottom: base.$spacing-l;
+    font-size: base.$base-font-size;
+    line-height: 1.5 * base.$base-line-height;
 }
 
 .pagination input {
@@ -354,7 +368,7 @@ nav.pagination {
 }
 
 .pagination form {
-    min-width: 3 * $spacing-l;
+    min-width: 3 * base.$spacing-l;
 }
 
 .pagination form,
@@ -363,21 +377,21 @@ nav.pagination {
 .pagination .page-count {
     display: inline-block;
     vertical-align: top;
-    height: 1.5 * $base-line-height;
+    height: 1.5 * base.$base-line-height;
 }
 
 .pagination .button {
-    border: 1px solid $light;
-    background-color: $light;
-    width: 1.5 * $spacing-l;
+    border: 1px solid var(--cdash-light);
+    background-color: var(--cdash-light);
+    width: 1.5 * base.$spacing-l;
     text-align: center;
-    padding: $spacing-s;
+    padding: base.$spacing-s;
     border-radius: 2px;
-    color: $gray;
-    line-height: $base-line-height;
+    color: var(--cdash-gray);
+    line-height: base.$base-line-height;
 
     &:hover {
-        background-color: $bold;
+        background-color: var(--cdash-bold);
     }
 }
 
@@ -392,16 +406,16 @@ nav.pagination {
 
 .pagination form,
 .pagination .last {
-    margin-right: $spacing-s;
+    margin-right: base.$spacing-s;
 }
 
 .pagination input {
-    width: 2 * $spacing-l;
+    width: 2 * base.$spacing-l;
 }
 
 .breadcrumbs {
-    font-size: .75 * $base-font-size;
-    margin: $spacing-l 0 (-$spacing-m);
+    font-size: .75 * base.$base-font-size;
+    margin: base.$spacing-l 0 (-(base.$spacing-m));
 }
 
 /* @end */
@@ -409,9 +423,9 @@ nav.pagination {
 /* @group ----- Header ----- */
 
 .site-title h1 {
-    font-size: 1.25 * $base-font-size;
-    line-height: $base-line-height;
-    padding-right: $base-line-height;
+    font-size: 1.25 * base.$base-font-size;
+    line-height: base.$base-line-height;
+    padding-right: base.$base-line-height;
 }
 
 header {
@@ -419,13 +433,13 @@ header {
   
     margin: 0 0 0 ;
  
-    background-color: $darkgray;
-    border-bottom: 1px solid $light;
+    background-color: var(--cdash-darkgray);
+    border-bottom: 1px solid var(--cdash-light);
 
 
     & > * {
-        @include container;
-        padding: 0 gutter();
+        @include base.container;
+        padding: 0 base.$spacing-m;
         display: block;
     }
 }
@@ -450,9 +464,9 @@ button.o-icon-search {
    // left: 0;
    // right: 0;
     //background-color: #fff;
-    border-bottom: 1px solid $light;
-    border-top: 1px solid $light;
-    //padding: $spacing-s gutter();
+    border-bottom: 1px solid var(--cdash-light);
+    border-top: 1px solid var(--cdash-light);
+    //padding: $spacing-s $spacing-m;
 }
 
 #search form {
@@ -466,8 +480,8 @@ button.o-icon-search {
 
 #search form button[type="submit"] {
 
-    height: 1.25 * $base-line-height;
-    width: 1.25 * $base-line-height;
+    height: 1.25 * base.$base-line-height;
+    width: 1.25 * base.$base-line-height;
 
     text-indent: -9999px;
     position: relative;
@@ -482,7 +496,7 @@ button.o-icon-search {
         right: 0;
         text-align: center;
         text-indent: 0;
-        line-height: 1.25 * $base-line-height;
+        line-height: 1.25 * base.$base-line-height;
     }
 }
 
@@ -491,24 +505,27 @@ button.o-icon-search {
 /* @group ----- Footer ----- */
 
 footer {
-    @include container;
-    padding: 0 gutter() $spacing-l;
+    @include base.container;
+    padding: 0 base.$spacing-m base.$spacing-l;
 }
 
 /* @end */
 
 /* @group ----- Page and Blocks ----- */
 
+// The padding here lost to the shell's, so it is gone. base.container stays,
+// but note it is only half-effective: it sets max-width plus auto side
+// margins, and the shell's `margin: 0` cancels the centring. #content is
+// therefore width-capped and left-aligned. Worth deciding deliberately.
 #content {
-    @include container;
-    padding: 0 gutter() $spacing-l;
+    @include base.container;
 }
 
 .item-showcase {
-    margin: $spacing-l 0;
-    border-top: 1px solid $light;
-    border-bottom: 1px solid $light;
-    padding: ($spacing-l - 1px) 0 0;
+    margin: base.$spacing-l 0;
+    border-top: 1px solid var(--cdash-light);
+    border-bottom: 1px solid var(--cdash-light);
+    padding: (base.$spacing-l - 1px) 0 0;
     overflow: hidden;
     text-align: center;
     clear: both;
@@ -517,11 +534,11 @@ footer {
 }
 
 .item.resource .caption {
-    font-size: .75 * $base-font-size;
-    line-height: $base-line-height;
+    font-size: .75 * base.$base-font-size;
+    line-height: base.$base-line-height;
 
     * {
-        margin: 0 0 $spacing-l 0;
+        margin: 0 0 base.$spacing-l 0;
     }
 
     & > *:last-child {
@@ -531,10 +548,10 @@ footer {
 
 .item-showcase .resource.item {
     vertical-align: top;
-    margin-bottom: $spacing-l;
+    margin-bottom: base.$spacing-l;
 
     img {
-        margin-right: $spacing-m;
+        margin-right: base.$spacing-m;
     }
 
     &:only-child img {
@@ -544,18 +561,18 @@ footer {
     &:not(:only-child) {
         width: 25%;
         clear: none;
-        padding: 0 gutter();
+        padding: 0 base.$spacing-m;
     }
 
     &:not(:only-child) h3 {
         clear: left;
-        font-size: .75 * $base-font-size;
-        line-height: $base-line-height;
-        margin: $spacing-m 0 0;
+        font-size: .75 * base.$base-font-size;
+        line-height: base.$base-line-height;
+        margin: base.$spacing-m 0 0;
     }
 
     &:not(:only-child) img {
-        max-height: 7 * $spacing-l;
+        max-height: 7 * base.$spacing-l;
         width: auto;
         float: none;
         margin-right: 0;
@@ -570,21 +587,21 @@ footer {
 
 .left .item.resource,
 .right .item.resource {
-    margin: 0 0 $spacing-l 0;
+    margin: 0 0 base.$spacing-l 0;
     width: -webkit-min-content;
     width: -moz-min-content;
     width: min-content;
     max-width: 40vw;
 
     &:first-of-type {
-        border-top: 1px solid $light;
-        padding-top: ($spacing-l - 1px);
+        border-top: 1px solid var(--cdash-light);
+        padding-top: (base.$spacing-l - 1px);
         margin-top: 0;
     }
 
     &:last-of-type {
-        border-bottom: 1px solid $light;
-        padding-bottom: ($spacing-l - 1px);
+        border-bottom: 1px solid var(--cdash-light);
+        padding-bottom: (base.$spacing-l - 1px);
     }
 
     .media-render > *, img {
@@ -620,13 +637,13 @@ footer {
 
 .left .item.resource {
     float: left;
-    margin-right: $spacing-l;
+    margin-right: base.$spacing-l;
     clear: left;
 }
 
 .right .item.resource {
     float: right;
-    margin-left: $spacing-l;
+    margin-left: base.$spacing-l;
     clear: right;
 }
 
@@ -637,8 +654,8 @@ footer {
 
 .medium .item.resource > h3,
 .square .item.resource > h3 {
-    font-size: $base-font-size;
-    line-height: $base-line-height;
+    font-size: base.$base-font-size;
+    line-height: base.$base-line-height;
 }
 
 .left .item.resource > h3,
@@ -654,48 +671,48 @@ footer {
 .break {
     width: 100%;
     clear: both;
-    border-bottom: 1px solid $light;
+    border-bottom: 1px solid var(--cdash-light);
     padding-bottom: -1px;
-    margin: $spacing-l 0;
+    margin: base.$spacing-l 0;
 
     &.transparent {
         border-color: transparent;
     }
 
     &.opaque {
-        border-color: $light;
+        border-color: var(--cdash-light);
     }
 }
 
 .preview-block {
-    margin: $spacing-l 0;
+    margin: base.$spacing-l 0;
     overflow: hidden;
 }
 
 .resource-list.preview + a {
-    background-color: $light;
+    background-color: var(--cdash-light);
     text-align: center;
-    padding: $spacing-s;
+    padding: base.$spacing-s;
     border-radius: 2px;
-    line-height: $base-line-height;
+    line-height: base.$base-line-height;
     display: inline-block;
     font-weight: bold;
 
     &:hover {
-        background-color: $bold;
+        background-color: var(--cdash-bold);
         border-bottom-width: 0px;
         color: #fff;
     }
 }
 
 .toc-block > ul {
-    margin: $spacing-l 0;
+    margin: base.$spacing-l 0;
     list-style-type: none;
-    border-left: 5px solid $gray;
+    border-left: 5px solid var(--cdash-gray);
 }
 
 .toc-block > ul > li {
-    margin-bottom: $spacing-m;
+    margin-bottom: base.$spacing-m;
 }
 
 .toc-block > ul > li > a {
@@ -713,22 +730,22 @@ footer {
 
 .toc-block ul ul li:before {
     content: "\2014";
-    color: $light;
+    color: var(--cdash-light);
 }
 
 .item-with-metadata .show.resource {
-    margin: (2 * $spacing-l) 0;
+    margin: (2 * base.$spacing-l) 0;
 }
 
 .site-page-pagination {
-    margin-top: 2 * $spacing-l;
+    margin-top: 2 * base.$spacing-l;
     clear: both;
 }
 
 .site-page-pagination a {
-    background-color: $light;
+    background-color: var(--cdash-light);
     border-radius: 2px;
-    padding: $spacing-s;
+    padding: base.$spacing-s;
     display: inline-block;
     appearance: none;
     -webkit-appearance: none;
@@ -739,17 +756,17 @@ footer {
 
 .list-of-sites .site-list {
     .site {
-        margin-bottom: $spacing-m;
+        margin-bottom: base.$spacing-m;
     }
 
     .site-link {
         display: inline-block;
-        font-size: 1.25 * $base-font-size;
-        margin-bottom: $spacing-s;
+        font-size: 1.25 * base.$base-font-size;
+        margin-bottom: base.$spacing-s;
     }
     
     .site-summary {
-        margin: 0 0 0 $spacing-m;
+        margin: 0 0 0 base.$spacing-m;
         line-height: 20px;
     }
 }
@@ -771,11 +788,11 @@ ul.resource-list {
 }
 
 ul.resource-list .resource {
-    border-bottom: 1px solid $light;
+    border-bottom: 1px solid var(--cdash-light);
     //padding-bottom: ($spacing-l - 1px);
     //margin: $spacing-l 0;
-    padding-bottom: ($spacing-s - 1px);
-    margin: $spacing-s 0;
+    padding-bottom: (base.$spacing-s - 1px);
+    margin: base.$spacing-s 0;
     overflow: hidden;
     position: relative;
 
@@ -791,7 +808,7 @@ ul.resource-list .resource {
 
 ul.resource-list .resource img {
     height: auto;
-    width: 2 * $spacing-l;
+    width: 2 * base.$spacing-l;
     float: right;
     /*margin-left: $spacing-m;*/
 }
@@ -801,23 +818,23 @@ ul.resource-list .resource h4 {
 }
 
 ul.resource-list .resource .description {
-    max-height: 3 * $spacing-l;
+    max-height: 3 * base.$spacing-l;
     overflow: hidden;
     position: relative;
 
     &:after {
         content: "";
         position: absolute;
-        top: 1.75 * $spacing-l;
+        top: 1.75 * base.$spacing-l;
         left: 0;
         right: 0;
-        height: 1.25 * $spacing-l;
+        height: 1.25 * base.$spacing-l;
         background: linear-gradient(to top, rgba(248,248,248,1), rgba(248,248,248,0));
     }
 }
 
 /*ul.resource-list .resource img ~ * {
-    width: calc(100% - #{2.5 * $spacing-l});
+    width: calc(100% - #{2.5 * base.$spacing-l});
 }*/
 
 ul.resource-list > li > A {
@@ -833,18 +850,18 @@ order: 0;
 /* @group ----- Browse ---- */
 
 .search-filters {
-    margin-bottom: $spacing-l;
+    margin-bottom: base.$spacing-l;
 }
 
 .filter-label,
 .filter-value {
     display: inline-block;
-    border: 1px solid $light;
-    padding: ($spacing-s - 1px);
+    border: 1px solid var(--cdash-light);
+    padding: (base.$spacing-s - 1px);
 }
 
 .filter-label {
-    background-color: $light;
+    background-color: var(--cdash-light);
 }
 
 .filter-value {
@@ -857,18 +874,109 @@ order: 0;
     flex-wrap: wrap;
 }
 
+// A block with its own margin, standing in for the <br><br> that used to
+// follow it in browse.phtml.
 .advanced-search {
-    line-height: 1.5 * $base-line-height;
+    display: block;
+    margin-bottom: base.$spacing-m;
+    line-height: 1.5 * base.$base-line-height;
 }
 
 /* @end */
 
-/* @group ----- Show ----- */
+/* @group ----- Page header ----- */
 
-body.resource #content > h2:first-of-type + h3 {
-    font-size: .75 * $base-font-size;
-    text-transform: uppercase;
-    margin: -$spacing-l 0 $spacing-l;
+// The sticky page header, common/cdash-page-header.phtml: the item page, a
+// folder's contents and search results all render it. Crumb row, title, and a
+// line saying what this is and how big it is. Sticky, so it stays at the top
+// of the browse pane while the page scrolls -- #showresult is the scroll
+// container and #content is its grid item, so there is nothing else to
+// arrange.
+//
+// The negative margins cancel #content's own padding (10px 30px 10px 10px) so
+// the band spans the full pane and content cannot show past its edges while
+// scrolling underneath; the padding then puts the text back in line with the
+// content below. The background does the actual hiding, and is declared
+// unconditionally -- nothing changes as the header becomes stuck, so nothing
+// shifts.
+//
+// No page-type qualifier: the header exists only where a template renders it.
+// If one is ever needed, key it to #content's data-cdash-page, never to a
+// class on <body> -- <body> is rendered only on a full load and htmx swaps just
+// #content, so a body class names whichever page was loaded last in full. That
+// is how this header once came unstuck. See layout.phtml.
+#content > .cdash-page-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--cdash-page);
+    border-bottom: 1px solid var(--cdash-light);
+    margin: -10px -30px base.$spacing-m -10px;
+    padding: 10px 30px base.$spacing-s 10px;
+}
+
+// The crumb row above the title: "Visit <Place>" from the partial, and
+// "Return to ..." inserted by cdash-layout.js. Small and quiet -- these are
+// ways out of the page, not part of its identity.
+//
+// inline, so the two sit on one line with the diamond between them, and the
+// row wraps rather than overflowing when a Place title is long.
+#content > .cdash-page-header > .cdash-breadcrumb,
+#content > .cdash-page-header > .cdash-visit-place {
+    display: inline;
+    font-size: .75 * base.$base-font-size;
+    border-bottom: 0;
+}
+
+// Explicit, because the display above would otherwise beat the UA's [hidden].
+// cdash-layout.js hides this one rather than removing it when the return link
+// already names the same Place.
+#content > .cdash-page-header > .cdash-visit-place[hidden] {
+    display: none;
+}
+
+.cdash-crumb-sep {
+    margin: 0 .4em;
+    font-size: .75 * base.$base-font-size;
+    color: var(--cdash-darkgray);
+}
+
+// "Place", "Document" or "Folder", then the size. Title case as stored,
+// deliberately not the small-uppercase treatment stock Omeka gave this slot
+// for its bare "Item" heading -- that rule is gone, since nothing renders an h3
+// there any more.
+#content > .cdash-page-header .cdash-page-meta {
+    font-size: base.$base-font-size;
+    font-weight: normal;
+    color: var(--cdash-darkgray);
+    margin: 0;
+}
+
+.cdash-page-meta-sep {
+    margin: 0 .25em;
+}
+
+// The header is sticky, so every pixel of it is pixels of page that can never
+// be scrolled into view. The title is therefore smaller and tighter here than
+// the 27px h2 elsewhere, at every width, with 5px margins in place of the
+// usual 10px.
+#content > .cdash-page-header h2 {
+    font-size: 22.5px;
+    line-height: 22.5px;
+    margin-block-start: 5px;
+    margin-block-end: 5px;
+}
+
+// Narrower still when the pane is. Keyed to the browse pane's own width rather
+// than the viewport -- the same container and threshold as the card grids and
+// the property list -- because the pane is resizable: a phone and a narrowed
+// desktop pane are the same problem. Only the type shrinks; the margins above
+// are already as tight as they go.
+@container browse (max-width: 500px) {
+    #content > .cdash-page-header h2 {
+        font-size: 20px;
+        line-height: 20px;
+    }
 }
 
 /*
@@ -880,7 +988,7 @@ body.resource #content > h2:first-of-type + h3 {
 */
 .resource-link img {
     width: auto;
-    height: 1.5 * $spacing-l;
+    height: 1.5 * base.$spacing-l;
     /*display: inline-block;*/
     vertical-align: middle;
     /*margin-right: $spacing-s;*/
@@ -894,24 +1002,24 @@ body.resource #content > h2:first-of-type + h3 {
 }
 
 .property .value:not(:last-child) img {
-    margin-bottom: $spacing-s;
+    margin-bottom: base.$spacing-s;
 }
 
 .property .value:not(:last-child) img + a {
-    margin-bottom: $spacing-s;
+    margin-bottom: base.$spacing-s;
 }
 
 .property .value .language {
-    background-color: lighten($gray, 15%);
-    padding: .5 * $spacing-s;
-    font-size: .5 * $base-font-size;
+    background-color: var(--cdash-gray-light);
+    padding: .5 * base.$spacing-s;
+    font-size: .5 * base.$base-font-size;
 }
 
 #content .media.resource {
     display: inline-block;
     text-align: center;
     vertical-align: bottom;
-    margin-right: $spacing-s;
+    margin-right: base.$spacing-s;
 
     &:hover {
         border-bottom: 0;
@@ -920,7 +1028,7 @@ body.resource #content > h2:first-of-type + h3 {
 
 #content .media.resource img {
     vertical-align: top;
-    margin-bottom: $spacing-m;
+    margin-bottom: base.$spacing-m;
 }
 
 .media-render > * {
@@ -930,12 +1038,12 @@ body.resource #content > h2:first-of-type + h3 {
 #linked-resources caption {
     text-align: left;
     font-weight: bold;
-    border-bottom: 3px solid $gray;
-    padding: $spacing-s $spacing-m ($spacing-s - 3px);
+    border-bottom: 3px solid var(--cdash-gray);
+    padding: base.$spacing-s base.$spacing-m (base.$spacing-s - 3px);
 }
 
 #linked-filter h4 {
-    margin-bottom: $spacing-m;
+    margin-bottom: base.$spacing-m;
 }
 
 #linked-resources .resource-link {
@@ -949,14 +1057,14 @@ body.resource #content > h2:first-of-type + h3 {
 /* @group ----- Advanced Search ----- */
 
 #advanced-search .value:not(:last-child) {
-    margin-bottom: $spacing-m;
+    margin-bottom: base.$spacing-m;
 }
 
 .remove-value {
     text-indent: -9999px;
     position: relative;
-    width: 1.5 * $spacing-l;
-    margin-left: $spacing-s;
+    width: 1.5 * base.$spacing-l;
+    margin-left: base.$spacing-s;
 
     &:before {
         text-indent: 0;
@@ -965,7 +1073,7 @@ body.resource #content > h2:first-of-type + h3 {
         right: 0;
         bottom: 0;
         left: 0;
-        line-height: 1.5 * $base-line-height;
+        line-height: 1.5 * base.$base-line-height;
     }
 }
 
@@ -974,7 +1082,7 @@ body.resource #content > h2:first-of-type + h3 {
 /* @group ----- Common Modules ---- */
 
 a.metadata-browse-link {
-    font-size: .75 * $base-font-size;
+    font-size: .75 * base.$base-font-size;
 }
 
 /* @end */
