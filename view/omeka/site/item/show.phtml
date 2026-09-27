@@ -1,29 +1,153 @@
 <?php
 $translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
 $this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css', 'Omeka'));
 $this->htmlElement('body')->appendAttribute('class', 'item resource show');
 $filterLocale = (bool) $this->siteSetting('filter_locale_values');
 $lang = $this->lang();
 $valueLang = $filterLocale ? [$lang, ''] : null;
+
+/**
+ * Whether this is a Place or a Document -- the distinction the whole site is
+ * built around, and one a visitor arriving from a marker or a search result
+ * cannot read off the title.
+ *
+ * Only the terms whose stored label is wrong for CDASH are mapped:
+ * bibo:Document already labels itself "Document", while dcterms:Location
+ * labels itself "Location", which is not what this site calls it anywhere
+ * else. An unclassed item, or a class added later, falls back to its own
+ * translated label rather than rendering an empty line.
+ */
+$resourceClass = $item->resourceClass();
+$classLabels = [
+    'dcterms:Location' => 'Place', // @translate
+];
+$isDocument = $resourceClass && 'bibo:Document' === $resourceClass->term();
+$classLabel = '';
+if ($resourceClass) {
+    $classLabel = $classLabels[$resourceClass->term()] ?? $resourceClass->label();
+    $classLabel = $translate($classLabel);
+}
+
+/**
+ * ...and how big it is: pages for a Document, linked Documents for a Place.
+ *
+ * subjectValueTotalCount() is Omeka's own count of resources pointing AT this
+ * one, which is what the Linked Resources block lists below. Site scoping has
+ * to match that block exactly or the header can claim documents the list does
+ * not show: it passes a site id only when exclude_resources_not_in_site is on
+ * (see Omeka's common/resource-page-block-layout/linked-resources.phtml), so
+ * this does the same. That matters here -- a site whose item pool is empty
+ * renders an empty list, and a header disagreeing with it would send the next
+ * person hunting the wrong bug.
+ *
+ * A count of zero prints nothing rather than "0 documents".
+ */
+$itemMeta = '';
+if ($isDocument) {
+    $pages = (int) (string) $item->value('bibo:numPages');
+    if ($pages > 0) {
+        $itemMeta = sprintf($translate($pages === 1 ? '%d p.' : '%d pp.'), $pages);
+    }
+} elseif ($resourceClass) {
+    $siteId = $this->siteSetting('exclude_resources_not_in_site')
+        ? $this->currentSite()->id()
+        : null;
+    $documents = $item->subjectValueTotalCount(null, 'items', $siteId);
+    if ($documents > 0) {
+        $itemMeta = sprintf(
+            $translate($documents === 1 ? '%d document' : '%d documents'),
+            $documents
+        );
+    }
+}
+
+/**
+ * The credit and rights statement, shown at the foot of every item page.
+ *
+ * Fixed text rather than the item's own values, deliberately. Both lines exist
+ * in the data as dcterms:bibliographicCitation and dcterms:rights, but only on
+ * Documents, and with one distinct value each across all of them -- boilerplate
+ * stored per item. Taking it from the theme puts the credit on Place pages too,
+ * where there is no stored value to read. Both terms are therefore hidden in
+ * view/common/resource-values.phtml, or a Document would show each line twice.
+ *
+ * This is the one place to edit the wording. If it starts changing often, the
+ * next step is a theme setting in config/theme.ini, beside the banner and the
+ * accent colour.
+ */
+$itemFooter = [
+    'Citation' => 'Cambridge Historical Commission, Digital Architectural Survey and History.', // @translate
+    'Rights' => 'Rights status not evaluated.', // @translate
+];
+
+/**
+ * The Place a Document belongs to, as a link up to it.
+ *
+ * Server-rendered, unlike the "Return to ..." breadcrumb beside it, because
+ * the two answer different questions from different sources: where this
+ * Document belongs is a fact about the item, while where the visitor came from
+ * is session state only the browser knows. Stating the fact here means it
+ * holds on a shared link, with JavaScript off, and in the page source -- and
+ * it covers the case the breadcrumb alone misses, a Document reached by
+ * clicking a map marker, which otherwise offers no way up at all.
+ *
+ * cdash-layout.js removes this link when the return breadcrumb already points
+ * at the same Place, so the row never reads "Visit X - Return to X". That
+ * comparison needs the stored return URL, which is why it is not done here.
+ */
+$placeLink = null;
+if ($isDocument) {
+    $placeValue = $item->value('cdash:placeItem');
+    if ($placeValue && 'resource' === $placeValue->type()) {
+        $place = $placeValue->valueResource();
+        $placeLink = [
+            'url' => $place->url(),
+            'title' => $place->displayTitle(null, $valueLang),
+        ];
+    }
+}
 ?>
-<?php echo $this->pageTitle($item->displayTitle(null, $valueLang), 2); ?>
-<!-- CDASH Custom: remove this item heading 
-<h3><?php echo $translate('Item'); ?></h3>
--->
+<?php
+// The sticky header, shared with the listings in browse.phtml. The meta line
+// is only shown for a classed item, as before: a size with no kind beside it
+// ("3 pp.") says too little on its own.
+echo $this->partial('common/cdash-page-header', [
+    'title' => $item->displayTitle(null, $valueLang),
+    'kind' => $classLabel,
+    'detail' => $classLabel !== '' ? $itemMeta : '',
+    'visit' => $placeLink,
+]);
+?>
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>
 
-<!-- The default behavior for the media-embed block is to attach a hyperlink to the image
-    that references the original tif file.  This CDASH modification removes that.  
-    WIth this mod, the user has access to the right-click menu for saving the thumbnail or
-    opening it in a new window. -->
-<script>
-images = document.getElementsByClassName("media-render file")
-for (let i = 0; i < images.length; i++) {
-    anchors = images[i].getElementsByTagName('a')
-    for (let j = 0; j < anchors.length; j++) {
-         anchors[j].removeAttribute("href");
-       }
-}
-</script>
+<?php // Same dl > div.property > dt + dd markup as the property list, on
+      // purpose: #content dl and #content .property in _desktop.scss carry the
+      // auto-fit columns, the max-content label column and the stack-below-
+      // 500px behaviour, so this block inherits all of it and needs no layout
+      // rules of its own. ?>
+<div class="cdash-item-footer">
+    <dl>
+        <?php foreach ($itemFooter as $label => $text): ?>
+        <div class="property">
+            <dt><?php echo $escape($translate($label)); ?><b>:</b></dt>
+            <dd class="value">
+                <span class="value-content"><?php echo $escape($translate($text)); ?></span>
+            </dd>
+        </div>
+        <?php endforeach; ?>
+    </dl>
+</div>
+
+<!-- Stock Omeka wraps each page thumbnail in a link to the original TIF. CDASH
+     does not want that link, and it is no longer rendered: the theme's copy of
+     the block template passes `link => null` to $media->render(), so the
+     anchor is absent from the markup. See
+     view/common/resource-page-block-layout/media-embeds.phtml.
+
+     This was an inline <script> here, then a JS fixup that stripped the href
+     after every browse-pane swap. Both are gone -- the second was only needed
+     because the first could not run on a swap, and neither is needed once the
+     server stops emitting the anchor. -->

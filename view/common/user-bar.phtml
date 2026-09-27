@@ -1,0 +1,57 @@
+<?php
+/**
+ * Copy of Omeka's user bar, with the two CDASH geo tools added to the admin
+ * links.
+ *
+ * Those links used to be appended by an inline <script> in layout.phtml, which
+ * ran once per page load -- fine in stock Omeka, wrong here, where navigation
+ * swaps the browse pane instead of reloading. They are server-rendered now, so
+ * they survive every swap without anything having to re-run.
+ *
+ * That matters more than tidiness: the shell carries hx-select-oob="#user-bar",
+ * so htmx replaces this whole bar from each swap response. Omeka's UserBar
+ * helper builds the View and Edit links from the route being rendered, which is
+ * what keeps them pointing at the item actually on screen -- they went stale
+ * otherwise, since the bar sits outside the swapped #content. Anything added to
+ * the bar has to come from the server for the same reason.
+ *
+ * Everything else is verbatim.
+ */
+$translate = $this->plugin('translate');
+$hyperlink = $this->plugin('hyperlink');
+$urlHelper = $this->plugin('url');
+$this->headLink()->prependStylesheet($this->assetUrl('css/user-bar.css', 'Omeka'));
+$this->headLink()->prependStylesheet('//fonts.googleapis.com/css?family=Source+Code+Pro|Lato:400,400italic,700,700italic');
+?>
+<div id="user-bar">
+<?php if ($user): ?>
+	<div class="site-links">
+    <?php foreach ($links as $link): ?>
+	    <span class="admin <?php echo $link['resource'] . ' ' . $link['action']; ?>">
+	        <?php echo $hyperlink($link['text'], $link['url']); ?>
+	    </span>
+    <?php endforeach; ?>
+        <?php // CDASH geo tools. Inside the $user branch with the rest: these
+              // rewrite the database, and _require-admin.php guards them, but
+              // there is no reason to show them to anyone else. ?>
+	    <span class="admin cdash-tool">
+	        <a href="<?php echo $this->escapeHtml($this->assetUrl('php/geosync.php')); ?>" target="geosync">GeoSync</a>
+	    </span>
+	    <span class="admin cdash-tool">
+	        <a href="<?php echo $this->escapeHtml($this->assetUrl('php/geoaudit.php')); ?>" target="geoaudit">GeoAudit</a>
+	    </span>
+	</div>
+
+	<div class="user-links">
+	    <span class="user-id">
+	        <?php
+	        $url = $urlHelper('admin/id', ['controller' => 'user', 'id' => $user->getId()]);
+	        echo sprintf($translate('Signed in as %s'), $hyperlink($user->getName(), $url));
+	        ?>
+	    </span>
+        <?php echo $hyperlink($translate('Logout'), $urlHelper('logout'), ['class' => 'logout']); ?>
+	</div>
+<?php else: ?>
+    <?php echo $hyperlink($translate('Log in'), $urlHelper('login'), ['class' => 'login']); ?>
+<?php endif; ?>
+</div>

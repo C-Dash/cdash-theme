@@ -1,0 +1,63 @@
+// Tall-case: the pane container's own aspect ratio is <= 1.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css. It is a sass partial now and
+// is @use'd last from style.scss, so it still wins on source order.
+
+/* ---- Tall-case: Pane Container's own aspect ratio is <= 1 ---- */
+@container panes (aspect-ratio <= 1) {
+  .cdash-pane-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: var(--cdash-split, 50%) var(--cdash-divider-track, 1px) 1fr;
+  }
+
+  /* Divider-facing side is bottom (map) / top (browse) instead of right/left,
+     so that is the side without a border here. .cdash-pane-collapsed's
+     border-width:0 is two classes, so it still wins over these. */
+  .cdash-map-pane {
+    grid-column: 1;
+    grid-row: 1;
+    border-right-width: 3px;
+    border-bottom-width: 0;
+  }
+
+  .cdash-pane-divider {
+    grid-column: 1;
+    grid-row: 2;
+    cursor: row-resize;
+  }
+
+  .cdash-browse-pane {
+    grid-column: 1;
+    grid-row: 3;
+    border-left-width: 3px;
+    border-top-width: 0;
+  }
+
+  /* Pane tabs move to the top and bottom edges, with horizontal labels. The
+     drawer tabs do not: drawers stay horizontal in both orientations. */
+  .cdash-pane-tab {
+    writing-mode: horizontal-tb;
+    width: 110px;
+    height: 32px;
+  }
+
+  .cdash-pane-tab-map {
+    top: var(--cdash-split);
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 0 0 8px 8px;
+  }
+
+  .cdash-pane-tab-browse {
+    top: var(--cdash-split);
+    left: 50%;
+    transform: translate(-50%, -100%);
+    border-radius: 8px 8px 0 0;
+  }
+}
+
+/* Redundant JS-mirrored cursor hint (kept in sync with the container query above) */
+.cdash-pane-grid.cdash-is-tall .cdash-pane-divider {
+  cursor: row-resize;
+}

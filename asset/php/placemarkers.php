@@ -23,10 +23,14 @@ die("Connection failed: " . $conn->connect_error);
 // resource_template_id corresponding with the CDASH Places template
 // property_id corresponding with a value of placeType 
 
-$sql = "SELECT item_id, resource.title, value.value as placetype, lat, lng 
+// This query bypasses Omeka's own visibility rules by reading the database
+// directly, so it has to enforce is_public itself -- without that filter an
+// unpublished Place item would still appear on the map as a marker.
+$sql = "SELECT item_id, resource.title, value.value as placetype, lat, lng
 FROM mapping_marker
 JOIN resource
   ON mapping_marker.item_id = resource.id
+  AND resource.is_public = 1
   AND resource_template_id = (select id from resource_template where label = 'CDASH Place')
 JOIN value
   on resource.id = resource_id

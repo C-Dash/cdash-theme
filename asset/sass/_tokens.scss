@@ -1,0 +1,104 @@
+// Design tokens and the typed custom properties the shell animates.
+//
+// Moved out of the hand-written asset/css/cdash-shell.css, which used to be
+// loaded as a second stylesheet after style.css.
+//
+// The colour tokens below are published from the sass variables in _base.scss
+// rather than replacing them, because the two do different jobs. _base.scss
+// still owns the values and the derivations -- $light, $bg and $bold are
+// color.adjust() of $gray, which a custom property cannot do at build time.
+// What the custom properties add is a runtime handle: a theme setting, or a
+// future dark mode, can change one property instead of needing a rule for
+// every place a colour is used.
+//
+// The numeric tokens deliberately do NOT get this treatment. $spacing-*,
+// $base-font-size and $base-line-height are used in arithmetic in 72 places
+// (`1.5 * $spacing-l`, `.75 * $base-font-size`), which a custom property can
+// only express by wrapping every one of them in calc(). They stay sass.
+
+@use "sass:color";
+@use "base";
+
+/* ---- Typed custom properties (required for animatable grid-track transitions) ---- */
+/* <length-percentage> rather than <percentage> so the banner_height theme
+   setting, which the admin UI documents as taking px/em/rem, is a valid
+   value. The collapse still animates to 0%, which is a valid length-percentage,
+   and the 15% default still applies when the setting is left empty. */
+@property --cdash-banner-h {
+  syntax: '<length-percentage>';
+  inherits: false;
+  initial-value: 15%;
+}
+
+/* inherits:true so the pane tabs, children of .cdash-pane-grid, can position
+   themselves on the split and follow it -- animation included, since the
+   inherited value is recomputed every frame of the grid's transition. */
+@property --cdash-split {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 50%;
+}
+
+@property --cdash-pullout-w {
+  syntax: '<percentage>';
+  inherits: false;
+  initial-value: 0%;
+}
+
+:root {
+  /* ---- Palette, published from _base.scss ----
+     $bold, $light and $bg are derived from $gray at build time; the two
+     -hover/-light entries exist because their call sites used color.adjust()
+     inline, which var() cannot do. */
+  --cdash-gray:       #{base.$gray};
+  --cdash-gray-light: #{color.adjust(base.$gray, $lightness: 15%)};
+  --cdash-bold:       #{base.$bold};
+  --cdash-light:      #{base.$light};
+  --cdash-bg:         #{base.$bg};
+  --cdash-darkgray:   #{base.$darkgray};
+  --cdash-page:       #{base.$page};
+
+  /* Overridden at runtime by the accent_color theme setting, which used to
+     have to inject its own a:link/a:visited rules to get past the compiled
+     value. It now sets this one property. */
+  --cdash-link:       #{base.$link};
+  --cdash-link-hover: #{color.adjust(base.$link, $lightness: 20%)};
+
+  --cdash-map-hue: 220;
+  --cdash-map-sat: 70%;
+  /* Browse was hue 42 at 65%, which read as tan. 50 at 80% is a clear yellow. */
+  --cdash-browse-hue: 50;
+  --cdash-browse-sat: 80%;
+
+  --cdash-map-boundary: hsl(var(--cdash-map-hue) var(--cdash-map-sat) 35%);
+  --cdash-map-bg:       hsl(var(--cdash-map-hue) var(--cdash-map-sat) 90%);
+  --cdash-browse-boundary: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 40%);
+  --cdash-browse-bg:       hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 90%);
+
+  /* Pull-outs: lighter than their pane's own background, plus a subtle
+     transparency so the pane content underneath faintly shows through. */
+  --cdash-map-pullout-bg:    hsl(var(--cdash-map-hue) var(--cdash-map-sat) 97% / 0.85);
+  --cdash-browse-pullout-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 97% / 0.85);
+
+  /* Tabs. A pane tab is solid and strong; a drawer tab is pale, so the two
+     read as different things when both sit on the same screen edge. The
+     browse tab is lighter than its boundary and carries dark text: white on
+     a mid yellow fails contrast. */
+  --cdash-map-tab-bg:       var(--cdash-map-boundary);
+  --cdash-map-tab-fg:       #fff;
+  --cdash-browse-tab-bg:    hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 55%);
+  --cdash-browse-tab-fg:    #222;
+  --cdash-map-drawer-tab-bg:    hsl(var(--cdash-map-hue) var(--cdash-map-sat) 85%);
+  --cdash-browse-drawer-tab-bg: hsl(var(--cdash-browse-hue) var(--cdash-browse-sat) 80%);
+
+  /* Resize edges: a quiet line at rest, a coloured band on hover, focus or
+     drag, and a grip pill marking where to take hold. */
+  --cdash-divider:     #b0b0b0;
+  --cdash-edge-active: var(--cdash-link);
+  --cdash-grip-bg:     #f4f4f4;
+  --cdash-grip-fg:     #808080;
+
+  /* The prototype used a 20px placeholder nav. The real nav carries a menu and
+     a search form, so the shell sizes that row to its content instead. */
+  --cdash-nav-h: auto;
+}

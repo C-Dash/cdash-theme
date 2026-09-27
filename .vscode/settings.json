@@ -1,0 +1,24 @@
+{
+  // Build config for asset/sass -> asset/css/style.css.
+  //
+  // This lived only in the user's personal VS Code settings, which meant the
+  // build was not reproducible by anyone else and not versioned with the
+  // theme. It is here so the extension and the command-line build agree.
+  //
+  // autoprefix is OFF deliberately. Its default, the browserslist query
+  // "defaults", is resolved against a caniuse-lite bundled inside the
+  // extension, so the emitted prefixes change silently whenever the extension
+  // updates -- and it both adds prefixes and strips hand-written ones. With it
+  // off, a plain `sass` run produces exactly this file's contents, so whoever
+  // compiles, the output is the same. The prefixes that matter are written out
+  // in the .scss sources.
+  "liveSassCompile.settings.formats": [
+    {
+      "format": "expanded",
+      "extensionName": ".css",
+      "savePath": "~/../css/",
+      "savePathReplacementPairs": null
+    }
+  ],
+  "liveSassCompile.settings.autoprefix": false
+}

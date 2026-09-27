@@ -1,25 +1,44 @@
-@import "normalize";
-//@import "susy";
+// Entry point for asset/css/style.css, loaded by layout.phtml with
+// media="screen". Print is a separate entry point, print.scss.
+//
+// There is no `@media screen` wrapper here. There used to be one, but the link
+// already carries media="screen", so every rule sat inside a screen-only
+// stylesheet inside a screen-only media block. The link's media attribute is
+// the one that stays, because `@use` is only legal at the top level of a file
+// and cannot be nested inside `@media` at all.
+//
+// Order is the cascade here. The shell partials come after the component ones
+// because they used to be a separate stylesheet, asset/css/cdash-shell.css,
+// loaded after this one, and some of their rules still win on source order
+// rather than on specificity.
+//
+// There is no _overrides partial any more. Every id the shell cares about --
+// #banner, #navmenu, #drawmap, #showresult, #content, #overlay-menu,
+// #basemap-menu -- is now declared in exactly one place: its box model here in
+// the shell partials, its colour and typography in _screen/_desktop.
 
+// Palette and the shell's typed custom properties. First because the partials
+// below reference them as var(--cdash-*) -- custom properties resolve at
+// computed-value time so order does not actually decide anything here, but
+// reading the values before their uses does.
+@use "tokens";
 
+// Omeka component styling: typography, links, forms, fields, tables. What the
+// browse pane renders.
+@use "base";
+@use "screen";
+@use "desktop";
 
+// The application shell: the banner/nav/pane grid, the panes, the drag divider
+// and the pull-out drawers.
+@use "shell";
+@use "panes";
+@use "drawers";
+@use "tall-case";
 
-@media screen {
-    @import "base";
-    @import "grid";
-    @import "screen";
-    @import "desktop";
-}
+// Controls the theme adds to the Leaflet map.
+@use "map-controls";
 
-/*
-@media screen and (min-width:800px) {
-    @import "grid";
-    @import "desktop";
-}
-
-
-@media print { 
-    @import "print";
-}
-*/
-
+// The card grid: search results, folder contents and the Linked Resources
+// block, which all render the same cards from view/common/cdash-card.phtml.
+@use "resource-list";

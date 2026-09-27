@@ -1,59 +1,36 @@
+@use "base";
+
 
 html, body { 
-    background-color: $gray;
+    background-color: var(--cdash-gray);
     //margin: $spacing-s auto;
     //height:   100%;
     
     }
     .leaflet-popup{
-        max-width: 250px;
+        max-width: 300px;
         white-space: normal;
     }
 
-    #grid-container {
-        display: grid;
-        height: 100vh;
-        width: 100%;
-        grid-template:
-        "top top" 
-        "cdash-map showresult" ;
-        grid-template-columns: 40vw 1fr;
-        grid-template-rows: 176px 1fr;
-    }
-    
-    map {
-        border-left: 3px solid $gray;
-        border-bottom: 3px solid $gray;
-    }
-    #top {
-        height: 176px;
-        grid-area: top;
-        display: grid;
-        grid-template:
-        "banner"
-        "navmenu" ;
-        /* grid-template-rows: 140px 36px; */
-        
-    }
-#navmenu {
-    grid-area: navmenu;
-    display: flex;
-    height: 30px;
-}
+/* The 4.1.1 desktop layout that used to live here -- #grid-container, #top,
+   the <map> element, #cdmap-frame, #cdmap-tools, #layer-panel(-flip),
+   #overlayBoxes, #baseMapButtons, #header and #menubar -- has been removed.
+   None of those selectors appear in this theme's markup, in its JS/PHP, or in
+   Omeka's core views: the shell is .cdash-app-shell and is styled by
+   asset/css/cdash-shell.css. The selectors kept below (#banner, #navmenu,
+   #drawmap, #showresult, #content, #overlay-menu, #basemap-menu, #user-bar)
+   ARE still live, which is why cdash-shell.css still has to override them. */
+// display:flex and the height moved to _shell.scss, which is the only place
+// that says how the nav row is sized. #navmenu's own rule here is gone
+// entirely now -- it carried only grid-area:navmenu, and its parent,
+// .cdash-navbar, is plain block, confirmed by checking before removing (see
+// the #content grid-area incident: an "inert" leftover reactivates the moment
+// its parent gains display:grid/flex, so this isn't assumed, it's verified).
 
-#banner { 
-    height: 140px;
-    width: 100%;
-    grid-area: banner; 
-    overflow: hidden;
-}
-
-#banner img {
-    height: 140px;
-    min-width:100%;
-    max-width:none;
-    /*margin:0 -100%; */
-} 
+// height/width/overflow moved to _shell.scss. The 140px was for the old 176px
+// #top row; the banner is a grid track now and fills whatever it is given.
+// #banner's rule here carried only grid-area:banner, same story as #navmenu
+// above -- parent (.cdash-banner-content) is plain block, verified, removed.
 
 .left {
     margin-left: auto;
@@ -76,125 +53,55 @@ html, body {
     "cdmap-tools" 300px ; */
     /* } */
 
-#cdmap-frame {
-    /* grid-area: cdmap-frame; */
-    border: 3px dotted rgb(202, 178, 126);
-}
-
 #drawmap {
     background-color:rgb(231, 226, 214);
     /*height: 100%;*/
 }
 
-#cdmap-tools {
-    background-color:rgb(233, 227, 204);
-    /*border: 3px dotted rgb(202, 178, 126);*/
-    grid-area: cdmap-tools;
-    /*overflow: auto; */
-    /* resize: vertical; */
-    /*min-width: 120px; */
-    /*max-width: 50vw;*/ 
-    /*overflow-x: visible ; */
-    overflow-y: scroll ;
-    height: 300px;
-    display: grid;
-    grid-template:
-    "overlay-menu  basemap-menu " 1fr 1fr;
-    padding-left: 20px;
-}
 
-#layer-panel-flip {
-    text-align: right;
-    margin-right: 15px;
-    cursor: n-resize;
-  }
-  
-  /*
-  #layer-panel {
-    height: 300px;
-    display: grid;
-    grid-template:
-    "overlay-menu basemap-menu";
-  }
-
-*/
-
-#layer-panel {
-    display: grid;
-    background-color: $page;
-    grid-area: layer-panel;
-    overflow-y: auto;
-    /*overflow-x: hidden ;*/
-    grid-template-columns: 
-     "overlay-menu" 1fr
-    "basemap-menu" 1fr; 
-
-    /*grid-template-columns: "overlay-menu basemap-menu" 1fr  */
-}
-
+// height moved to _drawers.scss: these are stacked in the Layers drawer now,
+// not cells in the old #layer-panel grid, so they size to content. grid-area
+// and grid-column, dead the same way #navmenu's/#banner's were above --
+// parent (.cdash-pullout-content-inner) is plain block, verified -- are gone.
 #overlay-menu {
-    grid-area: overlay-menu;
-    grid-column: 2;
-    /*border: 3px dotted rgb(238, 234, 21);*/
-    height: 100%;
     padding: 1px 4px 1px 4px;
 }
 
 #basemap-menu {
-    grid-area: basemap-menu;
-    grid-column: 1;
-    /*border: 3px dotted rgb(6, 240, 248);*/
-    height: 100%;
     padding: 1px 4px 1px 4px;
-    /*overflow-x: visible;*/
-
 }
 
 
-#showresult {    
-    //border: 3px solid rgb(194, 171, 124);
-    width: 100%; 
-    height: 100%;
-    background-color: $page;
-    /*padding-left: 4px;
-    padding-right: 8px; */
-    overflow-y: scroll;
-    overflow-x:hidden; 
-    border-left: 3px solid $gray;
-  grid-area: showresult;
-    display: grid;
-    grid-template:
-    "content" 1fr
-     "user-bar" 50px; 
-}
+// The whole box model moved to _panes.scss: this is the browse pane's single
+// scroll container now, not a grid with a "user-bar" track and its own left
+// border. grid-area is gone too -- #showresult's parent, .cdash-pane-content,
+// is plain block, verified rather than assumed, same as the others above.
 
 /* #detail {
     grid-area: detail;
     overflow: auto;
 } */
 
-#user-bar {
-    grid-area: user-bar;
-    width: 100%;
-}
+// #user-bar moved to _panes.scss: it is part of #showresult's box model now
+// (the grid row that pins it to the pane's bottom edge), not Omeka component
+// styling.
 
 
 
-#overlayBoxes {
-    grid-area: overlayBoxes;
-} 
-#baseMapButtons {
-    grid-area: baseMapButtons;
-
-}
-
-#content {
-    grid-area: content;
-    width: 100%;
-    height: 100%;
-    margin: 10px;
-    padding-right: 30px;
-}
+// Sizing moved to _panes.scss. margin:10px could collapse out of the scroller,
+// which is why its successor uses padding.
+//
+// grid-area:content used to live here and was judged harmless when the CSS
+// split removed the rest of this rule: #content's parent, #showresult, was
+// display:block at the time, and grid-area on a child of a non-grid element
+// does nothing. It stopped being harmless the moment #showresult became
+// display:grid (see _panes.scss) -- #content is a genuine grid item now, so
+// grid-area:content started to mean something: with no area named "content"
+// in #showresult's template, the browser creates an IMPLICIT named track for
+// it, outside the explicit 1-column/2-row grid entirely. #user-bar (no
+// grid-area, auto-placed) fell into the one explicit cell left over; #content
+// landed in the new implicit one -- diagonal from #user-bar instead of
+// stacked below it. Removed rather than left inert a second time.
 
 
 #content {
@@ -212,45 +119,95 @@ html, body {
         /*margin-right: 60px;*/
     }
 
+    // The property list on an item show page, rendered by
+    // view/common/resource-values.phtml as dl > div.property > dt + dd...
+    //
+    // It used to reserve a fixed 8.5em label column and indent every dd by
+    // 9em, inside a dl that was always two properties wide. The labels in this
+    // data are single words -- Citation, Pages, Rights, Folder -- and the
+    // values are sentences, so that indent was almost entirely empty space,
+    // and halving a narrow browse pane on top of it left a sentence about
+    // 55px to wrap in. Both fixed measurements are gone: the dl fits its
+    // columns to the space, and each property sizes its label column to its
+    // own label.
     .property dt {
         margin-bottom: 0;
-        font-size: 1 * $base-font-size;
+        font-size: 1 * base.$base-font-size;
         font-weight: bold;
-        width: 8.5em ;  
 
         &:first-child {
             margin-top: 0;
         }
     }
 
-    .property value-content {
-        margin-bottom: 0;
-        font-size: .75 * $base-font-size;
-        font-weight: bold;
-        
-    }
+    // `.property value-content` stood here, selecting an ELEMENT named
+    // value-content when the markup is <span class="value-content">. It never
+    // matched anything, so removing it changes nothing rendered -- the same
+    // mistake the old print CSS carried, recorded in CLAUDE.md.
 
     .resource-link img {
         height: 35px;
         width: 30px;
         margin-right: 4px;
     }
+
+    // auto-fit rather than a fixed 2: two columns when each can have ~22rem,
+    // one otherwise, with no breakpoint to maintain. min(22rem, 100%) is the
+    // same guard the card grids use -- a bare 22rem minimum would overflow a
+    // pane narrower than that instead of dropping to one column.
     dl {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        /*grid-auto-rows: minmax(100px, auto);*/
-        grid-gap: 2px;
+        grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+        column-gap: base.$spacing-l;
+        row-gap: base.$spacing-s;
+    }
+
+    // max-content: the label column is exactly as wide as that property's
+    // label and no wider, which is what removes the dead space. A property
+    // with several values puts each dd on its own row in the value column,
+    // from the grid's ordinary auto-placement.
+    .property {
+        display: grid;
+        grid-template-columns: max-content 1fr;
+        column-gap: base.$spacing-m;
+        align-items: baseline;
     }
 
     dt {
-        float: left;
-        clear: left;
-        width: 8.5em;
+        grid-column: 1;
+    }
+
+    dd {
+        grid-column: 2;
+        margin: 0;
+        padding: 0 0 0.2em 0;
+    }
+
+    // The credit and rights block at the foot of an item page. Its markup is
+    // the property list's, so the grid rules above already place it; this is
+    // only the separation from the blocks it follows, and a smaller size,
+    // since it is a standing statement rather than this item's own metadata.
+    .cdash-item-footer {
+        margin-top: 1.5 * base.$spacing-l;
+        padding-top: base.$spacing-m;
+        border-top: 1px solid var(--cdash-light);
+        font-size: .75 * base.$base-font-size;
+    }
+
+    // Below this the pane is too narrow to give a sentence a usable column
+    // beside its label, so the label moves above its value and the value gets
+    // the full width. The "browse" container is declared on the browse pane's
+    // content wrapper in _panes.scss.
+    @container browse (max-width: 500px) {
+        .property {
+            grid-template-columns: 1fr;
         }
-     dd {
-        margin: 0 0 0 9em;
-         padding: 0 0 0.2em 0;
+
+        dt,
+        dd {
+            grid-column: 1;
         }
+    }
 
     table {
         /*display: grid;
@@ -287,13 +244,6 @@ html, body {
 //}
 */
 
-#cdash_map #map {
-    //margin: $spacing-s;
-    //margin-top: $spacing-m;
-    //width: 50%;
-    /*height: 600px;*/
-    //grid-area: map;
-}
 
 /*#baseMapButtons, #overlayBoxes {
     //overflow-y: auto; 
@@ -304,8 +254,8 @@ html, body {
    }
 */
 //#content {
-//    //padding: 0 (2 * gutter()) $spacing-l;
-//    padding: 0 gutter() $spacing-l;
+//    //padding: 0 (2 * $spacing-m) $spacing-l;
+//    padding: 0 $spacing-m $spacing-l;
     //width: 60%;
 //    float: right;
 //    width: span(6 of 12 last);
@@ -369,59 +319,29 @@ html, body {
 
 p {
     display: block;
-    margin-block-start: $spacing-m;
-    margin-block-end: $spacing-m;
+    margin-block-start: base.$spacing-m;
+    margin-block-end: base.$spacing-m;
     margin-inline-start: 0px;
     margin-inline-end: 0px;
 }
 
 table {
-    margin: $spacing-l 0;
+    margin: base.$spacing-l 0;
     border-collapse: collapse;
 }
 
 th,
 td {
     text-align: left;
-    padding: $spacing-s $spacing-m;
-    padding-bottom: $spacing-s - 1px;
-    border-bottom: 1px solid $gray;
+    padding: base.$spacing-s base.$spacing-m;
+    padding-bottom: base.$spacing-s - 1px;
+    border-bottom: 1px solid var(--cdash-gray);
 }
 
 /* @group ----- Header ----- */
 
 #banner {
-    background-color: $darkgray;
-}
-
-#header {
-    //position: relative;
-    //padding: $spacing-s 0 0;
-    //margin-bottom: 2 * $spacing-l;
-    //background-color: $page;
-    background-color: $darkgray;
-    //position: fixed;
-}
-
-#header > * {
-    //padding: 0 (2 * gutter());
-    padding: 0 0 0 0;
-}
-
-//#header.fixed {
-//    position: fixed;
- //   width: 1328px;
-//    top: -115px;
-
-//}
-
-
-
-
-#header > h1 {
-    //margin: $spacing-s auto;
-    padding: 0 0 0 0;
-    line-height: 34px;
+    background-color: var(--cdash-darkgray);
 }
 
 /* @end */
@@ -442,15 +362,9 @@ td {
 
 /* @group ----- Navigation ----- */
 
-#menubar {
-    background-color: #60655F;
-    height: (1.5 * $spacing-l);
-    //@include container;
-}
-
 #navmenu {
 
-    background-color: $darkgray;
+    background-color: var(--cdash-darkgray);
 }
 
 //nav {
@@ -467,7 +381,7 @@ td {
 
 nav {
  a:link, a:visited, a:hover {
-    color: $page;
+    color: var(--cdash-page);
 }}
 
 nav:before {
@@ -502,7 +416,7 @@ nav > ul ul:hover > li {
 }
 
 nav ul.navigation {
-    margin-left: -$spacing-s;
+    margin-left: -(base.$spacing-s);
     //position: static;
     display: flex;
     align-items: flex-end;
@@ -516,7 +430,7 @@ nav ul.navigation {
     }
 
     & > li:not(:last-child) {
-        margin-right: $spacing-m;
+        margin-right: base.$spacing-m;
     }
 
     & > li > ul {
@@ -529,7 +443,7 @@ nav ul.navigation {
         list-style-type: none;
         list-style: none;
         width: 100%;
-        padding: ($spacing-m - 1px) 0 ($spacing-s - 1px);
+        padding: (base.$spacing-m - 1px) 0 (base.$spacing-s - 1px);
         display: flex;
         flex-direction: row;
         flex-flow: row wrap;
@@ -537,8 +451,8 @@ nav ul.navigation {
     }
 
     & > li:hover > ul {
-        @include container;
-        padding: $spacing-m calc(0.5 * $spacing-l) ;
+        @include base.container;
+        padding: base.$spacing-m calc(0.5 * base.$spacing-l) ;
         left: 0;
         right: 0;
         border-bottom: 0;
@@ -552,17 +466,17 @@ nav ul.navigation {
             position: absolute;
             top: 0;
             bottom: 0;
-            border-bottom: 1px solid $light;
-            border-top: 1px solid $light;
+            border-bottom: 1px solid var(--cdash-light);
+            border-top: 1px solid var(--cdash-light);
             z-index: -1;
         }
     }
 
     & > li > ul > li {
         width: 25%;
-        font-size: .75 * $base-font-size;
+        font-size: .75 * base.$base-font-size;
         font-weight: bold;
-        padding-bottom: $spacing-l;
+        padding-bottom: base.$spacing-l;
     }
 
     & > li > ul > li ul {
@@ -574,8 +488,8 @@ nav ul.navigation {
 }
 
 nav > ul > li > a {
-    margin: $spacing-l;
-    color: $page;
+    margin: base.$spacing-l;
+    color: var(--cdash-page);
 }
 
 /* All top-level nav items with siblings are parent items and get an arrow. */
@@ -583,7 +497,7 @@ nav > ul > li > a:not(:only-child):after {
     font-family: "Font Awesome 5 Free";
     content: "\f107";
     display: inline-block;
-    margin-left: $spacing-s;
+    margin-left: base.$spacing-s;
 }
 
 nav > ul li:hover ul li {
@@ -598,15 +512,15 @@ nav > ul > li > ul > li > ul > li a {
 }
 
 .sub-menu ul {
-    border-bottom: 1px solid $light;
-    padding-bottom: ($spacing-m - 1px);
+    border-bottom: 1px solid var(--cdash-light);
+    padding-bottom: (base.$spacing-m - 1px);
 }
 
 .sub-menu li {
     display: inline-block;
     border: 0;
     padding: 0;
-    margin-right: $spacing-m;
+    margin-right: base.$spacing-m;
 
     &:first-of-type {
         border: 0;
@@ -627,18 +541,16 @@ nav > ul > li > ul > li > ul > li a {
     //position: relative;
     //float: right;
     //padding: 2px;
-    background-color: $darkgray;
+    background-color: var(--cdash-darkgray);
     //border: 0;
     //border-left: 1px solid $light;
     //padding: $spacing-s;
-    //padding: 0 (2 * gutter()) $spacing-l;
-    //margin-right: 4 * gutter();
+    //padding: 0 (2 * $spacing-m) $spacing-l;
+    //margin-right: 4 * $spacing-m;
     //background-color: $page;
     //margin: $spacing-s;
     //margin-right: auto;
  
-
-
 }
 
 #search form input[type="text"],
@@ -656,57 +568,15 @@ nav > ul > li > ul > li > ul > li a {
 /* @group ----- Resource List ----- */
 
 ul.resource-list .resource img {
-    width: 4 * $spacing-l;
+    width: 4 * base.$spacing-l;
     height: auto;
     float: right;
     /*margin-left: $spacing-m;*/
 }
 
 /*ul.resource-list .resource img ~ * {
-    width: calc(100% - #{4.5 * $spacing-l});
+    width: calc(100% - #{4.5 * base.$spacing-l});
 }*/
-
-/* @end */
-
-/* @group ----- Item Set ----- */
-
-body.item-set.item #content {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    justify-content: flex-end;
-
-    & > h2,
-    & > h3 {
-        width: 100%;
-    }
-}
-
-body.item-set .metadata {
-    width: span(4 of 12 alpha);
-    border-left: 5px solid $light;
-    padding-left: gutter();
-    margin-right: gutter();
-}
-
-body.item-set .metadata h4:first-of-type {
-    margin-top: 0;
-}
-
-body.item-set #content .metadata ~ * {
-    width: span(8 of 12 omega);
-    border-left: 1px solid $light;
-    padding-left: gutter();
-}
-
-body.item-set .item-set-items h3 {
-    margin-top: 0;
-}
-
-body.item-set .metadata ~ nav.pagination:first-of-type {
-    margin-bottom: 0;
-}
-
 
 /* @end */
 
@@ -717,8 +587,19 @@ body.item-set .metadata ~ nav.pagination:first-of-type {
 }
 
 ul.preview.resource-list li:first-of-type {
-    border-top: 1px solid $light;
-    padding-top: ($spacing-l - 1px);
+    border-top: 1px solid var(--cdash-light);
+    padding-top: (base.$spacing-l - 1px);
+}
+
+/* Added for CDASH pbc 26/04/14 affects pages */
+.block {
+    .asset {margin-left: 20px; margin-right: 30px; }
+    h1, h2 {margin-left: 20px; margin-right: 25px;  margin-top: 20px; }
+    h3 {margin-left: 20px; margin-right: 25px; font-size: 15px;
+        margin-top: 17px; margin-bottom: 7px;}
+    p {margin-left: 20px; margin-right: 25px}
+    ul { list-style-type: disc !important; margin-left: 100px; margin-right: 50px !important; }
+    li { display: list-item !important; }
 }
 
 /* @end */
