@@ -884,7 +884,7 @@ ul.resource-list > li > A > img {
 
 /* @end */
 /* @group ----- Show ----- */
-body.resource #content > .cdash-item-header {
+#content[data-cdash-page~=resource] > .cdash-item-header {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -894,21 +894,21 @@ body.resource #content > .cdash-item-header {
   padding: 10px 30px 4.5px 10px;
 }
 
-body.resource #content > .cdash-item-header > .cdash-breadcrumb,
-body.resource #content > .cdash-item-header > .cdash-visit-place {
+#content[data-cdash-page~=resource] > .cdash-item-header > .cdash-breadcrumb,
+#content[data-cdash-page~=resource] > .cdash-item-header > .cdash-visit-place {
   display: inline;
   font-size: 11.25px;
   border-bottom: 0;
 }
 
-body.resource #content > .cdash-breadcrumb {
+#content[data-cdash-page~=resource] > .cdash-breadcrumb {
   display: block;
   margin-bottom: 4.5px;
   font-size: 11.25px;
   border-bottom: 0;
 }
 
-body.resource #content > .cdash-item-header > .cdash-visit-place[hidden] {
+#content[data-cdash-page~=resource] > .cdash-item-header > .cdash-visit-place[hidden] {
   display: none;
 }
 
@@ -918,7 +918,7 @@ body.resource #content > .cdash-item-header > .cdash-visit-place[hidden] {
   color: var(--cdash-darkgray);
 }
 
-body.resource #content > .cdash-item-header .cdash-item-meta {
+#content[data-cdash-page~=resource] > .cdash-item-header .cdash-item-meta {
   font-size: 15px;
   font-weight: normal;
   color: var(--cdash-darkgray);
@@ -929,7 +929,7 @@ body.resource #content > .cdash-item-header .cdash-item-meta {
   margin: 0 0.25em;
 }
 
-body.resource #content > .cdash-item-header h2 {
+#content[data-cdash-page~=resource] > .cdash-item-header h2 {
   font-size: 22.5px;
   line-height: 22.5px;
   margin-block-start: 5px;
@@ -937,7 +937,7 @@ body.resource #content > .cdash-item-header h2 {
 }
 
 @container browse (max-width: 500px) {
-  body.resource #content > .cdash-item-header h2 {
+  #content[data-cdash-page~=resource] > .cdash-item-header h2 {
     font-size: 20px;
     line-height: 20px;
   }
@@ -1431,36 +1431,36 @@ ul.resource-list .resource img {
 }*/
 /* @end */
 /* @group ----- Item Set ----- */
-body.item-set.item #content {
+#content[data-cdash-page~=item-set][data-cdash-page~=item] {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: flex-end;
 }
-body.item-set.item #content > h2, body.item-set.item #content > h3 {
+#content[data-cdash-page~=item-set][data-cdash-page~=item] > h2, #content[data-cdash-page~=item-set][data-cdash-page~=item] > h3 {
   width: 100%;
 }
 
-body.item-set .metadata {
+#content[data-cdash-page~=item-set] .metadata {
   border-left: 5px solid var(--cdash-light);
   padding-left: 9px;
   margin-right: 9px;
 }
 
-body.item-set .metadata h4:first-of-type {
+#content[data-cdash-page~=item-set] .metadata h4:first-of-type {
   margin-top: 0;
 }
 
-body.item-set #content .metadata ~ * {
+#content[data-cdash-page~=item-set] .metadata ~ * {
   border-left: 1px solid var(--cdash-light);
   padding-left: 9px;
 }
 
-body.item-set .item-set-items h3 {
+#content[data-cdash-page~=item-set] .item-set-items h3 {
   margin-top: 0;
 }
 
-body.item-set .metadata ~ nav.pagination:first-of-type {
+#content[data-cdash-page~=item-set] .metadata ~ nav.pagination:first-of-type {
   margin-bottom: 0;
 }
 

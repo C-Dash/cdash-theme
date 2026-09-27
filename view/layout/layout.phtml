@@ -125,6 +125,26 @@ $bannerPosition = [
 ][(string) $this->themeSetting('banner_position')] ?? '';
 $this->trigger('view.layout');
 $userBar = $this->userBar();
+
+// What kind of page this is, carried on #content rather than read off <body>.
+//
+// Omeka's content templates describe the page by appending to <body>'s class
+// ("item resource show"), and <body> is only ever rendered on a full load --
+// htmx swaps #content and nothing else. So <body> goes on naming whichever page
+// was last loaded in full, for the rest of the session: arrive on the home page
+// and every item page after it looked like a site page to CSS, which is how the
+// item header came unstuck. #content is replaced whole on every swap, so what
+// is written on it is always true of the page on screen.
+//
+// Read back out of the rendered tag because HtmlElement has setters but no
+// getter. Doing it here, once, covers the stock templates this theme does not
+// override as well as its own. A data attribute rather than classes: echoing
+// "item resource" as classes onto #content would pull it into existing rules
+// such as .item.resource .caption.
+$pageTypes = '';
+if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) {
+    $pageTypes = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5);
+}
 ?>
 <?php echo $this->doctype(); ?>
 <?php echo $this->htmlElement('html'); ?>
@@ -357,7 +377,7 @@ $userBar = $this->userBar();
            */
           ?>
           <div id="showresult" hx-history-elt>
-            <div id="content" role="main">
+            <div id="content" role="main" data-cdash-page="<?php echo $escape($pageTypes); ?>">
               <?php echo $this->content; ?>
             </div>
 

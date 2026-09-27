@@ -582,7 +582,13 @@ ul.resource-list .resource img {
 
 /* @group ----- Item Set ----- */
 
-body.item-set.item #content {
+// Keyed to #content's data-cdash-page rather than <body>'s class, which is
+// fixed at the last full page load -- see layout.phtml. Nothing currently
+// renders item-set there together with .metadata or .item-set-items (the
+// folder listing is item/browse.phtml, which does not add item-set), so these
+// rules match nothing today.
+
+#content[data-cdash-page~="item-set"][data-cdash-page~="item"] {
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
@@ -609,26 +615,26 @@ body.item-set.item #content {
 // narrower stacked box, not the two-column metadata sidebar this looks like
 // it was going for. That is real layout work, not a value to restore --
 // tracked as a possible future feature, not attempted here.
-body.item-set .metadata {
+#content[data-cdash-page~="item-set"] .metadata {
     border-left: 5px solid var(--cdash-light);
     padding-left: base.$spacing-m;
     margin-right: base.$spacing-m;
 }
 
-body.item-set .metadata h4:first-of-type {
+#content[data-cdash-page~="item-set"] .metadata h4:first-of-type {
     margin-top: 0;
 }
 
-body.item-set #content .metadata ~ * {
+#content[data-cdash-page~="item-set"] .metadata ~ * {
     border-left: 1px solid var(--cdash-light);
     padding-left: base.$spacing-m;
 }
 
-body.item-set .item-set-items h3 {
+#content[data-cdash-page~="item-set"] .item-set-items h3 {
     margin-top: 0;
 }
 
-body.item-set .metadata ~ nav.pagination:first-of-type {
+#content[data-cdash-page~="item-set"] .metadata ~ nav.pagination:first-of-type {
     margin-bottom: 0;
 }
 

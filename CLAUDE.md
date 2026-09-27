@@ -102,7 +102,7 @@ one responsive lever and one rule about where state lives.
 ## The recurring hazard
 
 Everything that used to happen once per page now happens **once per swap**.
-That is the class of bug to expect here. Two instances have already been fixed:
+That is the class of bug to expect here. Three instances have already been fixed:
 
 - An inline `<script>` in `view/common/linked-resources.phtml` declared
   top-level `const`s. Correct in stock Omeka; fatal here, because htmx
@@ -110,6 +110,13 @@ That is the class of bug to expect here. Two instances have already been fixed:
   wrapped in an IIFE now.
 - `htmx:afterSwap` does **not** fire on Back/Forward — that is
   `htmx:historyRestore`. Both are handled.
+- **`<body>`'s class is the last full load's, not the current page's.**
+  Omeka templates append `item resource show` and the like to `<body>`, but
+  only a full load renders `<body>`. Rules keyed to `body.resource` made the
+  sticky item header work or not depending on where the session *started* — a
+  reload on an item page fixed it, so it looked intermittent. `layout.phtml`
+  now copies those classes onto `#content` as `data-cdash-page`; key page-type
+  CSS to `#content[data-cdash-page~="…"]`, never to a body class.
 
 Check this whenever adding a resource page block or template override, and after
 any Omeka upgrade.
