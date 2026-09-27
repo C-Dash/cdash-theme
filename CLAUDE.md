@@ -2,8 +2,8 @@
 
 Theme for the Cambridge Historical Commission Digital Architectural Survey and
 History. Production runs the predecessor, `cdash_4.1.1`, at
-cdash.cambridgema.gov. This is its replacement, developed on branch
-**`v5-persistent-shell`**.
+cdash.cambridgema.gov. This is its replacement, on `main` since PR #1 and
+developed on branch **`v5-persistent-shell`**.
 
 ## What this theme is
 
@@ -434,9 +434,13 @@ both.
     layout-dynamics items. The untracked two are invisible to a fresh clone —
     commit them or fold them into this file.
 11. **`asset/php/geosync copy.php`** — untracked leftover.
-12. **13 Dependabot alerts** on the default branch; they clear when the
-    `package-lock.json` deletion merges to `main`.
-13. **No PR yet** — styling first, by decision.
+12. **Dependabot — resolved.** All 15 alerts on `main` came from
+    `package-lock.json`; the merge deleted it and none remain open. Nothing in
+    the theme is installed from npm any more, so a new lockfile appearing is
+    worth questioning.
+13. **Merged to `main`** as PR #1 (`b7a7e00`). Development continues on
+    `v5-persistent-shell`. Production is untouched by the merge — it still
+    runs `cdash_4.1.1`, which is why #1 above stands.
 
 ## Longer-term
 
