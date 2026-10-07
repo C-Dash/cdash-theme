@@ -411,6 +411,9 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
              :class="{ 'cdash-pullout-collapsed': collapsed }">
           <div class="cdash-pullout-content" :inert="collapsed">
             <div class="cdash-pullout-content-inner">
+              <?php // Rendered on every request, htmx swaps included, so
+                    // anything costly in this form is paid on every click.
+                    // See view/common/advanced-search/resource-class.phtml. ?>
               <form action="<?php echo $escape($site->url() . '/item'); ?>" method="GET">
                 <?php echo $this->partial('common/advanced-search', ['resourceType' => 'item']); ?>
                 <button type="submit"><?php echo $this->translate('Search'); ?></button>

@@ -1,0 +1,116 @@
+<?php
+/**
+ * The "Search by class" field of the advanced-search form, overridden for
+ * speed. Markup is stock Omeka 4.1.1; only how the <select> gets its options
+ * differs.
+ *
+ * The form is rendered in the layout's Filters drawer, so it runs on every
+ * request -- htmx swaps included, since Omeka renders the whole layout and
+ * htmx keeps only #content. Stock builds this menu with resourceClassSelect,
+ * which under vocabulary_scope = sitewide adds a subquery joining every
+ * resource to the site's item pool. In production that cost ~2.9 s per page,
+ * to produce two options.
+ *
+ * When the site restricts search to resource templates (search_apply_templates,
+ * which CDASH sets), the classes are read off those templates instead: a few
+ * primary-key reads, same menu -- Location and Document. With no templates set
+ * this falls back to stock behaviour.
+ *
+ * Compare against application/view/common/advanced-search/resource-class.phtml
+ * after an Omeka upgrade.
+ */
+use Laminas\Form\Element\Select;
+use Omeka\Api\Exception\NotFoundException;
+
+$translate = $this->plugin('translate');
+// Prepare the resource class query.
+$ids = isset($query['resource_class_id']) ? $query['resource_class_id'] : [];
+if (!is_array($ids)) {
+    $ids = [$ids];
+}
+$ids = array_filter($ids);
+if (!$ids) {
+    $ids = [null];
+}
+
+// Value options from the search templates' classes, grouped by vocabulary as
+// resourceClassSelect does. Null means "no templates, use stock".
+$templateOptions = null;
+$applyTemplates = $this->status()->isSiteRequest() ? $this->siteSetting('search_apply_templates') : null;
+if (is_array($applyTemplates) && $applyTemplates) {
+    $templateOptions = [];
+    foreach ($applyTemplates as $templateId) {
+        try {
+            $template = $this->api()->read('resource_templates', $templateId)->getContent();
+        } catch (NotFoundException $e) {
+            continue;
+        }
+        $class = $template->resourceClass();
+        if (!$class) {
+            continue;
+        }
+        $vocabulary = $class->vocabulary();
+        $group = $vocabulary->prefix();
+        if (!isset($templateOptions[$group])) {
+            $templateOptions[$group] = ['label' => $translate($vocabulary->label()), 'options' => []];
+        }
+        $templateOptions[$group]['options'][$class->id()] = [
+            'value' => $class->id(),
+            'label' => $translate($class->label()),
+            'attributes' => [
+                'data-term' => $class->term(),
+                'data-resource-class-id' => $class->id(),
+                'title' => $class->term(),
+            ],
+        ];
+    }
+}
+
+$optionsQuery = [];
+if ($templateOptions === null && $this->status()->isSiteRequest()) {
+    if ($this->siteSetting('vocabulary_scope') === 'sitewide') {
+        $optionsQuery['site_id'] = $this->layout()->site->id();
+    } elseif ($this->siteSetting('vocabulary_scope') === 'cross-site') {
+        $optionsQuery['used'] = true;
+    }
+}
+
+$classSelect = function ($id) use ($templateOptions, $optionsQuery, $translate) {
+    if ($templateOptions === null) {
+        return $this->resourceClassSelect([
+            'name' => 'resource_class_id[]',
+            'attributes' => [
+                'value' => $id,
+                'aria-labelledby' => 'by-resource-class-label',
+            ],
+            'options' => [
+                'query' => $optionsQuery,
+            ],
+        ]);
+    }
+    $select = new Select('resource_class_id[]');
+    $select->setAttribute('aria-labelledby', 'by-resource-class-label');
+    $select->setEmptyOption($translate('Select class…'));
+    $select->setValueOptions($templateOptions);
+    $select->setValue($id);
+    return $this->formSelect($select);
+};
+?>
+<div id="resource-class" class="field removable multi-value" role="group">
+    <div class="field-meta">
+        <span id="by-resource-class-label" class="label"><?php echo $translate('Search by class'); ?></span>
+        <?php echo $this->hyperlink('', '#', ['class' => 'expand', 'title' => $translate('Expand')]); ?>
+        <div class="collapsible">
+            <div class="field-description"><?php echo $translate('Searches for resources that are any of these classes.'); ?></div>
+        </div>
+        <button type="button" class="add-value o-icon-add button" aria-label="<?php echo $translate('Add new class'); ?>" title="<?php echo $translate('Add new class'); ?>"></button>
+    </div>
+    <div class="inputs">
+        <?php foreach ($ids as $id): ?>
+        <div class="value">
+            <?php echo $classSelect($id); ?>
+            <button type="button" class="o-icon-delete remove-value button" aria-label="<?php echo $translate('Remove value'); ?>" title="<?php echo $translate('Remove value'); ?>"></button>
+        </div>
+        <?php endforeach; ?>
+    </div>
+</div>
