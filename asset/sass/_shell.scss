@@ -51,14 +51,17 @@ html, body {
   transform: translateY(-100%);
 }
 
-/* Scrolls sideways rather than clipping. This dev site has one nav item and
-   fits easily, but the production menu is longer, and at phone widths
-   overflow:hidden would put those links past the edge with no way to reach
-   them. overflow-y stays hidden so the row cannot grow and steal height from
-   the panes. */
+/* Overflow is visible, so the CDASH pull-down can hang below the bar. This
+   used to scroll sideways so that a long menu stayed reachable on a phone;
+   the pull-down does that job now (navCollapse in cdash-layout.js), and a
+   scrolling box would clip it.
+
+   Stacked above the pane grid, whose highest layer is the divider at
+   z-index 4 -- see _panes.scss. Pane content is isolated at z-index 0, so
+   Leaflet's own 200-1000 never reaches this far. */
 .cdash-navbar {
-  overflow-x: auto;
-  overflow-y: hidden;
+  position: relative;
+  z-index: 5;
 }
 
 /* Sized by the shell rather than by the old 176px #top row: the nav is a grid
@@ -71,6 +74,72 @@ html, body {
   min-height: 30px;
   width: 100%;
   flex-wrap: nowrap;
+  position: relative;
+}
+
+/* Never shrinks while the row is expanded: navCollapse measures this box to
+   decide whether the links fit, and a box that gave way to them would make
+   that answer meaningless. */
+#navmenu > #search {
+  flex-shrink: 0;
+}
+
+/* ---- Collapsed nav: the CDASH pull-down ----
+   The links are hidden but stay in the layout tree, absolutely positioned, so
+   navCollapse can still read their full width and knows when to expand
+   again. visibility:hidden takes them out of the tab order and the
+   accessibility tree, which display:none would also do but at the cost of
+   that measurement. */
+#navmenu.cdash-nav-collapsed > ul.navigation {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Collapsed, the search box may give up width on a phone; see the searchW
+   comment in navCollapse for why only now. */
+#navmenu.cdash-nav-collapsed > #search {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+#navmenu.cdash-nav-collapsed #search-form {
+  max-width: 100%;
+}
+
+.cdash-nav-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cdash-nav-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 12em;
+  max-width: calc(100vw - 16px);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.cdash-nav-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Out-specifies `nav ul a { padding: 0 }` in _desktop.scss, (0,1,1) to
+   (0,0,3). */
+.cdash-nav-list a {
+  display: block;
+  padding: 0.4em 1em;
+}
+
+/* Deeper levels, when the nav_depth theme setting allows them. */
+.cdash-nav-list ul ul a {
+  padding-left: 2em;
 }
 
 /* ---- Banner ----

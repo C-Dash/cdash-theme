@@ -284,13 +284,46 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
     </div>
   </header>
 
+  <?php
+  /**
+   * The nav bar collapses its page links into a "CDASH" pull-down once they
+   * no longer fit beside the search box. Where that happens depends on the
+   * site's own page labels, so no breakpoint can know it: navCollapse in
+   * cdash-layout.js measures the row and sets `collapsed`.
+   *
+   * The pull-down's list is a second server-rendered copy of the same menu,
+   * not a clone made in JavaScript, so it carries Omeka's labels, URLs,
+   * nesting and active class exactly. It gets its own ulClass because the nav
+   * rules in _desktop.scss lay out ul.navigation as a horizontal row. Without
+   * JavaScript nothing collapses and the row simply stays as it is.
+   */
+  $navOptions = ['maxDepth' => $this->themeSetting('nav_depth') - 1];
+
+  /**
+   * A click on any nav link -- in the row or the pull-down -- brings the
+   * banner back, through the same 400ms transition that collapses it. It then
+   * collapses again under appShell's usual rules, as on arrival.
+   *
+   * bannerCollapsed belongs to appShell; Alpine's nested scopes let this
+   * element write it. `click` fires after the pointerup and keydown that
+   * appShell collapses on, so a slow click or Enter on a link ends revealed.
+   */
+  ?>
   <div class="cdash-navbar">
-    <nav id="navmenu">
-      <?php
-      echo $site->publicNav()->menu()->renderMenu(null, [
-          'maxDepth' => $this->themeSetting('nav_depth') - 1
-      ]);
-      ?>
+    <nav id="navmenu" x-data="navCollapse" :class="{ 'cdash-nav-collapsed': collapsed }"
+         x-on:click="$event.target.closest('a') && (bannerCollapsed = false)">
+      <div class="cdash-nav-dropdown" style="display: none" x-show="collapsed"
+           x-on:click.outside="close()" x-on:keydown.escape="close(true)">
+        <button type="button" class="cdash-nav-toggle" x-ref="toggle"
+                aria-controls="cdash-nav-list" aria-expanded="false"
+                :aria-expanded="open.toString()"
+                x-on:click="open = !open"><?php echo $escape($this->translate('CDASH')); ?></button>
+        <div id="cdash-nav-list" class="cdash-nav-list" style="display: none" x-show="open"
+             x-on:click="$event.target.closest('a') && close()">
+          <?php echo $site->publicNav()->menu()->renderMenu(null, $navOptions + ['ulClass' => 'cdash-nav-list-items']); ?>
+        </div>
+      </div>
+      <?php echo $site->publicNav()->menu()->renderMenu(null, $navOptions); ?>
       <div id="search" class="left">
         <?php echo $this->partial('common/search-form'); ?>
       </div>
