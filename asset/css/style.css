@@ -1536,8 +1536,17 @@ html, body {
   overflow: hidden;
 }
 
+/* Edge to edge, top left at the window's top left. `header > *` in
+   _screen.scss -- inherited from the page-header styling this theme grew
+   out of -- gives this box base.container's 1600px max-width with auto side
+   margins, plus 9px side padding: on a wide window the banner stopped
+   growing and sat centred, and at any width it was inset 9px. One class
+   outweighs that rule's two type selectors. */
 .cdash-banner-content {
   height: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   transition: transform 400ms ease-in;
 }
 
