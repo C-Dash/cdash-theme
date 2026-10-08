@@ -484,9 +484,16 @@ header > * {
   display: block;
 }
 
-.site-title:hover,
-.site-title:active {
+/* The banner is a link home, but it is an image, not text, so the text-link
+   styling stays off it in every state. It used to lose a:link's dotted
+   underline only on hover, which shifted the image by that pixel as the
+   pointer entered; and where an accent colour is set, the layout's inline
+   a:hover { opacity: .75 } faded it. The focus outline is left alone. */
+#banner .site-title,
+#banner .site-title:hover,
+#banner .site-title:active {
   border-bottom: 0;
+  opacity: 1;
 }
 
 .site-title h1 {
