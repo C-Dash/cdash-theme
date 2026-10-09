@@ -884,6 +884,8 @@ function pushMarkers(json_response, markerGroup){
 function onMarkerClick(e) {
   var url = e.target.item_url;
 
+  pulseMarker(e.target);
+
   if (!window.htmx) {   // htmx missing or failed to load -- navigate the old way.
     window.location.assign(url);
     return;
@@ -898,6 +900,33 @@ function onMarkerClick(e) {
     select: '#content',
     swap: 'outerHTML scroll:#showresult:top'
   });
+}
+
+// The clicked marker glows briefly -- the animation is in _map-controls.scss.
+// It answers the click straight away, in the second or two before the item
+// loads and updateFeaturedMarker() draws the red circle.
+//
+// Removing the class and forcing a reflow before adding it back is what lets a
+// second click on the same marker restart the pulse rather than be ignored.
+// The timer is for reduced motion, where the stylesheet swaps the animation
+// for a steady glow and animationend never fires; otherwise it is a backstop.
+var MARKER_PULSE_MS = 700;
+
+function pulseMarker(marker) {
+  var el = marker.getElement && marker.getElement();
+  if (!el) return;
+
+  el.classList.remove('cdash-marker-pulse');
+  void el.offsetWidth;
+  el.classList.add('cdash-marker-pulse');
+
+  clearTimeout(el.cdashPulseTimer);
+  var clear = function () {
+    clearTimeout(el.cdashPulseTimer);
+    el.classList.remove('cdash-marker-pulse');
+  };
+  el.addEventListener('animationend', clear, { once: true });
+  el.cdashPulseTimer = setTimeout(clear, MARKER_PULSE_MS + 100);
 }
 
 }); // $(document).ready(function() ends

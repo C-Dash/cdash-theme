@@ -68,6 +68,9 @@
   --cdash-edge-active: var(--cdash-link);
   --cdash-grip-bg: #f4f4f4;
   --cdash-grip-fg: #808080;
+  /* A clicked map marker glows in this, briefly (_map-controls.scss). Matched
+     to Chrome's focus-ring blue, so it reads as "this is what you chose". */
+  --cdash-marker-pulse: #005fcc;
   /* The prototype used a 20px placeholder nav. The real nav carries a menu and
      a search form, so the shell sizes that row to its content instead. */
   --cdash-nav-h: auto;
@@ -2248,6 +2251,35 @@ html, body {
   cursor: row-resize;
 }
 
+/* ---- Clicked marker ----
+   A marker glows twice when clicked, covering the second or two before the
+   item loads and the featured-marker circle takes over. pulseMarker() in
+   cdash-map.js adds the class and takes it off again.
+
+   A filter, never a transform: Leaflet positions every marker <img> with
+   transform: translate3d(...), so a scale or bounce animation would replace
+   that and throw the marker to the map's top-left corner for its duration.
+   drop-shadow follows the icon's own shape, balloon and halo alike. */
+@keyframes cdash-marker-pulse {
+  0%, 50%, 100% {
+    filter: none;
+  }
+  25%, 75% {
+    filter: drop-shadow(0 0 2px var(--cdash-marker-pulse)) drop-shadow(0 0 6px var(--cdash-marker-pulse));
+  }
+}
+.leaflet-marker-icon.cdash-marker-pulse {
+  animation: cdash-marker-pulse 700ms ease-out;
+}
+
+/* Reduced motion: one steady glow instead of flashing. pulseMarker() clears
+   it on a timer, since with no animation there is no animationend. */
+@media (prefers-reduced-motion: reduce) {
+  .leaflet-marker-icon.cdash-marker-pulse {
+    animation: none;
+    filter: drop-shadow(0 0 2px var(--cdash-marker-pulse)) drop-shadow(0 0 6px var(--cdash-marker-pulse));
+  }
+}
 /* Leaflet's own display rules would otherwise beat the UA's [hidden], and the
    control relies on hidden for both itself and its message. */
 .cdash-locate[hidden],
