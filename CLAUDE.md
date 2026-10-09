@@ -402,22 +402,26 @@ both.
 8. **The admin bar — links now follow the page, presentation does not.**
    `e2cb3e5` fixed the stale View/Edit links and that part is confirmed
    working; `a7b2064`, the URL keeping the visitor's map extent rather than the
-   item's, is confirmed too. What is left on the bar is undecided:
+   item's, is confirmed too.
 
+   - **Who sees it — decided.** Global and Site Administrators only
+     (`global_admin`, `site_admin`, the latter labelled "Supervisor" here);
+     everyone else, logged out included, gets no output. Checked in the
+     template, because Omeka's helper looks only at `show_user_bar` and
+     login, and its links need only dashboard access, which every role has.
+     The template must stay silent rather than render an empty bar, or the
+     shell's `hx-select-oob` is emitted with no target.
+   - **Where its links go — decided.** One named tab, `target="omeka_admin"`,
+     for every link on the bar, Logout and the user's name included. htmx
+     boosts only links with no target or `_self`, so the target alone keeps
+     them out of the browse pane. A named tab, not one per click, so a run of
+     edits reuses one tab. GeoSync and GeoAudit keep their own windows.
    - **Styling.** Not yet judged. The theme owns
      `view/common/user-bar.phtml` now, so the markup is ours to change, and the
      two CDASH tools carry `class="admin cdash-tool"` if they want
      distinguishing. The bar sits in `#showresult`'s auto row — see the sticky
      footer comment in `_panes.scss` — so its height comes out of the browse
      pane.
-   - **Whether admin links should open a new tab.** Following Edit in the same
-     tab leaves the public site, which means the persistent shell, the map and
-     ~2000 markers are all torn down and rebuilt on return — the one thing this
-     theme is built to avoid. GeoSync and GeoAudit already open named windows
-     (`target="geosync"`, `target="geoaudit"`). Giving the bar's own links a
-     target is a one-line change in that override, passing `['target' => …]` to
-     the `$hyperlink` call. Decide deliberately: a new tab per edit accumulates
-     tabs, a single named admin window does not.
 9. **Breadcrumb scroll depth — deferred, and not free.** "Return to …" returns
    to the right page at the top, not to where the visitor was. htmx 2.0.4 keeps
    no scroll positions in its history cache, and the swap spec forces
