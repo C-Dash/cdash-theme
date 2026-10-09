@@ -1,6 +1,14 @@
 // Map controls the theme adds to Leaflet's own: find my location, and the
 // pulse a marker gives when clicked.
 
+/* The still copy of the map that cdash-map.js puts into #content for print.
+   It exists only between beforeprint and afterprint, but the screen is still
+   showing while the print dialog is open, and it must not appear in the
+   browse pane there. print.scss shows it. */
+.cdash-print-map {
+  display: none;
+}
+
 /* ---- Clicked marker ----
    A marker glows twice when clicked, covering the second or two before the
    item loads and the featured-marker circle takes over. pulseMarker() in

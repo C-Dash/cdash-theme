@@ -1,3 +1,24 @@
+/* Wide: as many 200px columns as fit, filling the width.
+   min() rather than a bare $width: the browse pane is resizable and can be
+   narrower than one column, where a fixed minimum would overflow it. */
+/* Narrow: one column.
+   minmax(0, 1fr), not 1fr. A bare 1fr is minmax(AUTO, 1fr), and that auto
+   minimum is the content's own minimum width -- for an image, its intrinsic
+   pixel width. The track then refuses to shrink below it and overruns the
+   pane, with width:100% on the image never getting a say, because the column
+   it fills is already too wide. */
+/* The grid item itself. Stretched to the row's height by the grid, this sinks
+   its contents to the foot of that box, so the titles of a row line up along
+   its bottom edge whatever the images above them are doing. */
+/* A card: image on top, title beneath, both left-aligned. */
+/* The card's own thumbnail. Capped at the card width, and height:auto keeps
+   the medium derivative's proportions. */
+/* Titles are long ("Photograph of 1 Main Street, rear elevation, 1972"), so
+   they wrap rather than stretching the column. */
+@page {
+  size: letter portrait;
+  margin: 0.5in;
+}
 /* ---- Chrome that should not print ---- */
 .cdash-map-pane,
 .cdash-pane-divider,
@@ -18,20 +39,134 @@ header,
   display: none !important;
 }
 
+.cdash-item-footer {
+  display: none;
+}
+
+.linked-header .pagination form,
+.linked-header .pagination-buttons {
+  display: none;
+}
+
 /* ---- Page ---- */
 body {
-  margin: 0 3mm 0mm 3mm;
+  margin: 0;
   font-family: Arial, Helvetica, sans-serif;
 }
 
 #content {
   background-color: white;
-  margin: 0 3mm 0mm 3mm;
+  margin: 0;
 }
 
 #print-footer {
   position: fixed;
   bottom: 0;
+  left: 0;
+  right: 0;
+  height: 0.45in;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: white;
+  text-align: center;
+  font: 9pt/1.3 Arial, Helvetica, sans-serif;
+}
+#print-footer p {
+  margin: 0;
+}
+
+/* ---- Page 1: the map ----
+   A still copy of the map, put into #content by cdash-map.js at beforeprint
+   and sized by it, inline. The copy keeps the map's on-screen pixel size and
+   is scaled down to fit; the wrapper is the scaled size and clips the rest. */
+.cdash-print-map {
+  position: relative;
+  overflow: hidden;
+  margin: 0.15in 0;
+  break-inside: avoid;
+}
+
+.cdash-print-map-copy {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+}
+
+.cdash-print-map .leaflet-control-container {
+  display: none;
+}
+
+.cdash-print-map img {
+  max-width: none !important;
+}
+
+/* ---- Then: cards, or page images, from page 2 ---- */
+#resources-linked {
+  break-before: page;
+}
+
+.cdash-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(200px, 100%), 1fr));
+  gap: 18px;
+  /* stretch, the default, stated rather than left implicit: every card in a
+     row takes the height of the tallest one, so their bottom borders line up
+     and each row starts at one latitude down the scroller. align-items:start
+     would size each card to its own content and leave the borders ragged --
+     the rows would still align, but the cards would not. */
+  align-items: stretch;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0.15in 0;
+}
+
+.cdash-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  break-inside: avoid;
+}
+
+.cdash-card-link,
+.cdash-card-link:visited {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.cdash-card-thumb {
+  width: 100%;
+  max-width: 200px;
+  height: auto;
+  max-width: none;
+  display: block;
+}
+
+.cdash-place-marker {
+  float: left;
+  height: 0.4in;
+  width: auto;
+  margin: 0 0.1in 0.05in 0;
+}
+
+.cdash-card-title {
+  display: block;
+  line-height: 1.3;
+  overflow-wrap: break-word;
+  margin-top: 0.05in;
+}
+
+.media-embeds .media-render {
+  break-before: page;
+  break-inside: avoid;
+}
+
+.media-embeds img {
+  display: block;
+  width: auto;
+  max-height: calc(10in - 0.45in - 0.1in);
+  margin: 0 auto;
 }
 
 a,

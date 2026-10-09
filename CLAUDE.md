@@ -70,6 +70,22 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   Invisible when anonymous. **Back/Forward** take no swap spec at all:
   `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
   handler in `cdash-layout.js` resets it.
+- **The printed map is a copy.** An item page prints header and values, the
+  map, then cards or page images (`print.scss`, `notes/print_styles.md`). At
+  `beforeprint`, `cdash-map.js` deep-clones `#drawmap` into `#content`,
+  scaled to fit, and removes it at `afterprint`. The live map pane stays
+  hidden in print and is never moved: reparenting it would resize it, which
+  is the camBase hazard (*Still open* #5). camBase prints blank in the copy
+  (a cloned or copied WebGL canvas is empty) and MassGIS shows through, by
+  design. This needs Leaflet's CSS on paper, so `leaflet.css` and the
+  MarkerCluster sheets are registered `media="all"` in `layout.phtml`. **Do
+  not register `leaflet.css` anywhere else:** HeadLink keeps the first
+  registration of an href, and a content template renders before the layout,
+  so its screen-only copy would win on that page. The footer is
+  `position: fixed`, which every browser repeats per page. Headless Chrome
+  can check all of this: `chrome --headless=new --print-to-pdf=…
+  --virtual-time-budget=15000 <url>`, with a fresh `--user-data-dir` per run,
+  since a reused one crashes the renderer.
 
 ## The browse pane's furniture
 

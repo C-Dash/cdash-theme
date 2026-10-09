@@ -19,7 +19,15 @@ $this->headScript()->prependFile($this->assetUrl('vendor/jquery/jquery.min.js', 
 
 
 // frm mapping module
-$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'));
+//
+// leaflet.css and the two MarkerCluster sheets are media="all", not the
+// default "screen": the printed page carries a copy of the map (see the
+// beforeprint handler in cdash-map.js), and without Leaflet's own positioning
+// rules its tiles, panes and markers print as a loose pile. HeadLink keeps only
+// the first registration of a given href, so view/mapping/index/show.phtml no
+// longer registers leaflet.css itself -- on item pages it renders before this
+// layout, and its screen-only copy would win.
+$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'), 'all');
 $this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.css', 'Mapping'));
 
 $this->headScript()->appendFile($this->assetUrl('node_modules/leaflet/dist/leaflet.js', 'Mapping'));
@@ -35,8 +43,8 @@ $this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Map
 
 // For CDASH Map
 //$this->headScript()->appendFile($this->assetUrl('vendor/leaflet'));
-$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.css'));
-$this->headLink()->appendStylesheet($this->assetUrl('css//MarkerCluster.Default.css'));
+$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.css'), 'all');
+$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.Default.css'), 'all');
 
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.markercluster/leaflet.markercluster-src.js'));
 $this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-v3.0.12/esri-leaflet.js'));
@@ -425,8 +433,13 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
               <?php echo $this->content; ?>
             </div>
 
+            <?php // On every printed page, centred at the foot -- position:fixed
+                  // in print.scss, which every browser repeats per page. Hidden
+                  // on screen. The rights line lives here, not in the item's
+                  // Citation/Rights block, which print.scss hides. ?>
             <div id="print-footer">
-              <p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p>
+              <p>Cambridge Historical Commission, Digital Architectural Survey and History (CDASH)</p>
+              <p>Rights status not evaluated.</p>
             </div>
 
             <?php // The GeoSync and GeoAudit links used to be appended here by

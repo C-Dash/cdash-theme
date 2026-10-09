@@ -226,6 +226,91 @@ const resizeObserver = new ResizeObserver(() => {
 });
 resizeObserver.observe(mapDiv);
 
+/**
+ * The map on paper: a still copy, not the map itself.
+ *
+ * An item page prints its header and values, then the map, then the Linked
+ * Resources cards or the page images. The map has to sit inside #content to
+ * fall in that order, and the live map cannot be moved there: reparenting
+ * #drawmap resizes it, which is the camBase hazard described above, and
+ * Leaflet could not lay out new tiles in the time a print dialog allows
+ * anyway. So beforeprint inserts a deep copy of the map's DOM -- tiles,
+ * overlays, markers and the featured circle, all positioned by inline styles
+ * -- scaled to fit, and afterprint takes it away. The live map is never
+ * touched; print.scss keeps hiding its pane.
+ *
+ * camBase does not survive the copy, and is not meant to: a cloned canvas is
+ * blank, and copying a WebGL canvas's pixels gives blank too, since maplibre
+ * does not preserve its drawing buffer. MassGIS, the ground layer, is loaded
+ * underneath it and prints in its place. Other canvases (2D) are copied.
+ *
+ * Printed as it is shown: the visitor's own extent, at most 7.5in by about
+ * 4.2in -- US Letter less half-inch margins, leaving page 1 room for the
+ * header, the values and the footer. Never scaled up: a small pane prints
+ * small rather than blurred.
+ */
+const PRINT_MAP_MAX_W_PX = 720;   // 7.5in at 96 CSS px per inch
+const PRINT_MAP_MAX_H_PX = 400;
+
+let printMapEl = null;
+
+function removePrintMap() {
+  if (printMapEl) {
+    printMapEl.remove();
+    printMapEl = null;
+  }
+}
+
+window.addEventListener('beforeprint', function () {
+  removePrintMap();
+
+  // #content's data-cdash-page, not <body>'s class -- see CLAUDE.md.
+  const content = document.getElementById('content');
+  if (!content || !content.matches('[data-cdash-page~="item"][data-cdash-page~="show"]')) return;
+
+  // A collapsed map pane prints no map rather than a sliver.
+  const w = mapDiv.clientWidth;
+  const h = mapDiv.clientHeight;
+  if (w < COLLAPSED_MAP_FLOOR_PX || h < COLLAPSED_MAP_FLOOR_PX) return;
+
+  const scale = Math.min(1, PRINT_MAP_MAX_W_PX / w, PRINT_MAP_MAX_H_PX / h);
+
+  const copy = mapDiv.cloneNode(true);
+  copy.removeAttribute('id');
+  copy.classList.add('cdash-print-map-copy');
+  copy.style.width = w + 'px';
+  copy.style.height = h + 'px';
+  copy.style.transform = 'scale(' + scale + ')';
+
+  const liveCanvases = mapDiv.querySelectorAll('canvas');
+  const copyCanvases = copy.querySelectorAll('canvas');
+  liveCanvases.forEach(function (canvas, i) {
+    if (canvas.classList.contains('maplibregl-canvas')) return;
+    try {
+      copyCanvases[i].getContext('2d').drawImage(canvas, 0, 0);
+    } catch (err) {
+      // Left blank; the layers beneath still print.
+    }
+  });
+
+  printMapEl = document.createElement('div');
+  printMapEl.className = 'cdash-print-map';
+  printMapEl.style.width = Math.round(w * scale) + 'px';
+  printMapEl.style.height = Math.round(h * scale) + 'px';
+  printMapEl.appendChild(copy);
+
+  // After the values, before whatever follows them: the Linked Resources
+  // cards on a Place, the page images on a Document, else the credit block.
+  const next = content.querySelector('#resources-linked, .media-embeds, .cdash-item-footer');
+  if (next) {
+    next.parentNode.insertBefore(printMapEl, next);
+  } else {
+    content.appendChild(printMapEl);
+  }
+});
+
+window.addEventListener('afterprint', removePrintMap);
+
 // Always-on ground layer, pinned beneath everything else. Not a hash token --
 // it is never switchable, so there is nothing to record.
 map.addLayer(overlayMaps.massGIS);
