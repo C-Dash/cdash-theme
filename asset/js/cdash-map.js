@@ -425,14 +425,17 @@ document.body.addEventListener('htmx:replacedInHistory', writeMapHash);
 // ---------------------------------------------------------------------------
 // Find my location.
 //
-// A page cannot tell whether a device's GPS is switched on, so "show it when
-// GPS is engaged" becomes the nearest thing that can be known: a touch device,
-// on a secure page (geolocation is refused elsewhere), whose location
-// permission has not been denied. A GPS that turns out to be off surfaces as a
-// locationerror on tap, and gets a message rather than a hidden button.
+// The button is always on the map, GPS or not. Anything that stops it working
+// is explained when it is tapped, not by hiding it: a browser with no
+// geolocation, or a page that is not secure (geolocation is refused there),
+// gets a message straight away; a refused permission or a GPS that is off
+// surfaces as a locationerror, which gets one too.
 //
-// Touch only, on purpose: desktop positions come from Wi-Fi and are often
-// hundreds of metres out -- misleading at survey zoom.
+// It used to be touch-only, because desktop positions come from Wi-Fi and are
+// often hundreds of metres out. That is shown honestly rather than avoided:
+// the accuracy circle is drawn at its true size, and centring fits the map to
+// that circle, so a rough fix arrives as a large circle at a modest zoom, not
+// a confident dot at survey zoom.
 //
 // One tap starts watching and centres on the first fix. The dot then follows
 // the device but the map does not, so the user can browse around it. Tap again
@@ -471,284 +474,284 @@ function cdashScreenAngle() {
   return typeof window.orientation === 'number' ? window.orientation : 0;
 }
 
-var cdashCanLocate = 'geolocation' in navigator
-  && window.isSecureContext
-  && window.matchMedia('(pointer: coarse)').matches;
+// Whether location can work here at all. It no longer decides whether the
+// button is shown, only what a tap does.
+var cdashGeoAvailable = 'geolocation' in navigator && window.isSecureContext;
 
-if (cdashCanLocate) {
-  var LocateControl = L.Control.extend({
-    options: { position: 'topleft' },
+var LocateControl = L.Control.extend({
+  options: { position: 'topleft' },
 
-    onAdd: function (map) {
-      var container = L.DomUtil.create('div', 'leaflet-bar cdash-locate');
-      var button = L.DomUtil.create('button', 'cdash-locate-button', container);
-      button.type = 'button';
-      button.title = 'Show my location';
-      button.setAttribute('aria-label', 'Show my location');
-      button.setAttribute('aria-pressed', 'false');
+  onAdd: function (map) {
+    var container = L.DomUtil.create('div', 'leaflet-bar cdash-locate');
+    var button = L.DomUtil.create('button', 'cdash-locate-button', container);
+    button.type = 'button';
+    button.title = 'Show my location';
+    button.setAttribute('aria-label', 'Show my location');
+    button.setAttribute('aria-pressed', 'false');
 
-      var message = L.DomUtil.create('div', 'cdash-locate-message', container);
-      message.setAttribute('role', 'status');
-      message.hidden = true;
+    var message = L.DomUtil.create('div', 'cdash-locate-message', container);
+    message.setAttribute('role', 'status');
+    message.hidden = true;
 
-      L.DomEvent.disableClickPropagation(container);
+    L.DomEvent.disableClickPropagation(container);
 
-      // The dot is a divIcon rather than a circleMarker so the heading cone can
-      // sit in the same element and be turned with a CSS transform: an SVG
-      // circleMarker cannot be rotated, and re-drawing a wedge polygon on every
-      // compass reading would mean recomputing geometry many times a second.
-      //
-      // The cone points up (north) at rotation 0, which is also the map's
-      // orientation -- Leaflet never rotates the map, so a heading in degrees
-      // is the rotation in degrees, with nothing to convert.
-      var dot = L.marker([0, 0], {
-        interactive: false,
-        keyboard: false,
-        zIndexOffset: 1000,
-        icon: L.divIcon({
-          className: 'cdash-locate-marker',
-          iconSize: [80, 80],
-          iconAnchor: [40, 40],
-          html:
-            '<div class="cdash-locate-cone" hidden>' +
-              '<svg viewBox="0 0 100 100" aria-hidden="true">' +
-                '<defs><radialGradient id="cdash-cone-fade">' +
-                  '<stop offset="0" stop-color="#1a73e8" stop-opacity="0.5"/>' +
-                  '<stop offset="1" stop-color="#1a73e8" stop-opacity="0"/>' +
-                '</radialGradient></defs>' +
-                // A 60-degree wedge from the centre, opening upward.
-                '<path d="M50,50 L25,6.7 A50,50 0 0,1 75,6.7 Z" fill="url(#cdash-cone-fade)"/>' +
-              '</svg>' +
-            '</div>' +
-            '<div class="cdash-locate-dot"></div>',
-        }),
-      });
-      var accuracy = L.circle([0, 0], {
-        radius: 0, weight: 1, color: '#1a73e8', fillColor: '#1a73e8', fillOpacity: 0.12,
-        interactive: false,
-      });
-      var marks = L.layerGroup([accuracy, dot]);
+    // The dot is a divIcon rather than a circleMarker so the heading cone can
+    // sit in the same element and be turned with a CSS transform: an SVG
+    // circleMarker cannot be rotated, and re-drawing a wedge polygon on every
+    // compass reading would mean recomputing geometry many times a second.
+    //
+    // The cone points up (north) at rotation 0, which is also the map's
+    // orientation -- Leaflet never rotates the map, so a heading in degrees
+    // is the rotation in degrees, with nothing to convert.
+    var dot = L.marker([0, 0], {
+      interactive: false,
+      keyboard: false,
+      zIndexOffset: 1000,
+      icon: L.divIcon({
+        className: 'cdash-locate-marker',
+        iconSize: [80, 80],
+        iconAnchor: [40, 40],
+        html:
+          '<div class="cdash-locate-cone" hidden>' +
+            '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+              '<defs><radialGradient id="cdash-cone-fade">' +
+                '<stop offset="0" stop-color="#1a73e8" stop-opacity="0.5"/>' +
+                '<stop offset="1" stop-color="#1a73e8" stop-opacity="0"/>' +
+              '</radialGradient></defs>' +
+              // A 60-degree wedge from the centre, opening upward.
+              '<path d="M50,50 L25,6.7 A50,50 0 0,1 75,6.7 Z" fill="url(#cdash-cone-fade)"/>' +
+            '</svg>' +
+          '</div>' +
+          '<div class="cdash-locate-dot"></div>',
+      }),
+    });
+    var accuracy = L.circle([0, 0], {
+      radius: 0, weight: 1, color: '#1a73e8', fillColor: '#1a73e8', fillOpacity: 0.12,
+      interactive: false,
+    });
+    var marks = L.layerGroup([accuracy, dot]);
 
-      var active = false;     // watching the device position
-      var following = false;  // map is centred on the latest fix
-      var lastFix = null;
-      var messageTimer = null;
+    var active = false;     // watching the device position
+    var following = false;  // map is centred on the latest fix
+    var lastFix = null;
+    var messageTimer = null;
 
-      var headingDeg = null;    // what the cone is showing
-      var targetHeading = null; // what the sensor last said
-      var headingFrame = null;
-      var compassEvent = null;  // the event actually subscribed to, if any
-      var lastCompassAt = 0;
+    var headingDeg = null;    // what the cone is showing
+    var targetHeading = null; // what the sensor last said
+    var headingFrame = null;
+    var compassEvent = null;  // the event actually subscribed to, if any
+    var lastCompassAt = 0;
 
-      function setState() {
-        L.DomUtil[active ? 'addClass' : 'removeClass'](button, 'is-active');
-        L.DomUtil[following ? 'addClass' : 'removeClass'](button, 'is-following');
-        button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    function setState() {
+      L.DomUtil[active ? 'addClass' : 'removeClass'](button, 'is-active');
+      L.DomUtil[following ? 'addClass' : 'removeClass'](button, 'is-following');
+      button.setAttribute('aria-pressed', active ? 'true' : 'false');
+    }
+
+    function showMessage(text) {
+      message.textContent = text;
+      message.hidden = false;
+      clearTimeout(messageTimer);
+      messageTimer = setTimeout(function () { message.hidden = true; }, 6000);
+    }
+
+    // ---- Heading cone ----
+
+    // The icon's elements exist only while the marker is on the map, so they
+    // are looked up per paint rather than held.
+    function coneElement() {
+      var el = dot.getElement();
+      return el ? el.querySelector('.cdash-locate-cone') : null;
+    }
+
+    function paintHeading() {
+      var cone = coneElement();
+      if (!cone || headingDeg === null) return;
+      cone.style.transform = 'rotate(' + headingDeg.toFixed(1) + 'deg)';
+      cone.hidden = false;
+    }
+
+    // Eases toward the newest reading, the short way round, so crossing north
+    // does not spin the cone the long way. Repaints at most once a frame.
+    function stepHeading() {
+      headingFrame = null;
+      if (targetHeading === null) return;
+
+      if (headingDeg === null) {
+        headingDeg = targetHeading;
+      } else {
+        var diff = ((targetHeading - headingDeg + 540) % 360) - 180;
+        headingDeg = cdashNormalizeDeg(headingDeg + diff * CDASH_HEADING_EASE);
+        if (Math.abs(diff) > 0.5) headingFrame = requestAnimationFrame(stepHeading);
       }
+      paintHeading();
+    }
 
-      function showMessage(text) {
-        message.textContent = text;
-        message.hidden = false;
-        clearTimeout(messageTimer);
-        messageTimer = setTimeout(function () { message.hidden = true; }, 6000);
+    function setHeading(deg) {
+      if (typeof deg !== 'number' || isNaN(deg)) return;
+      targetHeading = cdashNormalizeDeg(deg);
+      if (headingFrame === null) headingFrame = requestAnimationFrame(stepHeading);
+    }
+
+    function onOrientation(e) {
+      var deg = null;
+      if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
+        // iOS: already a clockwise heading from magnetic north.
+        deg = e.webkitCompassHeading;
+      } else if (e.absolute === true && typeof e.alpha === 'number') {
+        // Everyone else: alpha runs anticlockwise from north. A reading that
+        // is not absolute is relative to wherever the device happened to be
+        // when it started, which is not a compass at all -- so it is ignored.
+        deg = 360 - e.alpha;
       }
+      if (deg === null) return;
 
-      // ---- Heading cone ----
+      lastCompassAt = Date.now();
+      setHeading(deg + cdashScreenAngle() + CDASH_MAGNETIC_DECLINATION);
+    }
 
-      // The icon's elements exist only while the marker is on the map, so they
-      // are looked up per paint rather than held.
-      function coneElement() {
-        var el = dot.getElement();
-        return el ? el.querySelector('.cdash-locate-cone') : null;
-      }
+    function listenForOrientation() {
+      if (compassEvent) return;
+      compassEvent = 'ondeviceorientationabsolute' in window
+        ? 'deviceorientationabsolute'
+        : 'deviceorientation';
+      window.addEventListener(compassEvent, onOrientation);
+    }
 
-      function paintHeading() {
-        var cone = coneElement();
-        if (!cone || headingDeg === null) return;
-        cone.style.transform = 'rotate(' + headingDeg.toFixed(1) + 'deg)';
-        cone.hidden = false;
-      }
-
-      // Eases toward the newest reading, the short way round, so crossing north
-      // does not spin the cone the long way. Repaints at most once a frame.
-      function stepHeading() {
-        headingFrame = null;
-        if (targetHeading === null) return;
-
-        if (headingDeg === null) {
-          headingDeg = targetHeading;
-        } else {
-          var diff = ((targetHeading - headingDeg + 540) % 360) - 180;
-          headingDeg = cdashNormalizeDeg(headingDeg + diff * CDASH_HEADING_EASE);
-          if (Math.abs(diff) > 0.5) headingFrame = requestAnimationFrame(stepHeading);
-        }
-        paintHeading();
-      }
-
-      function setHeading(deg) {
-        if (typeof deg !== 'number' || isNaN(deg)) return;
-        targetHeading = cdashNormalizeDeg(deg);
-        if (headingFrame === null) headingFrame = requestAnimationFrame(stepHeading);
-      }
-
-      function onOrientation(e) {
-        var deg = null;
-        if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) {
-          // iOS: already a clockwise heading from magnetic north.
-          deg = e.webkitCompassHeading;
-        } else if (e.absolute === true && typeof e.alpha === 'number') {
-          // Everyone else: alpha runs anticlockwise from north. A reading that
-          // is not absolute is relative to wherever the device happened to be
-          // when it started, which is not a compass at all -- so it is ignored.
-          deg = 360 - e.alpha;
-        }
-        if (deg === null) return;
-
-        lastCompassAt = Date.now();
-        setHeading(deg + cdashScreenAngle() + CDASH_MAGNETIC_DECLINATION);
-      }
-
-      function listenForOrientation() {
-        if (compassEvent) return;
-        compassEvent = 'ondeviceorientationabsolute' in window
-          ? 'deviceorientationabsolute'
-          : 'deviceorientation';
-        window.addEventListener(compassEvent, onOrientation);
-      }
-
-      // iOS requires permission, and only grants it when asked during a user
-      // gesture -- hence this being called first thing in the tap handler,
-      // before map.locate. A refusal is not worth a message: the dot still
-      // works, and only the cone is missing.
-      function startCompass() {
-        var request = window.DeviceOrientationEvent && window.DeviceOrientationEvent.requestPermission;
-        if (typeof request === 'function') {
-          request.call(window.DeviceOrientationEvent).then(function (state) {
-            if (state === 'granted') listenForOrientation();
-          }).catch(function () {});
-          return;
-        }
-        listenForOrientation();
-      }
-
-      function stopCompass() {
-        if (compassEvent) {
-          window.removeEventListener(compassEvent, onOrientation);
-          compassEvent = null;
-        }
-        if (headingFrame !== null) {
-          cancelAnimationFrame(headingFrame);
-          headingFrame = null;
-        }
-        headingDeg = null;
-        targetHeading = null;
-        lastCompassAt = 0;
-        var cone = coneElement();
-        if (cone) cone.hidden = true;
-      }
-
-      function centre() {
-        if (!lastFix) return;
-        // Fit the accuracy circle, but never closer than the cap: a precise
-        // fix should not dive to maxZoom.
-        var zoom = Math.min(CDASH_LOCATE_MAX_ZOOM, map.getBoundsZoom(lastFix.bounds));
-        following = true;
-        map.setView(lastFix.latlng, zoom);
-        setState();
-      }
-
-      function start() {
-        active = true;
-        following = false;
-        lastFix = null;
-        setState();
-        // Before map.locate, so iOS still counts it as part of the tap.
-        startCompass();
-        map.locate({ watch: true, setView: false, enableHighAccuracy: true });
-      }
-
-      function stop() {
-        map.stopLocate();
-        stopCompass();
-        map.removeLayer(marks);
-        active = false;
-        following = false;
-        lastFix = null;
-        setState();
-      }
-
-      L.DomEvent.on(button, 'click', function () {
-        message.hidden = true;
-        if (!active) start();
-        else if (!following) centre();
-        else stop();
-      });
-
-      L.DomEvent.on(message, 'click', function () { message.hidden = true; });
-
-      map.on('locationfound', function (e) {
-        if (!active) return;
-        var first = !lastFix;
-        lastFix = e;
-        dot.setLatLng(e.latlng);
-        accuracy.setLatLng(e.latlng).setRadius(e.accuracy);
-        if (!map.hasLayer(marks)) map.addLayer(marks);
-
-        // With no compass -- or none reporting lately -- course over ground is
-        // the next best thing, but only while actually moving: standing still,
-        // GPS heading is noise. Leaflet copies the numeric coords onto the
-        // event, so heading and speed arrive here without extra wiring.
-        if (Date.now() - lastCompassAt > CDASH_COMPASS_STALE_MS
-            && typeof e.speed === 'number' && e.speed > 1) {
-          setHeading(e.heading);
-        }
-
-        // The icon element only exists once the marker has been added, so the
-        // first paint has to come after that.
-        paintHeading();
-        if (first) centre();
-      });
-
-      map.on('locationerror', function (e) {
-        stop();
-        // e.code follows GeolocationPositionError: 1 denied, 2 unavailable,
-        // 3 timeout.
-        if (e.code === 1) {
-          showMessage('Location access is blocked for this site.');
-        } else {
-          showMessage('Your location is not available. Check that location services are on.');
-        }
-      });
-
-      // The user moving the map themselves ends "following", so the next tap
-      // re-centres instead of stopping.
-      map.on('dragstart', function () {
-        if (following) {
-          following = false;
-          setState();
-        }
-      });
-
-      // Hide the control once permission is denied, and bring it back if it is
-      // granted again from the browser's settings. Not every browser supports
-      // querying geolocation, so failure just leaves the button showing.
-      if (navigator.permissions && navigator.permissions.query) {
-        navigator.permissions.query({ name: 'geolocation' }).then(function (status) {
-          var apply = function () {
-            container.hidden = status.state === 'denied';
-            if (status.state === 'denied' && active) stop();
-          };
-          apply();
-          status.addEventListener('change', apply);
+    // iOS requires permission, and only grants it when asked during a user
+    // gesture -- hence this being called first thing in the tap handler,
+    // before map.locate. A refusal is not worth a message: the dot still
+    // works, and only the cone is missing.
+    function startCompass() {
+      var request = window.DeviceOrientationEvent && window.DeviceOrientationEvent.requestPermission;
+      if (typeof request === 'function') {
+        request.call(window.DeviceOrientationEvent).then(function (state) {
+          if (state === 'granted') listenForOrientation();
         }).catch(function () {});
+        return;
+      }
+      listenForOrientation();
+    }
+
+    function stopCompass() {
+      if (compassEvent) {
+        window.removeEventListener(compassEvent, onOrientation);
+        compassEvent = null;
+      }
+      if (headingFrame !== null) {
+        cancelAnimationFrame(headingFrame);
+        headingFrame = null;
+      }
+      headingDeg = null;
+      targetHeading = null;
+      lastCompassAt = 0;
+      var cone = coneElement();
+      if (cone) cone.hidden = true;
+    }
+
+    function centre() {
+      if (!lastFix) return;
+      // Fit the accuracy circle, but never closer than the cap: a precise
+      // fix should not dive to maxZoom.
+      var zoom = Math.min(CDASH_LOCATE_MAX_ZOOM, map.getBoundsZoom(lastFix.bounds));
+      following = true;
+      map.setView(lastFix.latlng, zoom);
+      setState();
+    }
+
+    function start() {
+      active = true;
+      following = false;
+      lastFix = null;
+      setState();
+      // Before map.locate, so iOS still counts it as part of the tap.
+      startCompass();
+      map.locate({ watch: true, setView: false, enableHighAccuracy: true });
+    }
+
+    function stop() {
+      map.stopLocate();
+      stopCompass();
+      map.removeLayer(marks);
+      active = false;
+      following = false;
+      lastFix = null;
+      setState();
+    }
+
+    L.DomEvent.on(button, 'click', function () {
+      message.hidden = true;
+      if (!cdashGeoAvailable) {
+        showMessage('Your location is not available in this browser.');
+        return;
+      }
+      if (!active) start();
+      else if (!following) centre();
+      else stop();
+    });
+
+    L.DomEvent.on(message, 'click', function () { message.hidden = true; });
+
+    map.on('locationfound', function (e) {
+      if (!active) return;
+      var first = !lastFix;
+      lastFix = e;
+      dot.setLatLng(e.latlng);
+      accuracy.setLatLng(e.latlng).setRadius(e.accuracy);
+      if (!map.hasLayer(marks)) map.addLayer(marks);
+
+      // With no compass -- or none reporting lately -- course over ground is
+      // the next best thing, but only while actually moving: standing still,
+      // GPS heading is noise. Leaflet copies the numeric coords onto the
+      // event, so heading and speed arrive here without extra wiring.
+      if (Date.now() - lastCompassAt > CDASH_COMPASS_STALE_MS
+          && typeof e.speed === 'number' && e.speed > 1) {
+        setHeading(e.heading);
       }
 
-      return container;
-    },
-  });
+      // The icon element only exists once the marker has been added, so the
+      // first paint has to come after that.
+      paintHeading();
+      if (first) centre();
+    });
 
-  map.addControl(new LocateControl());
-}
+    map.on('locationerror', function (e) {
+      stop();
+      // e.code follows GeolocationPositionError: 1 denied, 2 unavailable,
+      // 3 timeout.
+      if (e.code === 1) {
+        showMessage('Location access is blocked for this site.');
+      } else {
+        showMessage('Your location is not available. Check that location services are on.');
+      }
+    });
+
+    // The user moving the map themselves ends "following", so the next tap
+    // re-centres instead of stopping.
+    map.on('dragstart', function () {
+      if (following) {
+        following = false;
+        setState();
+      }
+    });
+
+    // Permission revoked from the browser's settings mid-session stops the
+    // tracking. The button stays: a tap then says access is blocked, via
+    // locationerror. Not every browser supports querying geolocation, so
+    // failure here changes nothing.
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' }).then(function (status) {
+        status.addEventListener('change', function () {
+          if (status.state === 'denied' && active) stop();
+        });
+      }).catch(function () {});
+    }
+
+    return container;
+  },
+});
+
+map.addControl(new LocateControl());
 
 
 // ---------------------------------------------------------------------------
