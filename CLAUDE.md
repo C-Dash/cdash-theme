@@ -449,10 +449,12 @@ both.
    breadcrumb.
 10. **The backlog is in `notes/`, which is local only.** Prompts, wishes and
     brainstorming go there, one file per topic; settled decisions move into
-    this file. The folder is **git-ignored** (`/notes/` in `.gitignore`) and
-    was untracked after being committed for a while, so a fresh clone does
-    not have it — anything a future session must know belongs here, not
-    there. Earlier versions survive in the history before that commit. It
+    this file. The folder is **git-ignored** (`/notes/` in `.gitignore`), and
+    was also removed from the history of `main` and `v5-persistent-shell`
+    on 2026-10-11 — a rewrite and force-push, so every commit ID from
+    2026-09-26 on changed. A fresh clone has no notes at all: anything a
+    future session must know belongs here, not there. GitHub's own refs for
+    PR #1 still hold the old commits until GitHub Support purges them. It
     holds the browse-pane and layout wish lists (a Print button in the
     breadcrumb bar, an unfinished "Search Results" section), the prompts
     behind the work above, and `notes/sql/copy_site_page.sql`, the
@@ -463,7 +465,8 @@ both.
     `package-lock.json`; the merge deleted it and none remain open. Nothing in
     the theme is installed from npm any more, so a new lockfile appearing is
     worth questioning.
-13. **Merged to `main`** as PR #1 (`b7a7e00`). Development continues on
+13. **Merged to `main`** as PR #1 (`cbecbad`; `b7a7e00` before the notes
+    were removed from history). Development continues on
     `v5-persistent-shell`. Production is untouched by the merge — it still
     runs `cdash_4.1.1`, which is why #1 above stands.
 
