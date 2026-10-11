@@ -7,3 +7,7 @@
 # real files when an NTFS tree is copied into WSL, and two of them were
 # committed by accident in 9c8a068.
 *Zone.Identifier
+
+# Working notes and design prompts: local only, never published with the
+# theme. See CLAUDE.md, "Still open" #10.
+/notes/

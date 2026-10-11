@@ -71,7 +71,8 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
   handler in `cdash-layout.js` resets it.
 - **The printed map is a copy.** An item page prints header and values, the
-  map, then cards or page images (`print.scss`, `notes/print_styles.md`). At
+  map, then cards or page images (`print.scss`; the brief is in the local
+  `notes/print_styles.md`). At
   `beforeprint`, `cdash-map.js` deep-clones `#drawmap` into `#content`,
   scaled to fit, and removes it at `afterprint`. The live map pane stays
   hidden in print and is never moved: reparenting it would resize it, which
@@ -446,15 +447,18 @@ both.
    modifiers go, positions are saved per URL, and top becomes a default rather
    than a rule. That is why it was split off rather than shipped with the
    breadcrumb.
-10. **The backlog is in `notes/`.** Prompts, wishes and brainstorming go
-    there, one file per topic, committed; settled decisions move into this
-    file. It holds `browse_pane_dynamics.md`,
-    `browse_grid_brainstorming.md` and `cdash5_layout_dynamics.md`: a Print
-    button in the breadcrumb bar that applies `print.css` to the browse pane
-    alone, an unfinished "Search Results" section, and the remaining
-    layout-dynamics items. The original shell prompts are elsewhere, in the
+10. **The backlog is in `notes/`, which is local only.** Prompts, wishes and
+    brainstorming go there, one file per topic; settled decisions move into
+    this file. The folder is **git-ignored** (`/notes/` in `.gitignore`) and
+    was untracked after being committed for a while, so a fresh clone does
+    not have it — anything a future session must know belongs here, not
+    there. Earlier versions survive in the history before that commit. It
+    holds the browse-pane and layout wish lists (a Print button in the
+    breadcrumb bar, an unfinished "Search Results" section), the prompts
+    behind the work above, and `notes/sql/copy_site_page.sql`, the
+    page-copy script. The original shell prompts are elsewhere, in the
     separate `../layout/` repo (`layout_prompt.txt`, `overview._prompt.md`).
-11. **`asset/php/geosync copy.php`** — untracked leftover.
+11. **`asset/php/geosync copy.php`** — the untracked leftover, now deleted.
 12. **Dependabot — resolved.** All 15 alerts on `main` came from
     `package-lock.json`; the merge deleted it and none remain open. Nothing in
     the theme is installed from npm any more, so a new lockfile appearing is
