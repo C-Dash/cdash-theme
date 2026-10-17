@@ -2,8 +2,10 @@
 
 Theme for the Cambridge Historical Commission Digital Architectural Survey and
 History. Production runs the predecessor, `cdash_4.1.1`, at
-cdash.cambridgema.gov. This is its replacement, on `main` since PR #1 and
-developed on branch **`v5-persistent-shell`**.
+cdash.cambridgema.gov, and is tagged **`v4.1.1`** (with a GitHub release).
+This is its replacement, and it **is `main`**: work goes on short branches,
+each merged to `main` by PR. The long-lived `v5-persistent-shell` branch was
+merged as PR #2 and deleted.
 
 ## What this theme is
 
@@ -481,10 +483,11 @@ both.
     `package-lock.json`; the merge deleted it and none remain open. Nothing in
     the theme is installed from npm any more, so a new lockfile appearing is
     worth questioning.
-13. **Merged to `main`** as PR #1 (`cbecbad`; `b7a7e00` before the notes
-    were removed from history). Development continues on
-    `v5-persistent-shell`. Production is untouched by the merge — it still
-    runs `cdash_4.1.1`, which is why #1 above stands.
+13. **`main` is CDASH 5.** Merged as PR #1 (`cbecbad`; `b7a7e00` before the
+    notes were removed from history), then PR #2, after which
+    `v5-persistent-shell` was deleted. 4.1.1 is still reachable as the
+    `v4.1.1` tag and release, at `fa36a94`. Production is untouched by either
+    merge — it still runs `cdash_4.1.1`, which is why #1 above stands.
 
 ## Longer-term
 
