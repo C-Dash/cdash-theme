@@ -229,44 +229,92 @@ resizeObserver.observe(mapDiv);
 /**
  * The map on paper: a still copy, not the map itself.
  *
- * An item page prints its header and values, then the map, then the Linked
- * Resources cards or the page images. The map has to sit inside #content to
- * fall in that order, and the live map cannot be moved there: reparenting
- * #drawmap resizes it, which is the camBase hazard described above, and
- * Leaflet could not lay out new tiles in the time a print dialog allows
- * anyway. So beforeprint inserts a deep copy of the map's DOM -- tiles,
- * overlays, markers and the featured circle, all positioned by inline styles
- * -- scaled to fit, and afterprint takes it away. The live map is never
- * touched; print.scss keeps hiding its pane.
+ * A Place prints a band on page 1: its facts on the left, the map on the
+ * right (show.phtml renders the band, print-only, with the right half empty).
+ * A Document prints no map. The map has to sit inside #content to land in
+ * that band, and the live map cannot be moved there: reparenting #drawmap
+ * resizes it, which is the camBase hazard described above, and Leaflet could
+ * not lay out new tiles in the time a print dialog allows anyway. So
+ * beforeprint puts a deep copy of the map's DOM -- tiles, overlays, markers
+ * and the featured circle, all positioned by inline styles -- scaled to fit,
+ * into the band's empty half, and afterprint takes it away. The live map is
+ * never touched; print.scss keeps hiding its pane.
  *
  * camBase does not survive the copy, and is not meant to: a cloned canvas is
  * blank, and copying a WebGL canvas's pixels gives blank too, since maplibre
  * does not preserve its drawing buffer. MassGIS, the ground layer, is loaded
  * underneath it and prints in its place. Other canvases (2D) are copied.
  *
- * Printed as it is shown: the visitor's own extent, at most 7.5in by about
- * 4.2in -- US Letter less half-inch margins, leaving page 1 room for the
- * header, the values and the footer. Never scaled up: a small pane prints
- * small rather than blurred.
+ * Printed as it is shown: the visitor's own extent, at most the band's map
+ * half, 3.9in by 3in (.cdash-print-place in print.scss). Never scaled up: a
+ * small pane prints small rather than blurred.
  */
-const PRINT_MAP_MAX_W_PX = 720;   // 7.5in at 96 CSS px per inch
-const PRINT_MAP_MAX_H_PX = 400;
+const PRINT_MAP_MAX_W_PX = 374;   // 3.9in at 96 CSS px per inch
+const PRINT_MAP_MAX_H_PX = 288;   // 3in
+
+/**
+ * A Document's page images on paper: equal slots, small ones sharing.
+ *
+ * Every printed page gives a page image the same slot, PRINT_SLOT_H_IN tall:
+ * page 1 spends the head of the page on the folder line, and every later
+ * page leaves that same space blank, so a letter-sized scan prints at one
+ * size throughout. Images that are short at full width -- a landscape photo,
+ * a clipping -- stack on one page while they fit.
+ *
+ * CSS cannot pack like that, so this decides where each page starts and
+ * marks it, from each image's natural aspect ratio, and print.scss turns the
+ * mark into a page break plus the blank head. An image not yet loaded has no
+ * natural size and gets a page to itself.
+ *
+ * Mirrors print.scss: $content-w and $slot-h. Change them together.
+ */
+const PRINT_SLOT_W_IN = 7.5;
+const PRINT_SLOT_H_IN = 8.95;
+
+function paginatePageImages(content) {
+  let used = PRINT_SLOT_H_IN;   // so the first image never starts a sheet
+  let first = true;
+  content.querySelectorAll('.media-embeds .media-render').forEach(function (render) {
+    const img = render.querySelector('img');
+    const h = (img && img.naturalWidth)
+      ? Math.min(PRINT_SLOT_H_IN, PRINT_SLOT_W_IN * img.naturalHeight / img.naturalWidth)
+      : PRINT_SLOT_H_IN;
+    if (first) {
+      used = h;
+      first = false;
+    } else if (used + h <= PRINT_SLOT_H_IN) {
+      used += h;
+    } else {
+      render.classList.add('cdash-print-sheet-start');
+      used = h;
+    }
+  });
+}
 
 let printMapEl = null;
 
-function removePrintMap() {
+function cleanUpPrint() {
   if (printMapEl) {
     printMapEl.remove();
     printMapEl = null;
   }
+  document.querySelectorAll('.cdash-print-sheet-start').forEach(function (el) {
+    el.classList.remove('cdash-print-sheet-start');
+  });
 }
 
 window.addEventListener('beforeprint', function () {
-  removePrintMap();
+  cleanUpPrint();
 
   // #content's data-cdash-page, not <body>'s class -- see CLAUDE.md.
   const content = document.getElementById('content');
   if (!content || !content.matches('[data-cdash-page~="item"][data-cdash-page~="show"]')) return;
+
+  paginatePageImages(content);
+
+  // Only a Place has a band to put the map in.
+  const slot = content.querySelector('.cdash-print-place-map');
+  if (!slot) return;
 
   // A collapsed map pane prints no map rather than a sliver.
   const w = mapDiv.clientWidth;
@@ -298,18 +346,10 @@ window.addEventListener('beforeprint', function () {
   printMapEl.style.width = Math.round(w * scale) + 'px';
   printMapEl.style.height = Math.round(h * scale) + 'px';
   printMapEl.appendChild(copy);
-
-  // After the values, before whatever follows them: the Linked Resources
-  // cards on a Place, the page images on a Document, else the credit block.
-  const next = content.querySelector('#resources-linked, .media-embeds, .cdash-item-footer');
-  if (next) {
-    next.parentNode.insertBefore(printMapEl, next);
-  } else {
-    content.appendChild(printMapEl);
-  }
+  slot.appendChild(printMapEl);
 });
 
-window.addEventListener('afterprint', removePrintMap);
+window.addEventListener('afterprint', cleanUpPrint);
 
 // Always-on ground layer, pinned beneath everything else. Not a hash token --
 // it is never switchable, so there is nothing to record.

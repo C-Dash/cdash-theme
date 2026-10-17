@@ -93,7 +93,16 @@ html {
   margin: 0;
 }
 
-#print-footer {
+#content .cdash-print-frame,
+#content .cdash-print-frame > tbody,
+#content .cdash-print-frame > tbody > tr,
+#content .cdash-print-body {
+  display: contents;
+}
+
+#content .cdash-print-frame > thead,
+#content .cdash-print-frame > tfoot,
+.cdash-print-only {
   display: none;
 }
 
@@ -896,7 +905,7 @@ ul.resource-list > li > A > img {
 
 /* @end */
 /* @group ----- Page header ----- */
-#content > .cdash-page-header {
+#content .cdash-page-header {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -906,14 +915,14 @@ ul.resource-list > li > A > img {
   padding: 10px 30px 4.5px 10px;
 }
 
-#content > .cdash-page-header > .cdash-breadcrumb,
-#content > .cdash-page-header > .cdash-visit-place {
+#content .cdash-page-header > .cdash-breadcrumb,
+#content .cdash-page-header > .cdash-visit-place {
   display: inline;
   font-size: 11.25px;
   border-bottom: 0;
 }
 
-#content > .cdash-page-header > .cdash-visit-place[hidden] {
+#content .cdash-page-header > .cdash-visit-place[hidden] {
   display: none;
 }
 
@@ -923,7 +932,7 @@ ul.resource-list > li > A > img {
   color: var(--cdash-darkgray);
 }
 
-#content > .cdash-page-header .cdash-page-meta {
+#content .cdash-page-header .cdash-page-meta {
   font-size: 15px;
   font-weight: normal;
   color: var(--cdash-darkgray);
@@ -934,7 +943,7 @@ ul.resource-list > li > A > img {
   margin: 0 0.25em;
 }
 
-#content > .cdash-page-header h2 {
+#content .cdash-page-header h2 {
   font-size: 22.5px;
   line-height: 22.5px;
   margin-block-start: 5px;
@@ -942,7 +951,7 @@ ul.resource-list > li > A > img {
 }
 
 @container browse (max-width: 500px) {
-  #content > .cdash-page-header h2 {
+  #content .cdash-page-header h2 {
     font-size: 20px;
     line-height: 20px;
   }
@@ -1981,9 +1990,9 @@ html, body {
    at instead of a guessed pixel value.
 
    No grid-area is needed on the children: a single-column, two-row grid
-   places items in source order, and #content is first. #print-footer (second,
-   display:none on screen) and #user-bar (third, when present) both fall in
-   the auto row; #print-footer being invisible on screen makes that harmless.
+   places items in source order, and #content is first. #user-bar (second,
+   when present) falls in the auto row. #print-footer used to sit between
+   them; it is inside #content now, in the print frame.
 
    grid-template-columns:1fr is NOT optional here. Leaving only rows declared
    defaults the one implicit column to grid-auto-columns:auto, which sizes to

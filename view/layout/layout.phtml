@@ -4,6 +4,16 @@ $siteTitle = $site->title();
 $this->htmlElement('html')->setAttribute('lang', $this->lang());
 $this->headMeta()->setCharset('utf-8');
 $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1');
+// The page's own title, for the printed header: what the content template put
+// into headTitle via pageTitle(), read before the site and installation names
+// are appended below. A page that sets none (the site home) prints the site's.
+$printTitleParts = [];
+foreach ($this->headTitle() as $part) {
+    if ((string) $part !== '') {
+        $printTitleParts[] = (string) $part;
+    }
+}
+$printTitle = $printTitleParts ? implode(' · ', $printTitleParts) : $siteTitle;
 $this->headTitle($siteTitle)->setSeparator(' · ');
 $this->headTitle()->append($this->setting('installation_title', 'Omeka S'));
 $this->headLink()->prependStylesheet($this->assetUrl('css/style.css'),$media = 'screen');
@@ -430,16 +440,58 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
           ?>
           <div id="showresult" hx-history-elt>
             <div id="content" role="main" data-cdash-page="<?php echo $escape($pageTypes); ?>">
+              <?php
+              /*
+               * The print frame: a real table, because a <thead> and <tfoot>
+               * are the one thing every browser repeats on each printed page
+               * AND reserves space for. position:fixed repeats too, but content
+               * runs beneath it, and pushed into the page margin it prints once,
+               * in the wrong place -- both tested in headless Chrome.
+               *
+               * The footer needs both. A <tfoot> follows the content on the
+               * last page rather than sitting at its foot, so here it is only
+               * a blank spacer that keeps content clear, and the text is the
+               * position:fixed #print-footer below, which every page draws at
+               * its foot, into that space.
+               *
+               * Inside #content, not beside it, so the header is re-rendered
+               * with every swap: htmx selects #content out of this full layout
+               * response, and the title and URL belong to the page being shown.
+               * The URL is the request's, so it never carries the map hash --
+               * the browser does not send one.
+               *
+               * On screen the frame is display:contents (_screen.scss) and its
+               * header and footer rows are hidden, so the content lays out as
+               * if the table were not there. The text lines are deliberately
+               * unstyled here; print.scss owns them.
+               */
+              ?>
+              <table class="cdash-print-frame" role="presentation">
+                <thead>
+                  <tr><td>
+                    <div id="print-header">
+                      <span class="cdash-print-title"><?php echo $escape($printTitle); ?></span>
+                      <span class="cdash-print-sep" aria-hidden="true">&#9670;</span>
+                      <span class="cdash-print-url"><?php echo $escape($this->serverUrl(true)); ?></span>
+                    </div>
+                  </td></tr>
+                </thead>
+                <tfoot>
+                  <tr><td><div class="cdash-print-footer-space"></div></td></tr>
+                </tfoot>
+                <tbody>
+                  <tr><td class="cdash-print-body">
               <?php echo $this->content; ?>
-            </div>
-
-            <?php // On every printed page, centred at the foot -- position:fixed
-                  // in print.scss, which every browser repeats per page. Hidden
-                  // on screen. The rights line lives here, not in the item's
-                  // Citation/Rights block, which print.scss hides. ?>
-            <div id="print-footer">
-              <p>Cambridge Historical Commission, Digital Architectural Survey and History (CDASH)</p>
-              <p>Rights status not evaluated.</p>
+                  </td></tr>
+                </tbody>
+              </table>
+              <?php // The rights line lives here, not in the item's
+                    // Citation/Rights block, which print.scss hides. ?>
+              <div id="print-footer" class="cdash-print-only">
+                Cambridge Historical Commission, Digital Architectural Survey and History (CDASH)
+                <span class="cdash-print-sep" aria-hidden="true">&#9670;</span>
+                Rights status not evaluated.
+              </div>
             </div>
 
             <?php // The GeoSync and GeoAudit links used to be appended here by

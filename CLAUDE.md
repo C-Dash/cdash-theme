@@ -70,11 +70,27 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   Invisible when anonymous. **Back/Forward** take no swap spec at all:
   `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
   handler in `cdash-layout.js` resets it.
-- **The printed map is a copy.** An item page prints header and values, the
-  map, then cards or page images (`print.scss`; the brief is in the local
-  `notes/print_styles.md`). At
-  `beforeprint`, `cdash-map.js` deep-clones `#drawmap` into `#content`,
-  scaled to fit, and removes it at `afterprint`. The live map pane stays
+- **Print has a frame, and the printed map is a copy.** The brief is in the
+  local `notes/print_styles.md`. Every printed page carries a one-line header,
+  "Title ◆ URL", and a one-line footer. Both live in a real `<table>` inside
+  `#content` (`layout.phtml`), because a `<thead>` is the only thing browsers
+  both repeat on every page and make room for. `position: fixed` content runs
+  beneath, and pushed into the page margin it prints once, misplaced. The
+  footer text is fixed after all: a `<tfoot>` is a blank spacer, since a text
+  one trails the content on the last page. On screen the frame is
+  `display: contents`, which is why the sticky header's selector is
+  `#content .cdash-page-header`, not `#content >`. Being inside `#content`, the
+  header is re-rendered with every swap, so it is always the current page's.
+
+  Item values do not print. A Place prints a band from `show.phtml`
+  (print-only markup: three properties the screen hides, plus folders) beside
+  the map. A Document prints its folder line, then page images in equal
+  slots. `cdash-map.js` marks where each printed page starts, and its
+  `PRINT_SLOT_*` constants mirror `print.scss`. Search results print the query
+  and a count but no cards, because `?per_page=` makes pagination no bound.
+
+  The map: at `beforeprint`, `cdash-map.js` deep-clones `#drawmap` into the
+  Place band's empty half, scaled to fit, and removes it at `afterprint`. The live map pane stays
   hidden in print and is never moved: reparenting it would resize it, which
   is the camBase hazard (*Still open* #5). camBase prints blank in the copy
   (a cloned or copied WebGL canvas is empty) and MassGIS shows through, by

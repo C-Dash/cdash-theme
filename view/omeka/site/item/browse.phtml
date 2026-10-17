@@ -68,6 +68,22 @@ if ($itemSetShow) {
 
 <?php echo $this->searchFilters(); ?>
 
+<?php
+// Print-only; see print.scss. A folder prints its cards under a heading.
+// Search results print none of them: pagination does not bound a search,
+// since ?per_page= in the URL overrides it, and one URL could print the whole
+// archive. What prints instead is the query (the filter chips above), this
+// count, and the URL in the universal header, which re-runs the search.
+?>
+<?php if ($itemSetShow): ?>
+<h3 class="cdash-print-only cdash-print-folder-heading"><?php echo $escape($translate('Folder Contents:')); ?></h3>
+<?php else: ?>
+<p class="cdash-print-only cdash-print-advisory">
+    <?php echo $escape($countLabel); ?>.
+    <?php echo $escape($translate('CDASH does not print thumbnails for search results.')); ?>
+</p>
+<?php endif; ?>
+
 
 <?php $this->trigger('view.browse.before'); ?>
 <?php
