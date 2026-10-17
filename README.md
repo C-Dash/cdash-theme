@@ -1,15 +1,28 @@
 # CDASH Theme
-This is an Omeka-S Theme that adds a map-based interface that includes spts
-for place-based items, and a hierarchy of documents related to each place.  
-The map window also incorporates a map control panel that offes various 
-alternative base maps and ovaelays.
+The Cambridge Digital Architecture Survey and History project extends Omeka-S with a schema of Place Items, Document Items and Folders that model the physical filing scheme of the physical archtectural survey at the Cambridge Historical Commission.  You can explore the production CDASH Omeka-S site with several introductory pages about the project at [cdash.cambridgema.gov(http://cdash.cambridgema.gov)].
+
+
+This theme implements the map interface and various modifications to the standard Omeka-S Show and Browse pages. More information on the CDASH schema can be found in the [CDASH Documentation Repo](https://github.com/C-Dash/Documentation) which can also be [Viewed as HTML](https://c-dash.github.io/Documentation).  There is no CDASH Module, but the CDASH Omeka instance and routine administration function does rely on several other modules, as follows:
+
+* Mapping (version 1.1)
+* Custom Vocabulary
+* Metadata Browse
+* Value Suggest
+* PDF Embed
+* Numeric Data Types
+
+To play around with this theme you may want to load a sample dataset which can be found along with documentation of the ]CDASH Accession Workflow (https://c-dash.github.io/Documentation/accession/index.htm)]
 
 ## Installation
 Install in the normal way [Omeka S User Manual instructions for installing themes](https://omeka.org/s/docs/user-manual/sites/site_theme/#installing-themes).
 
 
-## Published For Experimentation and Review
-This theme is published for experimentation and inspection.  It is not designed to do anyting beyond what it does for the Cambridge Historical Commission.  I am very interested in having other people try to adapt this theme for other purposes.  I aplogize in addvance for the lack of documentation.  Some decent documentation can be in the [CDASH Documentation Repo](https://github.com/C-Dash/Documentation) which can also be [Viewed as HTML](https://c-dash.github.io/Documentation)I will be improving this as time permits.  In the meantime, don't hesitate to post questions as "Issues" on this thread.  Watch this repo for updates.  YOu may also email me directly at paulbcote@gmail.com
+## Disclaimer
+The CDASH theme is way more complicated than a standard Omeka-S theme.  It breaks a few rules in order to maintain and audit logical consistency between Place and Document items.  Normally these functions would be implemented in an Omeka-S module that modifies Omeka's doctrine schema.  This module uses SQL, instead.
 
-Thanks
+Please try it out and evaluate this project for yourself.  The developers make no warranty regarding the outcome, but we are interested in hearing about your success or difficulty using the normal github Issue tracker.
+
+This theme was recently re-factored and enhanced for mobile screens using Claude Code Opus 5.5.
+
+
 
