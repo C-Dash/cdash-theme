@@ -68,6 +68,9 @@
   --cdash-edge-active: var(--cdash-link);
   --cdash-grip-bg: #f4f4f4;
   --cdash-grip-fg: #808080;
+  /* A clicked map marker glows in this, briefly (_map-controls.scss). Matched
+     to Chrome's focus-ring blue, so it reads as "this is what you chose". */
+  --cdash-marker-pulse: #005fcc;
   /* The prototype used a 20px placeholder nav. The real nav carries a menu and
      a search form, so the shell sizes that row to its content instead. */
   --cdash-nav-h: auto;
@@ -90,7 +93,16 @@ html {
   margin: 0;
 }
 
-#print-footer {
+#content .cdash-print-frame,
+#content .cdash-print-frame > tbody,
+#content .cdash-print-frame > tbody > tr,
+#content .cdash-print-body {
+  display: contents;
+}
+
+#content .cdash-print-frame > thead,
+#content .cdash-print-frame > tfoot,
+.cdash-print-only {
   display: none;
 }
 
@@ -484,9 +496,16 @@ header > * {
   display: block;
 }
 
-.site-title:hover,
-.site-title:active {
+/* The banner is a link home, but it is an image, not text, so the text-link
+   styling stays off it in every state. It used to lose a:link's dotted
+   underline only on hover, which shifted the image by that pixel as the
+   pointer entered; and where an accent colour is set, the layout's inline
+   a:hover { opacity: .75 } faded it. The focus outline is left alone. */
+#banner .site-title,
+#banner .site-title:hover,
+#banner .site-title:active {
   border-bottom: 0;
+  opacity: 1;
 }
 
 .site-title h1 {
@@ -886,7 +905,7 @@ ul.resource-list > li > A > img {
 
 /* @end */
 /* @group ----- Page header ----- */
-#content > .cdash-page-header {
+#content .cdash-page-header {
   position: sticky;
   top: 0;
   z-index: 1;
@@ -896,14 +915,14 @@ ul.resource-list > li > A > img {
   padding: 10px 30px 4.5px 10px;
 }
 
-#content > .cdash-page-header > .cdash-breadcrumb,
-#content > .cdash-page-header > .cdash-visit-place {
+#content .cdash-page-header > .cdash-breadcrumb,
+#content .cdash-page-header > .cdash-visit-place {
   display: inline;
   font-size: 11.25px;
   border-bottom: 0;
 }
 
-#content > .cdash-page-header > .cdash-visit-place[hidden] {
+#content .cdash-page-header > .cdash-visit-place[hidden] {
   display: none;
 }
 
@@ -913,7 +932,7 @@ ul.resource-list > li > A > img {
   color: var(--cdash-darkgray);
 }
 
-#content > .cdash-page-header .cdash-page-meta {
+#content .cdash-page-header .cdash-page-meta {
   font-size: 15px;
   font-weight: normal;
   color: var(--cdash-darkgray);
@@ -924,7 +943,7 @@ ul.resource-list > li > A > img {
   margin: 0 0.25em;
 }
 
-#content > .cdash-page-header h2 {
+#content .cdash-page-header h2 {
   font-size: 22.5px;
   line-height: 22.5px;
   margin-block-start: 5px;
@@ -932,7 +951,7 @@ ul.resource-list > li > A > img {
 }
 
 @container browse (max-width: 500px) {
-  #content > .cdash-page-header h2 {
+  #content .cdash-page-header h2 {
     font-size: 20px;
     line-height: 20px;
   }
@@ -1263,6 +1282,38 @@ td {
   background-color: var(--cdash-darkgray);
 }
 
+/* The CDASH pull-down -- box model in _shell.scss. The toggle reads as one of
+   the nav links it stands in for, with the same arrow the top-level parent
+   items get below. */
+.cdash-nav-toggle {
+  margin: 0 18px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--cdash-page);
+  font: inherit;
+  cursor: pointer;
+}
+.cdash-nav-toggle:after {
+  font-family: "Font Awesome 5 Free";
+  font-weight: 900;
+  content: "\f107";
+  display: inline-block;
+  margin-left: 4.5px;
+}
+
+.cdash-nav-list {
+  background-color: var(--cdash-darkgray);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+.cdash-nav-list a:hover,
+.cdash-nav-list a:focus-visible {
+  text-decoration: underline;
+}
+.cdash-nav-list .active > a {
+  font-weight: bold;
+}
+
 nav a:link, nav a:visited, nav a:hover {
   color: var(--cdash-page);
 }
@@ -1497,8 +1548,17 @@ html, body {
   overflow: hidden;
 }
 
+/* Edge to edge, top left at the window's top left. `header > *` in
+   _screen.scss -- inherited from the page-header styling this theme grew
+   out of -- gives this box base.container's 1600px max-width with auto side
+   margins, plus 9px side padding: on a wide window the banner stopped
+   growing and sat centred, and at any width it was inset 9px. One class
+   outweighs that rule's two type selectors. */
 .cdash-banner-content {
   height: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 0;
   transition: transform 400ms ease-in;
 }
 
@@ -1510,14 +1570,17 @@ html, body {
   transform: translateY(-100%);
 }
 
-/* Scrolls sideways rather than clipping. This dev site has one nav item and
-   fits easily, but the production menu is longer, and at phone widths
-   overflow:hidden would put those links past the edge with no way to reach
-   them. overflow-y stays hidden so the row cannot grow and steal height from
-   the panes. */
+/* Overflow is visible, so the CDASH pull-down can hang below the bar. This
+   used to scroll sideways so that a long menu stayed reachable on a phone;
+   the pull-down does that job now (navCollapse in cdash-layout.js), and a
+   scrolling box would clip it.
+
+   Stacked above the pane grid, whose highest layer is the divider at
+   z-index 4 -- see _panes.scss. Pane content is isolated at z-index 0, so
+   Leaflet's own 200-1000 never reaches this far. */
 .cdash-navbar {
-  overflow-x: auto;
-  overflow-y: hidden;
+  position: relative;
+  z-index: 5;
 }
 
 /* Sized by the shell rather than by the old 176px #top row: the nav is a grid
@@ -1530,6 +1593,72 @@ html, body {
   min-height: 30px;
   width: 100%;
   flex-wrap: nowrap;
+  position: relative;
+}
+
+/* Never shrinks while the row is expanded: navCollapse measures this box to
+   decide whether the links fit, and a box that gave way to them would make
+   that answer meaningless. */
+#navmenu > #search {
+  flex-shrink: 0;
+}
+
+/* ---- Collapsed nav: the CDASH pull-down ----
+   The links are hidden but stay in the layout tree, absolutely positioned, so
+   navCollapse can still read their full width and knows when to expand
+   again. visibility:hidden takes them out of the tab order and the
+   accessibility tree, which display:none would also do but at the cost of
+   that measurement. */
+#navmenu.cdash-nav-collapsed > ul.navigation {
+  position: absolute;
+  left: 0;
+  top: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* Collapsed, the search box may give up width on a phone; see the searchW
+   comment in navCollapse for why only now. */
+#navmenu.cdash-nav-collapsed > #search {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+#navmenu.cdash-nav-collapsed #search-form {
+  max-width: 100%;
+}
+
+.cdash-nav-dropdown {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cdash-nav-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 12em;
+  max-width: calc(100vw - 16px);
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.cdash-nav-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Out-specifies `nav ul a { padding: 0 }` in _desktop.scss, (0,1,1) to
+   (0,0,3). */
+.cdash-nav-list a {
+  display: block;
+  padding: 0.4em 1em;
+}
+
+/* Deeper levels, when the nav_depth theme setting allows them. */
+.cdash-nav-list ul ul a {
+  padding-left: 2em;
 }
 
 /* ---- Banner ----
@@ -1861,9 +1990,9 @@ html, body {
    at instead of a guessed pixel value.
 
    No grid-area is needed on the children: a single-column, two-row grid
-   places items in source order, and #content is first. #print-footer (second,
-   display:none on screen) and #user-bar (third, when present) both fall in
-   the auto row; #print-footer being invisible on screen makes that harmless.
+   places items in source order, and #content is first. #user-bar (second,
+   when present) falls in the auto row. #print-footer used to sit between
+   them; it is inside #content now, in the print frame.
 
    grid-template-columns:1fr is NOT optional here. Leaving only rows declared
    defaults the one implicit column to grid-auto-columns:auto, which sizes to
@@ -2131,6 +2260,43 @@ html, body {
   cursor: row-resize;
 }
 
+/* The still copy of the map that cdash-map.js puts into #content for print.
+   It exists only between beforeprint and afterprint, but the screen is still
+   showing while the print dialog is open, and it must not appear in the
+   browse pane there. print.scss shows it. */
+.cdash-print-map {
+  display: none;
+}
+
+/* ---- Clicked marker ----
+   A marker glows twice when clicked, covering the second or two before the
+   item loads and the featured-marker circle takes over. pulseMarker() in
+   cdash-map.js adds the class and takes it off again.
+
+   A filter, never a transform: Leaflet positions every marker <img> with
+   transform: translate3d(...), so a scale or bounce animation would replace
+   that and throw the marker to the map's top-left corner for its duration.
+   drop-shadow follows the icon's own shape, balloon and halo alike. */
+@keyframes cdash-marker-pulse {
+  0%, 50%, 100% {
+    filter: none;
+  }
+  25%, 75% {
+    filter: drop-shadow(0 0 2px var(--cdash-marker-pulse)) drop-shadow(0 0 6px var(--cdash-marker-pulse));
+  }
+}
+.leaflet-marker-icon.cdash-marker-pulse {
+  animation: cdash-marker-pulse 700ms ease-out;
+}
+
+/* Reduced motion: one steady glow instead of flashing. pulseMarker() clears
+   it on a timer, since with no animation there is no animationend. */
+@media (prefers-reduced-motion: reduce) {
+  .leaflet-marker-icon.cdash-marker-pulse {
+    animation: none;
+    filter: drop-shadow(0 0 2px var(--cdash-marker-pulse)) drop-shadow(0 0 6px var(--cdash-marker-pulse));
+  }
+}
 /* Leaflet's own display rules would otherwise beat the UA's [hidden], and the
    control relies on hidden for both itself and its message. */
 .cdash-locate[hidden],

@@ -143,6 +143,62 @@ document.addEventListener('alpine:init', () => {
     },
   }));
 
+  // The nav bar's page links, collapsed into the "CDASH" pull-down when they no
+  // longer fit beside the search box -- see the comment in layout.phtml.
+  //
+  // The row is measured, not given a breakpoint, because how wide it is
+  // depends on the site's page labels. ul.navigation stays in the layout tree
+  // while collapsed (hidden, absolutely positioned -- see _shell.scss), so its
+  // full width can be read in either state and the answer never flickers: it
+  // is "does the whole row fit", asked the same way whether or not it is shown.
+  //
+  // DOM refs are closure variables rather than reactive properties, as in
+  // pullOut below.
+  Alpine.data('navCollapse', () => {
+    // A few pixels of slack, so the row collapses just before it touches the
+    // search box rather than just after.
+    const SLACK_PX = 8;
+
+    let navEl = null;
+    let listEl = null;
+    let searchEl = null;
+    // The search box's full width, read only while the row is expanded: once
+    // collapsed it may shrink to fit a phone (_shell.scss), and measuring that
+    // shrunken width would make the row look as though it fits again --
+    // expanding it, which unshrinks the box, which collapses it, and so on.
+    let searchW = 0;
+
+    return {
+      collapsed: false,
+      open: false,
+
+      init() {
+        navEl = this.$el;
+        listEl = navEl.querySelector(':scope > ul.navigation');
+        searchEl = navEl.querySelector(':scope > #search');
+        if (!listEl) return;
+
+        new ResizeObserver(() => this.measure()).observe(navEl);
+        // Labels change width when the web font arrives.
+        if (document.fonts) document.fonts.ready.then(() => this.measure());
+      },
+
+      measure() {
+        if (searchEl && !this.collapsed) searchW = searchEl.offsetWidth;
+        const collapse = listEl.scrollWidth + SLACK_PX > navEl.clientWidth - searchW;
+        if (collapse === this.collapsed) return;
+        this.collapsed = collapse;
+        if (!collapse) this.open = false;
+      },
+
+      close(refocus) {
+        if (!this.open) return;
+        this.open = false;
+        if (refocus) this.$refs.toggle.focus();
+      },
+    };
+  });
+
   // The Map | Browse split. --cdash-split is the map pane's share of the
   // container's axis: 0% is map collapsed, 100% is browse collapsed.
   Alpine.data('paneResizer', () => {

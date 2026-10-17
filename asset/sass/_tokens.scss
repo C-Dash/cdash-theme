@@ -98,6 +98,10 @@
   --cdash-grip-bg:     #f4f4f4;
   --cdash-grip-fg:     #808080;
 
+  /* A clicked map marker glows in this, briefly (_map-controls.scss). Matched
+     to Chrome's focus-ring blue, so it reads as "this is what you chose". */
+  --cdash-marker-pulse: #005fcc;
+
   /* The prototype used a 20px placeholder nav. The real nav carries a menu and
      a search form, so the shell sizes that row to its content instead. */
   --cdash-nav-h: auto;

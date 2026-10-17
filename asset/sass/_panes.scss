@@ -301,9 +301,9 @@
    at instead of a guessed pixel value.
 
    No grid-area is needed on the children: a single-column, two-row grid
-   places items in source order, and #content is first. #print-footer (second,
-   display:none on screen) and #user-bar (third, when present) both fall in
-   the auto row; #print-footer being invisible on screen makes that harmless.
+   places items in source order, and #content is first. #user-bar (second,
+   when present) falls in the auto row. #print-footer used to sit between
+   them; it is inside #content now, in the print frame.
 
    grid-template-columns:1fr is NOT optional here. Leaving only rows declared
    defaults the one implicit column to grid-auto-columns:auto, which sizes to
