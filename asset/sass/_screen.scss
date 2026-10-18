@@ -17,8 +17,22 @@ html {
     margin: 0;
 }
 
-#print-footer {
-    display:none;
+// The print frame (layout.phtml) is a table only on paper. On screen its
+// table, body row and cell generate no boxes, so #content's children lay out
+// as if it were not there, and its header and footer rows do not render.
+// The #content prefix is for weight, not position: _desktop.scss styles
+// `#content tbody` and `td`, and these must beat both.
+#content .cdash-print-frame,
+#content .cdash-print-frame > tbody,
+#content .cdash-print-frame > tbody > tr,
+#content .cdash-print-body {
+    display: contents;
+}
+
+#content .cdash-print-frame > thead,
+#content .cdash-print-frame > tfoot,
+.cdash-print-only {
+    display: none;
 }
 
 body {
@@ -444,9 +458,16 @@ header {
     }
 }
 
-.site-title:hover,
-.site-title:active {
+/* The banner is a link home, but it is an image, not text, so the text-link
+   styling stays off it in every state. It used to lose a:link's dotted
+   underline only on hover, which shifted the image by that pixel as the
+   pointer entered; and where an accent colour is set, the layout's inline
+   a:hover { opacity: .75 } faded it. The focus outline is left alone. */
+#banner .site-title,
+#banner .site-title:hover,
+#banner .site-title:active {
     border-bottom: 0;
+    opacity: 1;
 }
 
 .site-title h1 {
@@ -905,7 +926,11 @@ order: 0;
 // class on <body> -- <body> is rendered only on a full load and htmx swaps just
 // #content, so a body class names whichever page was loaded last in full. That
 // is how this header once came unstuck. See layout.phtml.
-#content > .cdash-page-header {
+//
+// A descendant, not `#content >`: the print frame's cell sits between them in
+// the DOM. On screen that cell is display:contents, so #content is still the
+// box the header sticks within.
+#content .cdash-page-header {
     position: sticky;
     top: 0;
     z-index: 1;
@@ -921,8 +946,8 @@ order: 0;
 //
 // inline, so the two sit on one line with the diamond between them, and the
 // row wraps rather than overflowing when a Place title is long.
-#content > .cdash-page-header > .cdash-breadcrumb,
-#content > .cdash-page-header > .cdash-visit-place {
+#content .cdash-page-header > .cdash-breadcrumb,
+#content .cdash-page-header > .cdash-visit-place {
     display: inline;
     font-size: .75 * base.$base-font-size;
     border-bottom: 0;
@@ -931,7 +956,7 @@ order: 0;
 // Explicit, because the display above would otherwise beat the UA's [hidden].
 // cdash-layout.js hides this one rather than removing it when the return link
 // already names the same Place.
-#content > .cdash-page-header > .cdash-visit-place[hidden] {
+#content .cdash-page-header > .cdash-visit-place[hidden] {
     display: none;
 }
 
@@ -945,7 +970,7 @@ order: 0;
 // deliberately not the small-uppercase treatment stock Omeka gave this slot
 // for its bare "Item" heading -- that rule is gone, since nothing renders an h3
 // there any more.
-#content > .cdash-page-header .cdash-page-meta {
+#content .cdash-page-header .cdash-page-meta {
     font-size: base.$base-font-size;
     font-weight: normal;
     color: var(--cdash-darkgray);
@@ -960,7 +985,7 @@ order: 0;
 // be scrolled into view. The title is therefore smaller and tighter here than
 // the 27px h2 elsewhere, at every width, with 5px margins in place of the
 // usual 10px.
-#content > .cdash-page-header h2 {
+#content .cdash-page-header h2 {
     font-size: 22.5px;
     line-height: 22.5px;
     margin-block-start: 5px;
@@ -973,7 +998,7 @@ order: 0;
 // desktop pane are the same problem. Only the type shrinks; the margins above
 // are already as tight as they go.
 @container browse (max-width: 500px) {
-    #content > .cdash-page-header h2 {
+    #content .cdash-page-header h2 {
         font-size: 20px;
         line-height: 20px;
     }

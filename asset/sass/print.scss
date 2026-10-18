@@ -1,22 +1,42 @@
 // Entry point for asset/css/print.css, loaded by layout.phtml with
 // media="print". It is the only stylesheet that reaches paper.
 //
-// Print used to be spread across three places: print1.css (hand-written, the
-// real one), _print.scss (the 4.1.1 version, not compiled from anywhere and
-// still full of dead custom elements) and an @media print block inside
-// cdash-shell.css. This is all of it, in one file, generated like everything
-// else.
+// No @media print wrapper: the link's media attribute does that job. Because
+// style.css is media="screen", nothing else applies here -- this file defines
+// the printed page on its own, and what it mostly has to say is which of the
+// screen's furniture to hide, since it is in the DOM either way.
 //
-// No @media print wrapper: the link's media attribute does that job, the same
-// arrangement print1.css relied on.
+// The design is in notes/print_styles.md. On US Letter portrait:
+//   every page   a one-line header, "Title ◆ URL", and a one-line footer,
+//                "Cambridge Historical Commission ... ◆ Rights status ..."
+//   site page    nothing more
+//   Place        page 1 a band: Place Type, Neighborhood, Research District,
+//                folders and "Linked Documents" beside a still copy of the
+//                map; then its document cards, four across
+//   Document     page 1 the folder line; then its page images, one equal slot
+//                per page, short ones sharing
+//   folder       "Folder Contents:", then its cards, four across
+//   search       the query, the count and an advisory -- no cards
 //
-// Because style.css and cdash-shell.css are both media="screen", nothing else
-// applies here -- this file defines the printed page on its own. That is also
-// why the shell's old "unlock the viewport-locked boxes" rules are gone: they
-// existed only to undo the shell's own grid, height:100dvh and
-// overflow:hidden, which no longer reach paper at all. What still has to be
-// said is which chrome to hide, since those elements are in the DOM whether or
-// not the shell styles them.
+// Item property values do not print, apart from the Place band's three.
+
+@use "cards";
+
+/* ---- Geometry ----
+   cdash-map.js mirrors $content-w and $slot-h; change them together. */
+
+$margin: 0.5in;
+$content-w: 7.5in;      // 8.5in less the side margins
+$frame-row-h: 0.3in;    // the header row, and the footer row: a line and a gap
+$doc-head-h: 0.35in;    // a Document's folder line on page 1, blank after
+// A page image's slot: 10in of page inside the margins, less the frame's two
+// rows and the head, less 0.1in so a full slot never quite touches the footer.
+$slot-h: 10in - 2 * $frame-row-h - $doc-head-h - 0.1in;   // 8.95in
+
+@page {
+    size: letter portrait;
+    margin: $margin;
+}
 
 /* ---- Chrome that should not print ---- */
 
@@ -26,11 +46,7 @@
 .cdash-pane-divider,
 .cdash-pane-tab,
 .cdash-pullout,
-.cdash-navbar,
-// Ways out of the page mean nothing on paper.
-.cdash-breadcrumb,
-.cdash-visit-place,
-.cdash-crumb-sep {
+.cdash-navbar {
     display: none;
 }
 
@@ -43,100 +59,312 @@ header,
     display: none !important;
 }
 
-/* ---- Page ---- */
+// The on-screen page header, breadcrumbs included: the frame's header carries
+// the title on paper.
+.cdash-page-header {
+    display: none;
+}
+
+/* ---- Page and frame ---- */
 
 body {
-    margin: 0 3mm 0mm 3mm;
-    font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    font: 10pt/1.3 Arial, Helvetica, sans-serif;
 }
 
 #content {
     background-color: white;
-    margin: 0 3mm 0mm 3mm;
+    margin: 0;
+    padding: 0;
+}
+
+// The print frame (layout.phtml): a real table, whose <thead> and <tfoot>
+// every browser repeats on each page and makes room for. Nothing else does
+// both -- see the comment there.
+.cdash-print-frame {
+    width: 100%;
+    border-collapse: collapse;
+
+    > thead > tr > td,
+    > tfoot > tr > td,
+    > tbody > tr > td {
+        padding: 0;
+        border: 0;
+    }
+}
+
+// One line each, shrunk rather than wrapped. A long URL is cut, not the title.
+#print-header,
+#print-footer {
+    height: $frame-row-h;
+    display: flex;
+    gap: 0.4em;
+    font: 8pt/1.2 Arial, Helvetica, sans-serif;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+#print-header {
+    align-items: flex-start;
+}
+
+// The <tfoot> is only this spacer; the text is fixed to each page's foot,
+// into the space it keeps. See layout.phtml.
+.cdash-print-footer-space {
+    height: $frame-row-h;
 }
 
 #print-footer {
     position: fixed;
     bottom: 0;
+    left: 0;
+    right: 0;
+    justify-content: center;
+    align-items: flex-end;
+    background: white;
 }
+
+.cdash-print-title {
+    font-weight: bold;
+    flex: none;
+}
+
+.cdash-print-url {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cdash-print-sep {
+    flex: none;
+}
+
+/* ---- Print-only pieces ----
+   Hidden on screen (_screen.scss), shown here. */
+
+.cdash-print-only {
+    display: block;
+}
+
+/* ---- Item pages: what does not print ----
+   The values block, the stock item-sets block and the rule after it, the
+   Mapping module's own map section and the Citation/Rights block -- whose
+   rights line is in the footer instead. The values block and the item-sets
+   block are bare children of the frame's cell; the folders are restated in
+   the Place band or the Document's folder line. */
+#content[data-cdash-page~="item"][data-cdash-page~="show"] .cdash-print-body {
+    > dl,
+    > br,
+    > hr {
+        display: none;
+    }
+}
+
+#mapping-section,
+.cdash-item-footer {
+    display: none;
+}
+
+/* ---- Place: the page-1 band ---- */
+
+.cdash-print-place {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 0.2in;
+    break-inside: avoid;
+    margin-bottom: 0.15in;
+
+    dl {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        gap: 0.02in 0.15in;
+        margin: 0;
+    }
+
+    dt {
+        grid-column: 1;
+        font-weight: bold;
+    }
+
+    dd {
+        grid-column: 2;
+        margin: 0;
+    }
+
+    h3 {
+        margin: 0.2in 0 0;
+        font-size: 12pt;
+    }
+}
+
+// Sized inline by cdash-map.js; the wrapper is the scaled size and clips.
+.cdash-print-map {
+    position: relative;
+    overflow: hidden;
+}
+
+.cdash-print-map-copy {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform-origin: 0 0;
+}
+
+// Zoom buttons, the locate button, the attribution strip.
+.cdash-print-map .leaflet-control-container {
+    display: none;
+}
+
+// The card and page-image rules below would otherwise reach the tiles and
+// markers; Leaflet sizes those itself.
+.cdash-print-map img {
+    max-width: none !important;
+    max-height: none !important;
+}
+
+// The block's own heading; the band carries it.
+#resources-linked > h3 {
+    display: none;
+}
+
+// The Linked Resources pager: its page box and arrows mean nothing on paper.
+// The row count ("1-25 of 76") stays, since only that page of cards prints.
+.linked-header .pagination form,
+.linked-header .pagination-buttons {
+    display: none;
+}
+
+/* ---- Cards: a Place's documents and a folder's contents ---- */
+
+.cdash-print-folder-heading {
+    margin: 0 0 0.1in;
+    font-size: 12pt;
+}
+
+.cdash-card-grid {
+    @include cards.grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.15in;
+    margin: 0.1in 0;
+}
+
+.cdash-card {
+    @include cards.card-shell;
+    break-inside: avoid;
+}
+
+.cdash-card-link,
+.cdash-card-link:visited {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+}
+
+.cdash-card-thumb {
+    @include cards.card-thumb;
+    width: 100%;
+    max-width: none;
+    display: block;
+}
+
+.cdash-place-marker {
+    float: left;
+    height: 0.25in;
+    width: auto;
+    margin: 0 0.05in 0.03in 0;
+}
+
+.cdash-card-title {
+    @include cards.card-title;
+    margin-top: 0.04in;
+    font-size: 8pt;
+    line-height: 1.25;
+}
+
+/* ---- Search results: the query, not the results ----
+   A folder is a browse page too, and keeps its cards. */
+
+#content[data-cdash-page~="browse"]:not([data-cdash-page~="item-set"]) .cdash-card-grid {
+    display: none;
+}
+
+// Omeka's filter chips state the query in words; on paper, one per line.
+.search-filters {
+    margin: 0 0 0.1in;
+
+    .filter {
+        display: block;
+    }
+
+    .filter-label {
+        font-weight: bold;
+
+        &::after {
+            content: ": ";
+        }
+    }
+
+    .filter-value + .filter-value::before {
+        content: ", ";
+    }
+}
+
+.cdash-print-advisory {
+    margin: 0.1in 0 0;
+    font-style: italic;
+}
+
+// Ways out of a listing mean nothing on paper.
+.advanced-search,
+.cdash-print-body > .pagination {
+    display: none;
+}
+
+/* ---- Document: page images ---- */
+
+.cdash-print-doc-folder {
+    height: $doc-head-h;
+    margin: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+}
+
+// Each image scaled to fit one slot, never cut across a page.
+// cdash-map.js marks where each new page starts.
+.media-embeds .media-render {
+    break-inside: avoid;
+}
+
+.media-embeds img {
+    display: block;
+    width: auto;
+    height: auto;
+    max-width: $content-w;
+    max-height: $slot-h;
+    margin: 0 auto;
+}
+
+// The blank head that keeps every later slot the size of page 1's.
+.media-embeds .cdash-print-sheet-start {
+    break-before: page;
+    padding-top: $doc-head-h;
+}
+
+/* ---- Text ---- */
 
 a,
 a:visited {
-    text-decoration: underline;
+    color: inherit;
+    text-decoration: none;
 }
 
-/* ---- Page-break behaviour (from html5-boilerplate) ---- */
-
-pre,
-blockquote {
-    border: 1px solid #999;
-    page-break-inside: avoid;
-}
-
-thead {
-    display: table-header-group;
-}
-
-tr,
-img {
-    page-break-inside: avoid;
-}
-
-img {
-    max-width: 100% !important;
-    width: 100%;
-}
-
-p,
 h2,
 h3 {
+    break-after: avoid;
+}
+
+p {
     orphans: 3;
     widows: 3;
-}
-
-h2,
-h3 {
-    page-break-after: avoid;
-}
-
-h2 {
-    margin-top: 0;
-}
-
-/* ---- Resource values ---- */
-
-// print1.css also carried `.property value-content`, matching value-content as
-// an ELEMENT. The markup is <span class="value-content">, so that rule never
-// applied; it is dropped rather than corrected, because correcting it would
-// change what prints.
-//
-// Its font-size declarations went the same way: `font-size: 1` and
-// `font-size: .75` are unitless and invalid, so browsers discarded them. The
-// comments beside them showed the intent was $base-font-size, but restoring
-// that is a change to the printed page, not a port, so it is left alone.
-.property dt {
-    margin-bottom: 0;
-    font-weight: bold;
-}
-
-.resource-link img {
-    height: 30px;
-    width: 30px;
-}
-
-dl {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    grid-gap: 2px;
-}
-
-dt {
-    float: left;
-    clear: left;
-    width: 6.5em;
-}
-
-dd {
-    margin: 0 0 0 9em;
-    padding: 0 0 0.2em 0;
 }

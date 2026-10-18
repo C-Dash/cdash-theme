@@ -2,8 +2,10 @@
 
 Theme for the Cambridge Historical Commission Digital Architectural Survey and
 History. Production runs the predecessor, `cdash_4.1.1`, at
-cdash.cambridgema.gov. This is its replacement, developed on branch
-**`v5-persistent-shell`**.
+cdash.cambridgema.gov, and is tagged **`v4.1.1`** (with a GitHub release).
+This is its replacement, and it **is `main`**: work goes on short branches,
+each merged to `main` by PR. The long-lived `v5-persistent-shell` branch was
+merged as PR #2 and deleted.
 
 ## What this theme is
 
@@ -70,6 +72,39 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   Invisible when anonymous. **Back/Forward** take no swap spec at all:
   `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
   handler in `cdash-layout.js` resets it.
+- **Print has a frame, and the printed map is a copy.** The brief is in the
+  local `notes/print_styles.md`. Every printed page carries a one-line header,
+  "Title ◆ URL", and a one-line footer. Both live in a real `<table>` inside
+  `#content` (`layout.phtml`), because a `<thead>` is the only thing browsers
+  both repeat on every page and make room for. `position: fixed` content runs
+  beneath, and pushed into the page margin it prints once, misplaced. The
+  footer text is fixed after all: a `<tfoot>` is a blank spacer, since a text
+  one trails the content on the last page. On screen the frame is
+  `display: contents`, which is why the sticky header's selector is
+  `#content .cdash-page-header`, not `#content >`. Being inside `#content`, the
+  header is re-rendered with every swap, so it is always the current page's.
+
+  Item values do not print. A Place prints a band from `show.phtml`
+  (print-only markup: three properties the screen hides, plus folders) beside
+  the map. A Document prints its folder line, then page images in equal
+  slots. `cdash-map.js` marks where each printed page starts, and its
+  `PRINT_SLOT_*` constants mirror `print.scss`. Search results print the query
+  and a count but no cards, because `?per_page=` makes pagination no bound.
+
+  The map: at `beforeprint`, `cdash-map.js` deep-clones `#drawmap` into the
+  Place band's empty half, scaled to fit, and removes it at `afterprint`. The live map pane stays
+  hidden in print and is never moved: reparenting it would resize it, which
+  is the camBase hazard (*Still open* #5). camBase prints blank in the copy
+  (a cloned or copied WebGL canvas is empty) and MassGIS shows through, by
+  design. This needs Leaflet's CSS on paper, so `leaflet.css` and the
+  MarkerCluster sheets are registered `media="all"` in `layout.phtml`. **Do
+  not register `leaflet.css` anywhere else:** HeadLink keeps the first
+  registration of an href, and a content template renders before the layout,
+  so its screen-only copy would win on that page. The footer is
+  `position: fixed`, which every browser repeats per page. Headless Chrome
+  can check all of this: `chrome --headless=new --print-to-pdf=…
+  --virtual-time-budget=15000 <url>`, with a fresh `--user-data-dir` per run,
+  since a reused one crashes the renderer.
 
 ## The browse pane's furniture
 
@@ -402,22 +437,26 @@ both.
 8. **The admin bar — links now follow the page, presentation does not.**
    `e2cb3e5` fixed the stale View/Edit links and that part is confirmed
    working; `a7b2064`, the URL keeping the visitor's map extent rather than the
-   item's, is confirmed too. What is left on the bar is undecided:
+   item's, is confirmed too.
 
+   - **Who sees it — decided.** Global and Site Administrators only
+     (`global_admin`, `site_admin`, the latter labelled "Supervisor" here);
+     everyone else, logged out included, gets no output. Checked in the
+     template, because Omeka's helper looks only at `show_user_bar` and
+     login, and its links need only dashboard access, which every role has.
+     The template must stay silent rather than render an empty bar, or the
+     shell's `hx-select-oob` is emitted with no target.
+   - **Where its links go — decided.** One named tab, `target="omeka_admin"`,
+     for every link on the bar, Logout and the user's name included. htmx
+     boosts only links with no target or `_self`, so the target alone keeps
+     them out of the browse pane. A named tab, not one per click, so a run of
+     edits reuses one tab. GeoSync and GeoAudit keep their own windows.
    - **Styling.** Not yet judged. The theme owns
      `view/common/user-bar.phtml` now, so the markup is ours to change, and the
      two CDASH tools carry `class="admin cdash-tool"` if they want
      distinguishing. The bar sits in `#showresult`'s auto row — see the sticky
      footer comment in `_panes.scss` — so its height comes out of the browse
      pane.
-   - **Whether admin links should open a new tab.** Following Edit in the same
-     tab leaves the public site, which means the persistent shell, the map and
-     ~2000 markers are all torn down and rebuilt on return — the one thing this
-     theme is built to avoid. GeoSync and GeoAudit already open named windows
-     (`target="geosync"`, `target="geoaudit"`). Giving the bar's own links a
-     target is a one-line change in that override, passing `['target' => …]` to
-     the `$hyperlink` call. Decide deliberately: a new tab per edit accumulates
-     tabs, a single named admin window does not.
 9. **Breadcrumb scroll depth — deferred, and not free.** "Return to …" returns
    to the right page at the top, not to where the visitor was. htmx 2.0.4 keeps
    no scroll positions in its history cache, and the swap spec forces
@@ -426,17 +465,29 @@ both.
    modifiers go, positions are saved per URL, and top becomes a default rather
    than a rule. That is why it was split off rather than shipped with the
    breadcrumb.
-10. **The backlog is in three notes, two still untracked.**
-    `browse_pane_dynamics.md` is committed; `browse_grid_brainstorming.md` and
-    `cdash5_layout_dynamics.md` are not. They hold the outstanding wishes: a
-    Print button in the breadcrumb bar that applies `print.css` to the browse
-    pane alone, an unfinished "Search Results" section, and the remaining
-    layout-dynamics items. The untracked two are invisible to a fresh clone —
-    commit them or fold them into this file.
-11. **`asset/php/geosync copy.php`** — untracked leftover.
-12. **13 Dependabot alerts** on the default branch; they clear when the
-    `package-lock.json` deletion merges to `main`.
-13. **No PR yet** — styling first, by decision.
+10. **The backlog is in `notes/`, which is local only.** Prompts, wishes and
+    brainstorming go there, one file per topic; settled decisions move into
+    this file. The folder is **git-ignored** (`/notes/` in `.gitignore`), and
+    was also removed from the history of `main` and `v5-persistent-shell`
+    on 2026-10-11 — a rewrite and force-push, so every commit ID from
+    2026-09-26 on changed. A fresh clone has no notes at all: anything a
+    future session must know belongs here, not there. GitHub's own refs for
+    PR #1 still hold the old commits until GitHub Support purges them. It
+    holds the browse-pane and layout wish lists (a Print button in the
+    breadcrumb bar, an unfinished "Search Results" section), the prompts
+    behind the work above, and `notes/sql/copy_site_page.sql`, the
+    page-copy script. The original shell prompts are elsewhere, in the
+    separate `../layout/` repo (`layout_prompt.txt`, `overview._prompt.md`).
+11. **`asset/php/geosync copy.php`** — the untracked leftover, now deleted.
+12. **Dependabot — resolved.** All 15 alerts on `main` came from
+    `package-lock.json`; the merge deleted it and none remain open. Nothing in
+    the theme is installed from npm any more, so a new lockfile appearing is
+    worth questioning.
+13. **`main` is CDASH 5.** Merged as PR #1 (`cbecbad`; `b7a7e00` before the
+    notes were removed from history), then PR #2, after which
+    `v5-persistent-shell` was deleted. 4.1.1 is still reachable as the
+    `v4.1.1` tag and release, at `fa36a94`. Production is untouched by either
+    merge — it still runs `cdash_4.1.1`, which is why #1 above stands.
 
 ## Longer-term
 

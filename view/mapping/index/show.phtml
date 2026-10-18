@@ -6,8 +6,10 @@ if (!$mapping && !$markers) {
     //return;  Commented out for CDASH so that these libraries load even if there is no coordinates in curren titem.
 }
 
-$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'));
-$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.css', 'Mapping'));
+// leaflet.css and Control.FullScreen.css are registered by layout.phtml, with
+// leaflet.css as media="all" so the printed map copy is positioned. Registering
+// them here too would win -- this renders first, and HeadLink keeps the first
+// registration of an href -- and leave leaflet.css screen-only on item pages.
 
 $this->headScript()->appendFile($this->assetUrl('node_modules/leaflet/dist/leaflet.js', 'Mapping'));
 $this->headScript()->appendFile($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.js', 'Mapping'));

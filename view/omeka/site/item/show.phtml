@@ -107,6 +107,49 @@ if ($isDocument) {
         ];
     }
 }
+
+/**
+ * What the printed page states about the item, beneath the universal header
+ * (layout.phtml) that already carries its title and URL. Print-only; see
+ * print.scss and notes/print_styles.md.
+ *
+ * A Place prints three of its properties and its folders beside the map. All
+ * three properties are hidden on screen by view/common/resource-values.phtml,
+ * which is why they are read here rather than left to the values block, which
+ * does not print. A Document prints only its folders, on one line.
+ *
+ * The folders follow the item-sets block's own rule (Omeka's
+ * Site\ResourcePageBlockLayout\ItemSets): only those in this site when
+ * exclude_resources_not_in_site is on.
+ */
+$printFolders = $item->itemSets();
+if ($this->siteSetting('exclude_resources_not_in_site')) {
+    $siteItemSetIds = [];
+    foreach ($this->site->siteItemSets() as $siteItemSet) {
+        $siteItemSetIds[] = $siteItemSet->itemSet()->id();
+    }
+    $printFolders = array_filter($printFolders, function ($itemSet) use ($siteItemSetIds) {
+        return in_array($itemSet->id(), $siteItemSetIds);
+    });
+}
+$printFolderTitles = array_map(function ($itemSet) use ($valueLang) {
+    return $itemSet->displayTitle(null, $valueLang);
+}, $printFolders);
+
+$printPlaceValues = [];
+if (!$isDocument) {
+    $printPlaceTerms = [
+        'cdash:placeType' => 'Place Type', // @translate
+        'cdash:Neighborhood' => 'Neighborhood', // @translate
+        'cdash:chcDist' => 'Research District', // @translate
+    ];
+    foreach ($printPlaceTerms as $term => $label) {
+        $value = $item->value($term, ['lang' => $valueLang]);
+        if ($value) {
+            $printPlaceValues[$translate($label)] = $value->asHtml();
+        }
+    }
+}
 ?>
 <?php
 // The sticky header, shared with the listings in browse.phtml. The meta line
@@ -119,6 +162,35 @@ echo $this->partial('common/cdash-page-header', [
     'visit' => $placeLink,
 ]);
 ?>
+<?php if ($isDocument): ?>
+<p class="cdash-print-only cdash-print-doc-folder">
+    <?php echo $escape($translate('Folder:')); ?>
+    <?php echo $escape(implode(', ', $printFolderTitles)); ?>
+</p>
+<?php else: ?>
+<?php // The map's half is filled at beforeprint by cdash-map.js, with a still
+      // copy of the map pane. ?>
+<div class="cdash-print-only cdash-print-place">
+    <div class="cdash-print-place-facts">
+        <dl>
+            <?php foreach ($printPlaceValues as $label => $html): ?>
+            <dt><?php echo $escape($label); ?></dt>
+            <dd><?php echo $html; ?></dd>
+            <?php endforeach; ?>
+            <?php if ($printFolderTitles): ?>
+            <dt><?php echo $escape($translate('Folder')); ?></dt>
+            <?php foreach ($printFolderTitles as $folderTitle): ?>
+            <dd><?php echo $escape($folderTitle); ?></dd>
+            <?php endforeach; ?>
+            <?php endif; ?>
+        </dl>
+        <?php if (!empty($documents)): ?>
+        <h3><?php echo $escape($translate('Linked Documents')); ?></h3>
+        <?php endif; ?>
+    </div>
+    <div class="cdash-print-place-map"></div>
+</div>
+<?php endif; ?>
 <?php $this->trigger('view.show.before'); ?>
 <?php echo $this->resourcePageBlocks($item)->getBlocks(); ?>
 <?php $this->trigger('view.show.after'); ?>

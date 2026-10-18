@@ -367,6 +367,41 @@ td {
     background-color: var(--cdash-darkgray);
 }
 
+/* The CDASH pull-down -- box model in _shell.scss. The toggle reads as one of
+   the nav links it stands in for, with the same arrow the top-level parent
+   items get below. */
+.cdash-nav-toggle {
+    margin: 0 base.$spacing-l;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--cdash-page);
+    font: inherit;
+    cursor: pointer;
+
+    &:after {
+        font-family: "Font Awesome 5 Free";
+        font-weight: 900;
+        content: "\f107";
+        display: inline-block;
+        margin-left: base.$spacing-s;
+    }
+}
+
+.cdash-nav-list {
+    background-color: var(--cdash-darkgray);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+
+    a:hover,
+    a:focus-visible {
+        text-decoration: underline;
+    }
+
+    .active > a {
+        font-weight: bold;
+    }
+}
+
 //nav {
     //margin: 0 auto;
     //dhanges for cdash_split

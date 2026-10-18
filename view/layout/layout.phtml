@@ -4,6 +4,16 @@ $siteTitle = $site->title();
 $this->htmlElement('html')->setAttribute('lang', $this->lang());
 $this->headMeta()->setCharset('utf-8');
 $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1');
+// The page's own title, for the printed header: what the content template put
+// into headTitle via pageTitle(), read before the site and installation names
+// are appended below. A page that sets none (the site home) prints the site's.
+$printTitleParts = [];
+foreach ($this->headTitle() as $part) {
+    if ((string) $part !== '') {
+        $printTitleParts[] = (string) $part;
+    }
+}
+$printTitle = $printTitleParts ? implode(' · ', $printTitleParts) : $siteTitle;
 $this->headTitle($siteTitle)->setSeparator(' · ');
 $this->headTitle()->append($this->setting('installation_title', 'Omeka S'));
 $this->headLink()->prependStylesheet($this->assetUrl('css/style.css'),$media = 'screen');
@@ -19,7 +29,15 @@ $this->headScript()->prependFile($this->assetUrl('vendor/jquery/jquery.min.js', 
 
 
 // frm mapping module
-$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'));
+//
+// leaflet.css and the two MarkerCluster sheets are media="all", not the
+// default "screen": the printed page carries a copy of the map (see the
+// beforeprint handler in cdash-map.js), and without Leaflet's own positioning
+// rules its tiles, panes and markers print as a loose pile. HeadLink keeps only
+// the first registration of a given href, so view/mapping/index/show.phtml no
+// longer registers leaflet.css itself -- on item pages it renders before this
+// layout, and its screen-only copy would win.
+$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'), 'all');
 $this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.css', 'Mapping'));
 
 $this->headScript()->appendFile($this->assetUrl('node_modules/leaflet/dist/leaflet.js', 'Mapping'));
@@ -35,8 +53,8 @@ $this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Map
 
 // For CDASH Map
 //$this->headScript()->appendFile($this->assetUrl('vendor/leaflet'));
-$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.css'));
-$this->headLink()->appendStylesheet($this->assetUrl('css//MarkerCluster.Default.css'));
+$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.css'), 'all');
+$this->headLink()->appendStylesheet($this->assetUrl('css/MarkerCluster.Default.css'), 'all');
 
 $this->headScript()->appendFile($this->assetUrl('vendor/leaflet.markercluster/leaflet.markercluster-src.js'));
 $this->headScript()->appendFile($this->assetUrl('vendor/esri-leaflet-v3.0.12/esri-leaflet.js'));
@@ -284,13 +302,46 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
     </div>
   </header>
 
+  <?php
+  /**
+   * The nav bar collapses its page links into a "CDASH" pull-down once they
+   * no longer fit beside the search box. Where that happens depends on the
+   * site's own page labels, so no breakpoint can know it: navCollapse in
+   * cdash-layout.js measures the row and sets `collapsed`.
+   *
+   * The pull-down's list is a second server-rendered copy of the same menu,
+   * not a clone made in JavaScript, so it carries Omeka's labels, URLs,
+   * nesting and active class exactly. It gets its own ulClass because the nav
+   * rules in _desktop.scss lay out ul.navigation as a horizontal row. Without
+   * JavaScript nothing collapses and the row simply stays as it is.
+   */
+  $navOptions = ['maxDepth' => $this->themeSetting('nav_depth') - 1];
+
+  /**
+   * A click on any nav link -- in the row or the pull-down -- brings the
+   * banner back, through the same 400ms transition that collapses it. It then
+   * collapses again under appShell's usual rules, as on arrival.
+   *
+   * bannerCollapsed belongs to appShell; Alpine's nested scopes let this
+   * element write it. `click` fires after the pointerup and keydown that
+   * appShell collapses on, so a slow click or Enter on a link ends revealed.
+   */
+  ?>
   <div class="cdash-navbar">
-    <nav id="navmenu">
-      <?php
-      echo $site->publicNav()->menu()->renderMenu(null, [
-          'maxDepth' => $this->themeSetting('nav_depth') - 1
-      ]);
-      ?>
+    <nav id="navmenu" x-data="navCollapse" :class="{ 'cdash-nav-collapsed': collapsed }"
+         x-on:click="$event.target.closest('a') && (bannerCollapsed = false)">
+      <div class="cdash-nav-dropdown" style="display: none" x-show="collapsed"
+           x-on:click.outside="close()" x-on:keydown.escape="close(true)">
+        <button type="button" class="cdash-nav-toggle" x-ref="toggle"
+                aria-controls="cdash-nav-list" aria-expanded="false"
+                :aria-expanded="open.toString()"
+                x-on:click="open = !open"><?php echo $escape($this->translate('CDASH')); ?></button>
+        <div id="cdash-nav-list" class="cdash-nav-list" style="display: none" x-show="open"
+             x-on:click="$event.target.closest('a') && close()">
+          <?php echo $site->publicNav()->menu()->renderMenu(null, $navOptions + ['ulClass' => 'cdash-nav-list-items']); ?>
+        </div>
+      </div>
+      <?php echo $site->publicNav()->menu()->renderMenu(null, $navOptions); ?>
       <div id="search" class="left">
         <?php echo $this->partial('common/search-form'); ?>
       </div>
@@ -389,11 +440,58 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
           ?>
           <div id="showresult" hx-history-elt>
             <div id="content" role="main" data-cdash-page="<?php echo $escape($pageTypes); ?>">
+              <?php
+              /*
+               * The print frame: a real table, because a <thead> and <tfoot>
+               * are the one thing every browser repeats on each printed page
+               * AND reserves space for. position:fixed repeats too, but content
+               * runs beneath it, and pushed into the page margin it prints once,
+               * in the wrong place -- both tested in headless Chrome.
+               *
+               * The footer needs both. A <tfoot> follows the content on the
+               * last page rather than sitting at its foot, so here it is only
+               * a blank spacer that keeps content clear, and the text is the
+               * position:fixed #print-footer below, which every page draws at
+               * its foot, into that space.
+               *
+               * Inside #content, not beside it, so the header is re-rendered
+               * with every swap: htmx selects #content out of this full layout
+               * response, and the title and URL belong to the page being shown.
+               * The URL is the request's, so it never carries the map hash --
+               * the browser does not send one.
+               *
+               * On screen the frame is display:contents (_screen.scss) and its
+               * header and footer rows are hidden, so the content lays out as
+               * if the table were not there. The text lines are deliberately
+               * unstyled here; print.scss owns them.
+               */
+              ?>
+              <table class="cdash-print-frame" role="presentation">
+                <thead>
+                  <tr><td>
+                    <div id="print-header">
+                      <span class="cdash-print-title"><?php echo $escape($printTitle); ?></span>
+                      <span class="cdash-print-sep" aria-hidden="true">&#9670;</span>
+                      <span class="cdash-print-url"><?php echo $escape($this->serverUrl(true)); ?></span>
+                    </div>
+                  </td></tr>
+                </thead>
+                <tfoot>
+                  <tr><td><div class="cdash-print-footer-space"></div></td></tr>
+                </tfoot>
+                <tbody>
+                  <tr><td class="cdash-print-body">
               <?php echo $this->content; ?>
-            </div>
-
-            <div id="print-footer">
-              <p>Cambridge Historical Commission, Digital Architectural Survey and History (C-DASH)</p>
+                  </td></tr>
+                </tbody>
+              </table>
+              <?php // The rights line lives here, not in the item's
+                    // Citation/Rights block, which print.scss hides. ?>
+              <div id="print-footer" class="cdash-print-only">
+                Cambridge Historical Commission, Digital Architectural Survey and History (CDASH)
+                <span class="cdash-print-sep" aria-hidden="true">&#9670;</span>
+                Rights status not evaluated.
+              </div>
             </div>
 
             <?php // The GeoSync and GeoAudit links used to be appended here by
@@ -411,6 +509,9 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
              :class="{ 'cdash-pullout-collapsed': collapsed }">
           <div class="cdash-pullout-content" :inert="collapsed">
             <div class="cdash-pullout-content-inner">
+              <?php // Rendered on every request, htmx swaps included, so
+                    // anything costly in this form is paid on every click.
+                    // See view/common/advanced-search/resource-class.phtml. ?>
               <form action="<?php echo $escape($site->url() . '/item'); ?>" method="GET">
                 <?php echo $this->partial('common/advanced-search', ['resourceType' => 'item']); ?>
                 <button type="submit"><?php echo $this->translate('Search'); ?></button>
