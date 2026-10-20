@@ -3,9 +3,17 @@
 Theme for the Cambridge Historical Commission Digital Architectural Survey and
 History. Production runs the predecessor, `cdash_4.1.1`, at
 cdash.cambridgema.gov, and is tagged **`v4.1.1`** (with a GitHub release).
-This is its replacement, and it **is `main`**: work goes on short branches,
-each merged to `main` by PR. The long-lived `v5-persistent-shell` branch was
-merged as PR #2 and deleted.
+This is its replacement, and it **is `main`**.
+
+**Work directly on `main`.** One developer, a production instance deployed
+independently of this repo, and a dev site that serves this working folder
+(see *Dev instance*): together they make a branch per task cost more than it
+saves. Each task is one or more commits on `main`, made and pushed when asked.
+That was tried and dropped after PRs #3 and #4: the dev site can only show
+the checked-out branch, so unmerged work on one branch vanished from the site
+while another was checked out, which looked like a regression. Use a branch
+only for long or experimental work that might be abandoned, and say so first.
+The long-lived `v5-persistent-shell` branch was merged as PR #2 and deleted.
 
 ## What this theme is
 
