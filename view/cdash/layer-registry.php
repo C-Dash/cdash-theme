@@ -203,7 +203,20 @@ return [
         'sourceUrl'      => 'https://mapwarper.net/layers/546',
     ],
 
-    $camDynamic('bromley1916', '1916 Bromley', 1),
+    //$camDynamic('bromley1916', '1916 Bromley', 1),
+    [
+        'key'            => 'bromley1916',
+        'group'          => 'basemap',
+        'label'          => '1916 Bromley',
+        'type'           => 'tileLayer',
+        'url'            => 'https://s3.us-east-2.wasabisys.com/urbanatlases/al8c3wda3/tiles/{z}/{x}/{y}.png',
+        'maxZoom'        => 20,
+        'attribution'    => 'Leventhal Map Center',
+        'attributionUrl' => 'https://collections.leventhalmap.org/search/commonwealth:tt44pw49q',
+        'source'         => 'Leventhal Map and Education Center at Boston Public Library',
+        'sourceUrl'      => 'https://collections.leventhalmap.org/search/commonwealth:tt44pw49q',
+    ],
+
 
     [
         'key'            => 'bromley1894',
