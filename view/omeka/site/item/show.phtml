@@ -136,12 +136,25 @@ $printFolderTitles = array_map(function ($itemSet) use ($valueLang) {
     return $itemSet->displayTitle(null, $valueLang);
 }, $printFolders);
 
+/**
+ * The Survey Area (cdash:chcDist, labelled "Research District" in the
+ * vocabulary), shown above the folders in the item-sets block on both Places
+ * and Documents. That block's partial is handed only the item sets -- Omeka's
+ * Site\ResourcePageBlockLayout\ItemSets passes nothing else -- so the values
+ * travel to it in a placeholder, which every partial of this request shares.
+ * Set before the blocks render below.
+ */
+$surveyAreas = array_map(function ($value) {
+    return $value->asHtml();
+}, $item->value('cdash:chcDist', ['all' => true, 'lang' => $valueLang]));
+$this->placeholder('cdash-survey-area')->exchangeArray($surveyAreas);
+
 $printPlaceValues = [];
 if (!$isDocument) {
     $printPlaceTerms = [
         'cdash:placeType' => 'Place Type', // @translate
         'cdash:Neighborhood' => 'Neighborhood', // @translate
-        'cdash:chcDist' => 'Research District', // @translate
+        'cdash:chcDist' => 'Survey Area', // @translate
     ];
     foreach ($printPlaceTerms as $term => $label) {
         $value = $item->value($term, ['lang' => $valueLang]);
@@ -184,9 +197,6 @@ echo $this->partial('common/cdash-page-header', [
             <?php endforeach; ?>
             <?php endif; ?>
         </dl>
-        <?php if (!empty($documents)): ?>
-        <h3><?php echo $escape($translate('Linked Documents')); ?></h3>
-        <?php endif; ?>
     </div>
     <div class="cdash-print-place-map"></div>
 </div>

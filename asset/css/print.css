@@ -16,7 +16,8 @@
 /* Titles are long ("Photograph of 1 Main Street, rear elevation, 1972"), so
    they wrap rather than stretching the column. */
 /* ---- Geometry ----
-   cdash-map.js mirrors $content-w and $slot-h; change them together. */
+   cdash-map.js mirrors $content-w, $header-h, the 65/35 header split and
+   $slot-h; change them together. */
 @page {
   size: letter portrait;
   margin: 0.5in;
@@ -56,6 +57,7 @@ body {
 
 .cdash-print-frame {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 .cdash-print-frame > thead > tr > td,
@@ -65,18 +67,11 @@ body {
   border: 0;
 }
 
-#print-header,
-#print-footer {
-  height: 0.3in;
-  display: flex;
-  gap: 0.4em;
-  font: 8pt/1.2 Arial, Helvetica, sans-serif;
-  white-space: nowrap;
-  overflow: hidden;
-}
-
 #print-header {
-  align-items: flex-start;
+  display: grid;
+  grid-template-columns: 65% 35%;
+  align-items: start;
+  font: 11pt/0.2in Arial, Helvetica, sans-serif;
 }
 
 .cdash-print-footer-space {
@@ -84,24 +79,29 @@ body {
 }
 
 #print-footer {
+  display: flex;
+  gap: 0.4em;
+  white-space: nowrap;
+  overflow: hidden;
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  height: 0.3in;
   justify-content: center;
   align-items: flex-end;
   background: white;
+  font: 8pt/1.2 Arial, Helvetica, sans-serif;
 }
 
 .cdash-print-title {
   font-weight: bold;
-  flex: none;
+  padding-right: 0.15in;
 }
 
 .cdash-print-url {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  text-align: right;
+  overflow-wrap: anywhere;
 }
 
 .cdash-print-sep {
@@ -153,10 +153,6 @@ body {
   grid-column: 2;
   margin: 0;
 }
-.cdash-print-place h3 {
-  margin: 0.2in 0 0;
-  font-size: 12pt;
-}
 
 .cdash-print-map {
   position: relative;
@@ -180,7 +176,8 @@ body {
 }
 
 #resources-linked > h3 {
-  display: none;
+  margin: 0 0 0.05in;
+  font-size: 12pt;
 }
 
 .linked-header .pagination form,
@@ -298,7 +295,7 @@ body {
   width: auto;
   height: auto;
   max-width: 7.5in;
-  max-height: 8.95in;
+  max-height: calc(9.05in - (var(--cdash-header-lines, 1) - 1) * 0.2in);
   margin: 0 auto;
 }
 

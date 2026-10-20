@@ -3,9 +3,17 @@
 Theme for the Cambridge Historical Commission Digital Architectural Survey and
 History. Production runs the predecessor, `cdash_4.1.1`, at
 cdash.cambridgema.gov, and is tagged **`v4.1.1`** (with a GitHub release).
-This is its replacement, and it **is `main`**: work goes on short branches,
-each merged to `main` by PR. The long-lived `v5-persistent-shell` branch was
-merged as PR #2 and deleted.
+This is its replacement, and it **is `main`**.
+
+**Work directly on `main`.** One developer, a production instance deployed
+independently of this repo, and a dev site that serves this working folder
+(see *Dev instance*): together they make a branch per task cost more than it
+saves. Each task is one or more commits on `main`, made and pushed when asked.
+That was tried and dropped after PRs #3 and #4: the dev site can only show
+the checked-out branch, so unmerged work on one branch vanished from the site
+while another was checked out, which looked like a regression. Use a branch
+only for long or experimental work that might be abandoned, and say so first.
+The long-lived `v5-persistent-shell` branch was merged as PR #2 and deleted.
 
 ## What this theme is
 
@@ -73,8 +81,8 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
   handler in `cdash-layout.js` resets it.
 - **Print has a frame, and the printed map is a copy.** The brief is in the
-  local `notes/print_styles.md`. Every printed page carries a one-line header,
-  "Title ◆ URL", and a one-line footer. Both live in a real `<table>` inside
+  local `notes/print_styles.md`. Every printed page carries a header,
+  title left and URL right, each wrapping in its column, and a one-line footer. Both live in a real `<table>` inside
   `#content` (`layout.phtml`), because a `<thead>` is the only thing browsers
   both repeat on every page and make room for. `position: fixed` content runs
   beneath, and pushed into the page margin it prints once, misplaced. The
@@ -85,7 +93,7 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   header is re-rendered with every swap, so it is always the current page's.
 
   Item values do not print. A Place prints a band from `show.phtml`
-  (print-only markup: three properties the screen hides, plus folders) beside
+  (print-only markup: Place Type, Neighborhood and Survey Area, plus folders) beside
   the map. A Document prints its folder line, then page images in equal
   slots. `cdash-map.js` marks where each printed page starts, and its
   `PRINT_SLOT_*` constants mirror `print.scss`. Search results print the query

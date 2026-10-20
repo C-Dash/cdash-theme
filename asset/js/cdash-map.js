@@ -266,23 +266,67 @@ const PRINT_MAP_MAX_H_PX = 288;   // 3in
  * mark into a page break plus the blank head. An image not yet loaded has no
  * natural size and gets a page to itself.
  *
- * Mirrors print.scss: $content-w and $slot-h. Change them together.
+ * The slot also shrinks by a line for each further line the printed header
+ * wraps to, since every page repeats it -- see printHeaderLines().
+ *
+ * Mirrors print.scss: $content-w, $header-h and $slot-h. Change them
+ * together.
  */
 const PRINT_SLOT_W_IN = 7.5;
-const PRINT_SLOT_H_IN = 8.95;
+const PRINT_SLOT_H_IN = 9.05;          // with a one-line header
+const PRINT_HEADER_LINE_IN = 0.2;
 
-function paginatePageImages(content) {
-  let used = PRINT_SLOT_H_IN;   // so the first image never starts a sheet
+/**
+ * How many lines the printed header will take: the title wraps by word in
+ * the left 65%, less its 0.15in padding, and the URL by character in the
+ * right 35% (#print-header in print.scss). The print layout cannot be
+ * measured before it exists, so this measures the text with a canvas in the
+ * same font instead, and widens each measurement by 5%. Overestimating costs
+ * a sliver of each page image; underestimating would push a full-height
+ * image off its page.
+ */
+const PRINT_TITLE_COL_PX = (PRINT_SLOT_W_IN * 0.65 - 0.15) * 96;
+const PRINT_URL_COL_PX = PRINT_SLOT_W_IN * 0.35 * 96;
+
+function countLines(ctx, pieces, separator, widthPx) {
+  let lines = 1;
+  let line = '';
+  pieces.forEach(function (piece) {
+    const candidate = line ? line + separator + piece : piece;
+    if (line && ctx.measureText(candidate).width * 1.05 > widthPx) {
+      lines++;
+      line = piece;
+    } else {
+      line = candidate;
+    }
+  });
+  return lines;
+}
+
+function printHeaderLines(content) {
+  const title = content.querySelector('#print-header .cdash-print-title');
+  const url = content.querySelector('#print-header .cdash-print-url');
+  if (!title || !url) return 1;
+  const ctx = document.createElement('canvas').getContext('2d');
+  ctx.font = 'bold 11pt Arial, Helvetica, sans-serif';
+  const titleLines = countLines(ctx, title.textContent.trim().split(/\s+/), ' ', PRINT_TITLE_COL_PX);
+  ctx.font = '11pt Arial, Helvetica, sans-serif';
+  const urlLines = countLines(ctx, Array.from(url.textContent.trim()), '', PRINT_URL_COL_PX);
+  return Math.max(titleLines, urlLines);
+}
+
+function paginatePageImages(content, slotH) {
+  let used = slotH;   // so the first image never starts a sheet
   let first = true;
   content.querySelectorAll('.media-embeds .media-render').forEach(function (render) {
     const img = render.querySelector('img');
     const h = (img && img.naturalWidth)
-      ? Math.min(PRINT_SLOT_H_IN, PRINT_SLOT_W_IN * img.naturalHeight / img.naturalWidth)
-      : PRINT_SLOT_H_IN;
+      ? Math.min(slotH, PRINT_SLOT_W_IN * img.naturalHeight / img.naturalWidth)
+      : slotH;
     if (first) {
       used = h;
       first = false;
-    } else if (used + h <= PRINT_SLOT_H_IN) {
+    } else if (used + h <= slotH) {
       used += h;
     } else {
       render.classList.add('cdash-print-sheet-start');
@@ -301,6 +345,8 @@ function cleanUpPrint() {
   document.querySelectorAll('.cdash-print-sheet-start').forEach(function (el) {
     el.classList.remove('cdash-print-sheet-start');
   });
+  const content = document.getElementById('content');
+  if (content) content.style.removeProperty('--cdash-header-lines');
 }
 
 window.addEventListener('beforeprint', function () {
@@ -310,7 +356,11 @@ window.addEventListener('beforeprint', function () {
   const content = document.getElementById('content');
   if (!content || !content.matches('[data-cdash-page~="item"][data-cdash-page~="show"]')) return;
 
-  paginatePageImages(content);
+  // print.scss reads the line count to size the images; this uses it to
+  // decide which share a page. The two must agree.
+  const headerLines = printHeaderLines(content);
+  content.style.setProperty('--cdash-header-lines', headerLines);
+  paginatePageImages(content, PRINT_SLOT_H_IN - (headerLines - 1) * PRINT_HEADER_LINE_IN);
 
   // Only a Place has a band to put the map in.
   const slot = content.querySelector('.cdash-print-place-map');
