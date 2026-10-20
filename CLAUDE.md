@@ -73,8 +73,8 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
   handler in `cdash-layout.js` resets it.
 - **Print has a frame, and the printed map is a copy.** The brief is in the
-  local `notes/print_styles.md`. Every printed page carries a one-line header,
-  "Title ◆ URL", and a one-line footer. Both live in a real `<table>` inside
+  local `notes/print_styles.md`. Every printed page carries a header,
+  title left and URL right, each wrapping in its column, and a one-line footer. Both live in a real `<table>` inside
   `#content` (`layout.phtml`), because a `<thead>` is the only thing browsers
   both repeat on every page and make room for. `position: fixed` content runs
   beneath, and pushed into the page margin it prints once, misplaced. The

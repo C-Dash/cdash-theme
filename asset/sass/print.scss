@@ -7,12 +7,12 @@
 // screen's furniture to hide, since it is in the DOM either way.
 //
 // The design is in notes/print_styles.md. On US Letter portrait:
-//   every page   a one-line header, "Title ◆ URL", and a one-line footer,
+//   every page   a header, title left and URL right, and a one-line footer,
 //                "Cambridge Historical Commission ... ◆ Rights status ..."
 //   site page    nothing more
-//   Place        page 1 a band: Place Type, Neighborhood, Research District,
-//                folders and "Linked Documents" beside a still copy of the
-//                map; then its document cards, four across
+//   Place        page 1 a band: Place Type, Neighborhood, Research District
+//                and folders beside a still copy of the map; then "Linked
+//                Documents" and its document cards, four across
 //   Document     page 1 the folder line; then its page images, one equal slot
 //                per page, short ones sharing
 //   folder       "Folder Contents:", then its cards, four across
@@ -23,15 +23,22 @@
 @use "cards";
 
 /* ---- Geometry ----
-   cdash-map.js mirrors $content-w and $slot-h; change them together. */
+   cdash-map.js mirrors $content-w, $header-h, the 65/35 header split and
+   $slot-h; change them together. */
 
 $margin: 0.5in;
 $content-w: 7.5in;      // 8.5in less the side margins
-$frame-row-h: 0.3in;    // the header row, and the footer row: a line and a gap
+$header-h: 0.2in;       // one line of the header, 11pt; it may wrap to more
+$footer-h: 0.3in;       // the footer row: an 8pt line and a gap above it
 $doc-head-h: 0.35in;    // a Document's folder line on page 1, blank after
-// A page image's slot: 10in of page inside the margins, less the frame's two
-// rows and the head, less 0.1in so a full slot never quite touches the footer.
-$slot-h: 10in - 2 * $frame-row-h - $doc-head-h - 0.1in;   // 8.95in
+// A page image's slot with a one-line header: 10in of page inside the
+// margins, less the frame's two rows and the head, less 0.1in so a full slot
+// never quite touches the footer.
+$slot-h: 10in - $header-h - $footer-h - $doc-head-h - 0.1in;   // 9.05in
+// ...less a line for each further line the header wraps to. Every page
+// repeats the same header, so every slot loses the same. cdash-map.js
+// estimates the count at beforeprint and sets --cdash-header-lines.
+$slot-h-wrapped: calc(#{$slot-h} - (var(--cdash-header-lines, 1) - 1) * #{$header-h});
 
 @page {
     size: letter portrait;
@@ -81,8 +88,14 @@ body {
 // The print frame (layout.phtml): a real table, whose <thead> and <tfoot>
 // every browser repeats on each page and makes room for. Nothing else does
 // both -- see the comment there.
+//
+// table-layout:fixed is load-bearing. An auto-layout cell widens to its
+// content's min-content width, and the header line is nowrap -- so a long
+// title and URL widened the whole table past the page, and Chrome shrank
+// every page to fit instead of cutting the URL.
 .cdash-print-frame {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
 
     > thead > tr > td,
@@ -93,46 +106,49 @@ body {
     }
 }
 
-// One line each, shrunk rather than wrapped. A long URL is cut, not the title.
-#print-header,
-#print-footer {
-    height: $frame-row-h;
-    display: flex;
-    gap: 0.4em;
-    font: 8pt/1.2 Arial, Helvetica, sans-serif;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
+// The title in the left 65%, the URL right-aligned in the other 35%. Each
+// wraps within its column rather than being cut; the URL has no spaces, so it
+// may break anywhere. A line is exactly $header-h, which is why the
+// line-height is that and not a ratio -- cdash-map.js counts in those lines.
 #print-header {
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: 65% 35%;
+    align-items: start;
+    font: 11pt/#{$header-h} Arial, Helvetica, sans-serif;
 }
 
 // The <tfoot> is only this spacer; the text is fixed to each page's foot,
 // into the space it keeps. See layout.phtml.
 .cdash-print-footer-space {
-    height: $frame-row-h;
+    height: $footer-h;
 }
 
+// One line, shrunk rather than wrapped.
 #print-footer {
+    display: flex;
+    gap: 0.4em;
+    white-space: nowrap;
+    overflow: hidden;
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
+    height: $footer-h;
     justify-content: center;
     align-items: flex-end;
     background: white;
+    font: 8pt/1.2 Arial, Helvetica, sans-serif;
 }
 
+// The padding is the gap between the columns; cdash-map.js allows for it.
 .cdash-print-title {
     font-weight: bold;
-    flex: none;
+    padding-right: 0.15in;
 }
 
 .cdash-print-url {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    text-align: right;
+    overflow-wrap: anywhere;
 }
 
 .cdash-print-sep {
@@ -190,11 +206,6 @@ body {
         grid-column: 2;
         margin: 0;
     }
-
-    h3 {
-        margin: 0.2in 0 0;
-        font-size: 12pt;
-    }
 }
 
 // Sized inline by cdash-map.js; the wrapper is the scaled size and clips.
@@ -222,9 +233,12 @@ body {
     max-height: none !important;
 }
 
-// The block's own heading; the band carries it.
+// The block's own heading, full width beneath the band and directly above
+// the cards it names. The band used to carry a copy, which left it beside the
+// map and up to 2in above the cards.
 #resources-linked > h3 {
-    display: none;
+    margin: 0 0 0.05in;
+    font-size: 12pt;
 }
 
 // The Linked Resources pager: its page box and arrows mean nothing on paper.
@@ -341,7 +355,7 @@ body {
     width: auto;
     height: auto;
     max-width: $content-w;
-    max-height: $slot-h;
+    max-height: $slot-h-wrapped;
     margin: 0 auto;
 }
 
