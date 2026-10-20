@@ -85,7 +85,7 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   header is re-rendered with every swap, so it is always the current page's.
 
   Item values do not print. A Place prints a band from `show.phtml`
-  (print-only markup: three properties the screen hides, plus folders) beside
+  (print-only markup: Place Type, Neighborhood and Survey Area, plus folders) beside
   the map. A Document prints its folder line, then page images in equal
   slots. `cdash-map.js` marks where each printed page starts, and its
   `PRINT_SLOT_*` constants mirror `print.scss`. Search results print the query
