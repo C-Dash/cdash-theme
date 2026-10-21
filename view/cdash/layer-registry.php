@@ -230,6 +230,21 @@ return [
         'source'         => 'MapJunction',
         'sourceUrl'      => 'https://mapjunction.com/VIEWER/17810',
     ],
+    
+    [
+        'key'            => 'hopkins1896',
+        'group'          => 'basemap',
+        'label'          => '1886 Hopkins',
+        'type'           => 'tileLayer',
+        'url'            => 'https://s3.us-east-2.wasabisys.com/urbanatlases/al88rid22/tiles/{z}/{x}/{y}.png',
+        'maxZoom'        => 20,
+        'attribution'    => 'Leventhal Map Center',
+        'attributionUrl' => 'https://collections.leventhalmap.org/search/commonwealth:tt44pw45m',
+        'source'         => 'Leventhal Map and Education Center at Boston Public Library',
+        'sourceUrl'      => 'https://collections.leventhalmap.org/search/commonwealth:tt44pw45m',
+    ],
+
+
     [
         'key'            => 'hopkins1873',
         'group'          => 'basemap',
