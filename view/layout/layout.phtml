@@ -22,6 +22,17 @@ $this->headLink()->prependStylesheet($this->assetUrl('css/style.css'),$media = '
 // print block inside cdash-shell.css.
 $this->headLink()->prependStylesheet($this->assetUrl('css/print.css'),$media = 'print');
 $this->headLink()->prependStylesheet($this->assetUrl('css/iconfonts.css', 'Omeka'));
+// Omeka's block stylesheets, on every page rather than only on the pages whose
+// templates ask for them. A content template registers its stylesheet in
+// <head>, and an htmx swap brings only #content, never a new <head>. So a
+// visit that started on the map or an item page and then followed a link to
+// a site page never had page-blocks.css, and its right- and left-aligned
+// image blocks lost their floats: image on the left, text cleared below it.
+// A reload "fixed" it. resource-page-blocks.css is the item-page
+// counterpart. HeadLink keeps the first registration of an href, so the
+// templates' own appendStylesheet calls for these are harmless duplicates.
+$this->headLink()->appendStylesheet($this->assetUrl('css/page-blocks.css', 'Omeka'));
+$this->headLink()->appendStylesheet($this->assetUrl('css/resource-page-blocks.css', 'Omeka'));
 $this->headLink()->prependStylesheet('//fonts.googleapis.com/css?family=Open+Sans:400,400italic,600,600italic,700italic,700');
 $this->headScript()->prependFile($this->assetUrl('js/default.js'));
 $this->headScript()->prependFile($this->assetUrl('js/global.js', 'Omeka'));

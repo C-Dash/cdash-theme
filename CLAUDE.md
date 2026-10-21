@@ -155,7 +155,7 @@ one responsive lever and one rule about where state lives.
 ## The recurring hazard
 
 Everything that used to happen once per page now happens **once per swap**.
-That is the class of bug to expect here. Three instances have already been fixed:
+That is the class of bug to expect here. Four instances have already been fixed:
 
 - An inline `<script>` in `view/common/linked-resources.phtml` declared
   top-level `const`s. Correct in stock Omeka; fatal here, because htmx
@@ -170,9 +170,19 @@ That is the class of bug to expect here. Three instances have already been fixed
   reload on an item page fixed it, so it looked intermittent. `layout.phtml`
   now copies those classes onto `#content` as `data-cdash-page`; key page-type
   CSS to `#content[data-cdash-page~="…"]`, never to a body class.
+- **`<head>` is the last full load's too.** A content template's
+  `headLink()->appendStylesheet()` reaches only a full load; a swap brings
+  `#content` and nothing else. Omeka's site-page template registers
+  `page-blocks.css` that way, so on a visit that started on the map or an item
+  page, site pages lost their right- and left-aligned image floats — image
+  on the left, text cleared below — until a reload. `layout.phtml` now
+  registers `page-blocks.css` and `resource-page-blocks.css` on every page.
+  A stylesheet any page needs belongs in the layout, not in a template.
+  Verified by driving headless Chrome over its debugging port: load `/item`,
+  click a nav link, read the block's computed `float`.
 
-Check this whenever adding a resource page block or template override, and after
-any Omeka upgrade.
+Check this whenever adding a resource page block, template override or
+module, and after any Omeka upgrade.
 
 ## Dev instance
 
