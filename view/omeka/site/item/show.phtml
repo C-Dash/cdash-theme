@@ -116,7 +116,8 @@ if ($isDocument) {
  * A Place prints three of its properties and its folders beside the map. All
  * three properties are hidden on screen by view/common/resource-values.phtml,
  * which is why they are read here rather than left to the values block, which
- * does not print. A Document prints only its folders, on one line.
+ * does not print. A Document prints three short rows instead: its CDASH Place
+ * (cdash:placeItem, via $placeLink above), its Survey Area and its folders.
  *
  * The folders follow the item-sets block's own rule (Omeka's
  * Site\ResourcePageBlockLayout\ItemSets): only those in this site when
@@ -176,10 +177,23 @@ echo $this->partial('common/cdash-page-header', [
 ]);
 ?>
 <?php if ($isDocument): ?>
-<p class="cdash-print-only cdash-print-doc-folder">
-    <?php echo $escape($translate('Folder:')); ?>
-    <?php echo $escape(implode(', ', $printFolderTitles)); ?>
-</p>
+<?php // Three rows at a fixed height ($doc-head-h in print.scss), which every
+      // later printed page leaves blank so page-image slots stay equal. A row
+      // with no value is left out; the height does not change. ?>
+<dl class="cdash-print-only cdash-print-doc-head">
+    <?php if ($placeLink): ?>
+    <dt><?php echo $escape($translate('CDASH Place:')); ?></dt>
+    <dd><?php echo $escape($placeLink['title']); ?></dd>
+    <?php endif; ?>
+    <?php if ($surveyAreas): ?>
+    <dt><?php echo $escape($translate('Survey Area:')); ?></dt>
+    <dd><?php echo implode(', ', $surveyAreas); ?></dd>
+    <?php endif; ?>
+    <?php if ($printFolderTitles): ?>
+    <dt><?php echo $escape($translate('Folder:')); ?></dt>
+    <dd><?php echo $escape(implode(', ', $printFolderTitles)); ?></dd>
+    <?php endif; ?>
+</dl>
 <?php else: ?>
 <?php // The map's half is filled at beforeprint by cdash-map.js, with a still
       // copy of the map pane. ?>

@@ -256,7 +256,8 @@ const PRINT_MAP_MAX_H_PX = 288;   // 3in
  * A Document's page images on paper: equal slots, small ones sharing.
  *
  * Every printed page gives a page image the same slot, PRINT_SLOT_H_IN tall:
- * page 1 spends the head of the page on the folder line, and every later
+ * page 1 spends the head of the page on its three-row head (CDASH Place,
+ * Survey Area, Folder), and every later
  * page leaves that same space blank, so a letter-sized scan prints at one
  * size throughout. Images that are short at full width -- a landscape photo,
  * a clipping -- stack on one page while they fit.
@@ -273,7 +274,7 @@ const PRINT_MAP_MAX_H_PX = 288;   // 3in
  * together.
  */
 const PRINT_SLOT_W_IN = 7.5;
-const PRINT_SLOT_H_IN = 9.05;          // with a one-line header
+const PRINT_SLOT_H_IN = 8.75;          // with a one-line header
 const PRINT_HEADER_LINE_IN = 0.2;
 
 /**

@@ -30,11 +30,11 @@ $margin: 0.5in;
 $content-w: 7.5in;      // 8.5in less the side margins
 $header-h: 0.2in;       // one line of the header, 11pt; it may wrap to more
 $footer-h: 0.3in;       // the footer row: an 8pt line and a gap above it
-$doc-head-h: 0.35in;    // a Document's folder line on page 1, blank after
+$doc-head-h: 0.65in;    // a Document's three-row head on page 1, blank after
 // A page image's slot with a one-line header: 10in of page inside the
 // margins, less the frame's two rows and the head, less 0.1in so a full slot
 // never quite touches the footer.
-$slot-h: 10in - $header-h - $footer-h - $doc-head-h - 0.1in;   // 9.05in
+$slot-h: 10in - $header-h - $footer-h - $doc-head-h - 0.1in;   // 8.75in
 // ...less a line for each further line the header wraps to. Every page
 // repeats the same header, so every slot loses the same. cdash-map.js
 // estimates the count at beforeprint and sets --cdash-header-lines.
@@ -167,9 +167,9 @@ body {
    Mapping module's own map section and the Citation/Rights block -- whose
    rights line is in the footer instead. The values block and the item-sets
    block are bare children of the frame's cell; the folders are restated in
-   the Place band or the Document's folder line. */
+   the Place band or the Document's three-row head. */
 #content[data-cdash-page~="item"][data-cdash-page~="show"] .cdash-print-body {
-    > dl,
+    > dl:not(.cdash-print-only),
     > br,
     > hr {
         display: none;
@@ -336,12 +336,27 @@ body {
 
 /* ---- Document: page images ---- */
 
-.cdash-print-doc-folder {
+// CDASH Place, Survey Area and Folder, one line each, at a fixed height
+// whether or not every row has a value.
+.cdash-print-doc-head {
+    display: grid;
+    grid-template-columns: max-content minmax(0, 1fr);
+    align-content: start;
+    gap: 0 0.1in;
     height: $doc-head-h;
     margin: 0;
     overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+
+    dt {
+        font-weight: bold;
+    }
+
+    dd {
+        margin: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
 }
 
 // Each image scaled to fit one slot, never cut across a page.

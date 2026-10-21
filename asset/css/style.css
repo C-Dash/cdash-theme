@@ -102,7 +102,7 @@ html {
 
 #content .cdash-print-frame > thead,
 #content .cdash-print-frame > tfoot,
-.cdash-print-only {
+#content .cdash-print-only {
   display: none;
 }
 

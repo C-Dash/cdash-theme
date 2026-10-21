@@ -29,9 +29,13 @@ html {
     display: contents;
 }
 
+// Print-only markup, hidden on screen. The #content prefix is for weight
+// here too: `#content dl` in _desktop.scss sets display:grid at (1,0,1),
+// which beat a bare `.cdash-print-only` and showed the Document's print head
+// on screen. Everything print-only lives inside #content.
 #content .cdash-print-frame > thead,
 #content .cdash-print-frame > tfoot,
-.cdash-print-only {
+#content .cdash-print-only {
     display: none;
 }
 

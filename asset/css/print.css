@@ -119,8 +119,8 @@ body {
    Mapping module's own map section and the Citation/Rights block -- whose
    rights line is in the footer instead. The values block and the item-sets
    block are bare children of the frame's cell; the folders are restated in
-   the Place band or the Document's folder line. */
-#content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > dl,
+   the Place band or the Document's three-row head. */
+#content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > dl:not(.cdash-print-only),
 #content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > br,
 #content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > hr {
   display: none;
@@ -278,8 +278,19 @@ body {
 }
 
 /* ---- Document: page images ---- */
-.cdash-print-doc-folder {
-  height: 0.35in;
+.cdash-print-doc-head {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-content: start;
+  gap: 0 0.1in;
+  height: 0.65in;
+  margin: 0;
+  overflow: hidden;
+}
+.cdash-print-doc-head dt {
+  font-weight: bold;
+}
+.cdash-print-doc-head dd {
   margin: 0;
   overflow: hidden;
   white-space: nowrap;
@@ -295,13 +306,13 @@ body {
   width: auto;
   height: auto;
   max-width: 7.5in;
-  max-height: calc(9.05in - (var(--cdash-header-lines, 1) - 1) * 0.2in);
+  max-height: calc(8.75in - (var(--cdash-header-lines, 1) - 1) * 0.2in);
   margin: 0 auto;
 }
 
 .media-embeds .cdash-print-sheet-start {
   break-before: page;
-  padding-top: 0.35in;
+  padding-top: 0.65in;
 }
 
 /* ---- Text ---- */
