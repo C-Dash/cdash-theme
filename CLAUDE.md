@@ -94,7 +94,7 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
 
   Item values do not print. A Place prints a band from `show.phtml`
   (print-only markup: Place Type, Neighborhood and Survey Area, plus folders) beside
-  the map. A Document prints a three-row head (CDASH Place, Survey Area, Folder), then page images in equal
+  the map. A Document prints a two-column head (CDASH Place and Folder left, Survey Area right), then page images in equal
   slots. `cdash-map.js` marks where each printed page starts, and its
   `PRINT_SLOT_*` constants mirror `print.scss`. Search results print the query
   and a count but no cards, because `?per_page=` makes pagination no bound.

@@ -119,7 +119,7 @@ body {
    Mapping module's own map section and the Citation/Rights block -- whose
    rights line is in the footer instead. The values block and the item-sets
    block are bare children of the frame's cell; the folders are restated in
-   the Place band or the Document's three-row head. */
+   the Place band or the Document's two-column head. */
 #content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > dl:not(.cdash-print-only),
 #content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > br,
 #content[data-cdash-page~=item][data-cdash-page~=show] .cdash-print-body > hr {
@@ -280,12 +280,17 @@ body {
 /* ---- Document: page images ---- */
 .cdash-print-doc-head {
   display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 0.25in;
+  height: 0.65in;
+  overflow: hidden;
+}
+.cdash-print-doc-head dl {
+  display: grid;
   grid-template-columns: max-content minmax(0, 1fr);
   align-content: start;
   gap: 0 0.1in;
-  height: 0.65in;
   margin: 0;
-  overflow: hidden;
 }
 .cdash-print-doc-head dt {
   font-weight: bold;

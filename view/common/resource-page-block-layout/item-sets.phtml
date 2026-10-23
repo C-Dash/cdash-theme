@@ -10,14 +10,6 @@ $surveyAreas = $this->placeholder('cdash-survey-area')->getArrayCopy();
 ?>
 <?php if ($surveyAreas || $itemSets): ?>
 <dl class="item-sets">
-    <?php if ($surveyAreas): ?>
-    <div class="property">
-        <dt><?php echo $this->translate('Survey Area:'); ?></dt>
-        <?php foreach ($surveyAreas as $surveyArea): ?>
-        <dd class="value"><?php echo $surveyArea; ?></dd>
-        <?php endforeach; ?>
-    </div>
-    <?php endif; ?>
     <?php if ($itemSets): ?>
     <div class="property">
         <dt><?php echo $this->translate('Folder:'); ?></dt>
@@ -25,6 +17,14 @@ $surveyAreas = $this->placeholder('cdash-survey-area')->getArrayCopy();
         <dd class="value">
             <a href="<?php echo $this->escapeHtml($itemSet->url()); ?>"><?php echo $itemSet->displayTitle(null, $valueLang); ?></a>
         </dd>
+        <?php endforeach; ?>
+    </div>
+    <?php endif; ?>
+    <?php if ($surveyAreas): ?>
+    <div class="property">
+        <dt><?php echo $this->translate('Survey Area:'); ?></dt>
+        <?php foreach ($surveyAreas as $surveyArea): ?>
+        <dd class="value"><?php echo $surveyArea; ?></dd>
         <?php endforeach; ?>
     </div>
     <?php endif; ?>

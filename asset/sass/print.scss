@@ -30,7 +30,7 @@ $margin: 0.5in;
 $content-w: 7.5in;      // 8.5in less the side margins
 $header-h: 0.2in;       // one line of the header, 11pt; it may wrap to more
 $footer-h: 0.3in;       // the footer row: an 8pt line and a gap above it
-$doc-head-h: 0.65in;    // a Document's three-row head on page 1, blank after
+$doc-head-h: 0.65in;    // a Document's two-column head on page 1, blank after
 // A page image's slot with a one-line header: 10in of page inside the
 // margins, less the frame's two rows and the head, less 0.1in so a full slot
 // never quite touches the footer.
@@ -167,7 +167,7 @@ body {
    Mapping module's own map section and the Citation/Rights block -- whose
    rights line is in the footer instead. The values block and the item-sets
    block are bare children of the frame's cell; the folders are restated in
-   the Place band or the Document's three-row head. */
+   the Place band or the Document's two-column head. */
 #content[data-cdash-page~="item"][data-cdash-page~="show"] .cdash-print-body {
     > dl:not(.cdash-print-only),
     > br,
@@ -336,16 +336,22 @@ body {
 
 /* ---- Document: page images ---- */
 
-// CDASH Place, Survey Area and Folder, one line each, at a fixed height
-// whether or not every row has a value.
+// CDASH Place and Folder on the left, Survey Area on the right, one line
+// each, at a fixed height whether or not every row has a value.
 .cdash-print-doc-head {
     display: grid;
-    grid-template-columns: max-content minmax(0, 1fr);
-    align-content: start;
-    gap: 0 0.1in;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0 0.25in;
     height: $doc-head-h;
-    margin: 0;
     overflow: hidden;
+
+    dl {
+        display: grid;
+        grid-template-columns: max-content minmax(0, 1fr);
+        align-content: start;
+        gap: 0 0.1in;
+        margin: 0;
+    }
 
     dt {
         font-weight: bold;
