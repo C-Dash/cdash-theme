@@ -106,13 +106,13 @@ body {
     }
 }
 
-// The title in the left 65%, the URL right-aligned in the other 35%. Each
+// The title in the left half, the URL right-aligned in the other. Each
 // wraps within its column rather than being cut; the URL has no spaces, so it
 // may break anywhere. A line is exactly $header-h, which is why the
 // line-height is that and not a ratio -- cdash-map.js counts in those lines.
 #print-header {
     display: grid;
-    grid-template-columns: 65% 35%;
+    grid-template-columns: 50% 50%;
     align-items: start;
     font: 11pt/#{$header-h} Arial, Helvetica, sans-serif;
 }

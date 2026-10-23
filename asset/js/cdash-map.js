@@ -279,15 +279,15 @@ const PRINT_HEADER_LINE_IN = 0.2;
 
 /**
  * How many lines the printed header will take: the title wraps by word in
- * the left 65%, less its 0.15in padding, and the URL by character in the
- * right 35% (#print-header in print.scss). The print layout cannot be
+ * the left half, less its 0.15in padding, and the URL by character in the
+ * right half (#print-header in print.scss). The print layout cannot be
  * measured before it exists, so this measures the text with a canvas in the
  * same font instead, and widens each measurement by 5%. Overestimating costs
  * a sliver of each page image; underestimating would push a full-height
  * image off its page.
  */
-const PRINT_TITLE_COL_PX = (PRINT_SLOT_W_IN * 0.65 - 0.15) * 96;
-const PRINT_URL_COL_PX = PRINT_SLOT_W_IN * 0.35 * 96;
+const PRINT_TITLE_COL_PX = (PRINT_SLOT_W_IN * 0.5 - 0.15) * 96;
+const PRINT_URL_COL_PX = PRINT_SLOT_W_IN * 0.5 * 96;
 
 function countLines(ctx, pieces, separator, widthPx) {
   let lines = 1;

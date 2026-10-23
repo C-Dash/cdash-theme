@@ -69,7 +69,7 @@ body {
 
 #print-header {
   display: grid;
-  grid-template-columns: 65% 35%;
+  grid-template-columns: 50% 50%;
   align-items: start;
   font: 11pt/0.2in Arial, Helvetica, sans-serif;
 }
