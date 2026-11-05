@@ -1,0 +1,65 @@
+<?php
+/**
+ * The advanced search form's Sort field, preselected to street order.
+ *
+ * Stock Omeka leaves both selects on their empty option, and submitting the
+ * form then sends `sort_by=&sort_order=`. An empty sort_by is not a missing
+ * one: SetBrowseDefaults keeps it (`$query->get('sort_by', $default)` returns
+ * the empty string), so the site's browse default never applies and the API
+ * falls back to item id -- which looks *almost* like street order, because
+ * the Places were imported in roughly that order. Preselecting the term means
+ * the form always submits a real sort.
+ *
+ * It has to be the term, `cdash:streetSort`. A bare `streetSort` matches no
+ * property, and the adapter silently sorts by id instead; drop it if a column
+ * setting offers it.
+ *
+ * Also fixes a stock slip: the original sets $sortBy's value twice, the second
+ * time from sort_order, so a chosen sort never redisplayed.
+ */
+use Laminas\Form\Element;
+
+$streetSort = 'cdash:streetSort';
+
+$sortConfigContext = $this->status()->isAdminRequest() ? 'admin' : 'public';
+switch ($resourceType) {
+    case 'itemSet':
+        $sortConfigResourceType = 'item_sets';
+        break;
+    case 'media':
+        $sortConfigResourceType = 'media';
+        break;
+    case 'item':
+    default:
+        $sortConfigResourceType = 'items';
+}
+$sortConfig = $this->browse()->getBrowseService()->getSortConfig($sortConfigContext, $sortConfigResourceType);
+unset($sortConfig['streetSort']);
+$sortConfig = [$streetSort => $this->translate('Street address')] + $sortConfig;
+
+// An explicit choice redisplays; otherwise street order, ascending.
+$chosenSortBy = (!isset($query['sort_by_default']) && !empty($query['sort_by'])) ? $query['sort_by'] : '';
+$chosenSortOrder = (!isset($query['sort_order_default']) && !empty($query['sort_order'])) ? $query['sort_order'] : '';
+
+$sortBy = new Element\Select('sort_by');
+$sortBy->setAttribute('aria-label', 'Sort by'); // @translate
+$sortBy->setValueOptions($sortConfig);
+$sortBy->setValue($chosenSortBy ?: $streetSort);
+
+$sortOrder = new Element\Select('sort_order');
+$sortOrder->setAttribute('aria-label', 'Sort order'); // @translate
+$sortOrder->setValueOptions([
+    'asc' => 'Ascending', // @translate
+    'desc' => 'Descending', // @translate
+]);
+$sortOrder->setValue($chosenSortOrder ?: 'asc');
+?>
+<div class="field">
+    <div class="field-meta">
+        <label><?php echo $this->translate('Sort'); ?></label>
+    </div>
+    <div class="inputs">
+        <?php echo $this->formSelect($sortBy); ?>
+        <?php echo $this->formSelect($sortOrder); ?>
+    </div>
+</div>
