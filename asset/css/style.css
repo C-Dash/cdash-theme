@@ -1168,6 +1168,9 @@ max-width: 50vw; */
   #content dd {
     grid-column: 1;
   }
+  #content .cdash-survey-area {
+    display: none;
+  }
 }
 #content table {
   /*display: grid;

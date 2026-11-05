@@ -197,7 +197,9 @@ html, body {
     // Below this the pane is too narrow to give a sentence a usable column
     // beside its label, so the label moves above its value and the value gets
     // the full width. The "browse" container is declared on the browse pane's
-    // content wrapper in _panes.scss.
+    // content wrapper in _panes.scss. Survey Area (item-sets.phtml) is dropped
+    // here altogether: on a pane this narrow it costs more room than it is
+    // worth. It still prints.
     @container browse (max-width: 500px) {
         .property {
             grid-template-columns: 1fr;
@@ -206,6 +208,10 @@ html, body {
         dt,
         dd {
             grid-column: 1;
+        }
+
+        .cdash-survey-area {
+            display: none;
         }
     }
 
