@@ -1,9 +1,10 @@
 # CDASH 5 — Omeka S theme
 
 Theme for the Cambridge Historical Commission Digital Architectural Survey and
-History. Production runs the predecessor, `cdash_4.1.1`, at
-cdash.cambridgema.gov, and is tagged **`v4.1.1`** (with a GitHub release).
-This is its replacement, and it **is `main`**.
+History. It **is `main`**, and since 2026-11-05 it is what production runs at
+cdash.cambridgema.gov, as `themes/cdash_5.0.0`. Production is still deployed
+by hand, not from GitHub: a commit here reaches it only when it is copied
+over. The predecessor is tagged **`v4.1.1`** (with a GitHub release).
 
 **Work directly on `main`.** One developer, a production instance deployed
 independently of this repo, and a dev site that serves this working folder
@@ -22,8 +23,7 @@ reason most of the code looks the way it does:
 
 **The map is built once per session and never torn down.** Navigation swaps only
 the browse pane's `#content`; the map, its 23 layers and its ~2000 clustered
-markers survive untouched. 4.1.1 called `window.location.replace()` on every
-marker click, rebuilding all of it to show a different item in the *other* pane.
+markers survive untouched.
 
 Verified by access log, not by inspection: 19 navigations produce exactly one
 `placemarkers.php` POST.
@@ -62,8 +62,8 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
 - **`hx-history-elt` on `#showresult`.** Without it htmx snapshots
   `document.body`, so Back replaced the whole page and left Leaflet holding a
   detached node.
-- **Marker links derive from `currentSite()->url()`.** 4.1.1 hardcoded
-  `/s/cdash/`, which is why *it* only works on a site with that exact slug.
+- **Marker links derive from `currentSite()->url()`**, never a hardcoded
+  `/s/<slug>/`, so the theme works under any site slug.
 - **The admin user bar is swapped out of band**, via `hx-select-oob="#user-bar"`
   on the shell, emitted only when there is a bar. Omeka builds its View/Edit
   links from the route it renders, so the swap response already holds a correct
@@ -102,7 +102,7 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   The map: at `beforeprint`, `cdash-map.js` deep-clones `#drawmap` into the
   Place band's empty half, scaled to fit, and removes it at `afterprint`. The live map pane stays
   hidden in print and is never moved: reparenting it would resize it, which
-  is the camBase hazard (*Still open* #5). camBase prints blank in the copy
+  is the camBase hazard (*Still open* #4). camBase prints blank in the copy
   (a cloned or copied WebGL canvas is empty) and MassGIS shows through, by
   design. This needs Leaflet's CSS on paper, so `leaflet.css` and the
   MarkerCluster sheets are registered `media="all"` in `layout.phtml`. **Do
@@ -193,10 +193,9 @@ Docker compose project `cdash-dev-docker`, config at
 | site | slug | theme |
 |---|---|---|
 | 4 | `cdash5` | `cdash_5.0.0` — this one |
-| 3 | `cdash` | `cdash_4.1.1` — unmodified by request |
+| 3 | `cdash` | `cdash_4.1.1` — the predecessor, kept for comparison |
 
-**The slugs have swapped once and may again — check, do not assume.** 4.1.1
-*requires* the slug `cdash`; this theme works under any slug.
+**The slugs have swapped once and may again — check, do not assume.**
 
 This directory is bind-mounted **read-only** into the container, so edits are
 served with no deploy step:
@@ -228,6 +227,19 @@ a git repo owned by a different Windows SID, so git refuses it.
   extensions disabled; it does not reproduce in Firefox. Nothing to fix. **A
   stack made only of `VM…` frames is injected code, not page code** — worth
   weighting that tell before reaching for extensions, as happened here.
+- **Item-page blocks are stored per theme *folder*.** Which resource page
+  blocks a site shows, and in which region, is the site setting
+  `theme_settings_<theme folder>` — e.g. `theme_settings_cdash_5.0.0`. Switching
+  a site to a new theme folder (including a version bump) starts from that
+  key, not the old theme's, and a block missing from it simply never renders:
+  no error, no markup, and CSS cannot be the cause. It cost a session on
+  production, where Folder and Survey Area vanished. Tell: the item-sets
+  partial always prints `<!-- CDASH: Added this rule -->`; if a page's HTML
+  lacks it, the block is not in the layout. Check with
+  `SELECT site_id, value FROM site_setting WHERE id LIKE 'theme_settings_%'`.
+- **The "Right sidebar" region is never rendered.** `config/theme.ini`
+  declares it for items, but `show.phtml` prints only `main`. A block placed
+  there in the admin disappears silently.
 
 ## Verifying a change
 
@@ -301,10 +313,7 @@ both.
 
 ## Still open
 
-1. **Production `geosync.php`.** `cdash_4.1.1` ships an unauthenticated endpoint
-   that rewrites the database on load — no auth, no request gating. Guarded in
-   this theme by `_require-admin.php`; **production is not**. Highest priority.
-2. **CSS split — done.** The theme builds two generated stylesheets,
+1. **CSS split — done.** The theme builds two generated stylesheets,
    `style.css` (media=`screen`) and `print.css` (media=`print`), and owns no
    hand-written CSS. Each of `#banner`, `#navmenu`, `#drawmap`, `#showresult`,
    `#content`, `#overlay-menu` and `#basemap-menu` is declared once: box model
@@ -335,7 +344,7 @@ both.
    `sass-migrator` 2.6.1 is vendored beside dart-sass at
    `../tools/sass-migrator/`.
 
-3. **Item-page centring — resolved.** The featured-marker logic used to pan on
+2. **Item-page centring — resolved.** The featured-marker logic used to pan on
    every navigation, which made the hash near useless: the hash is written from
    `moveend`, so the URL recorded where the *item* was rather than where the
    visitor had put the map, and a shared link could not reproduce its own
@@ -360,9 +369,9 @@ both.
    `updateFeaturedMarker()`, which returns early on a page with no
    coordinates — otherwise a first load on a site page leaves the flag standing
    and the next item looks like a fresh arrival.
-4. **Real-device phone check.** The `100dvh` fix addresses the collapsing mobile
+3. **Real-device phone check.** The `100dvh` fix addresses the collapsing mobile
    URL bar and is desktop-verified only.
-5. **Slide-collapse-restore — redesigned.** Panes and
+4. **Slide-collapse-restore — redesigned.** Panes and
    drawers now collapse to zero (no sliver), show a grip on the open edge and
    a tab on the collapsed one; a tab click reopens to the last size, kept in
    `localStorage` under `cdash.layout`. Snapping is in pixels (`SNAP_PX = 64`
@@ -396,7 +405,7 @@ both.
    `trackResize: false`; the ResizeObserver covers window resizes instead.
    A canvas poisoned some other way still needs a reload. Collapse-to-zero
    depends on that floor: do not remove it.
-6. **Two card blocks, one card — resolved.** The card grid appears twice:
+5. **Two card blocks, one card — resolved.** The card grid appears twice:
    Linked Resources on a Place page, and search results/folder contents. Both
    now render `view/common/cdash-card.phtml`, so the markup, the Document /
    Place split and the caption rules exist once. `asset/sass/_resource-list.scss`
@@ -426,33 +435,18 @@ both.
    One asymmetry in the data, worth knowing before hunting a bug that is not
    there: every resource link points *at* a Place, so only Place pages have a
    Linked Resources block. Document pages have none.
-7. **Original TIFs are unlinked, not protected.** Page thumbnails no longer
-   link to the original: the theme's copy of
+6. **Page thumbnails do not link the original TIF.** The theme's copy of
    `view/common/resource-page-block-layout/media-embeds.phtml` passes
    `['link' => null]` to `$media->render()`, and Omeka's `ThumbnailRenderer`
    then returns the bare `<img>`. That replaced a JS fixup which stripped the
    `href` after every swap, so the anchor is now absent from the markup rather
-   than removed from it.
-
-   **The file is still public**, and that is the part left undone:
-
-   - `/files/original/<hash>.tif` returns 200 to anyone who asks;
-   - the REST API hands out the path — `/api/media/<id>` includes
-     `o:original_url` — so the link being gone from the page hides nothing
-     from anything that reads the API.
-
-   Blocking the path at the web server is not the fix it looks like: Apache
-   cannot tell a logged-in editor from a visitor, so a deny rule takes staff
-   downloads in the admin UI with it. (For the dev instance that rule would go
-   in the persist volume at `config/apache2/.htaccess_dev`, which is symlinked
-   as the docroot `.htaccess`.) The module that does this properly is
-   **Access** (Daniel-KM), which serves files through a permission-checking
-   controller. Deferred deliberately, pending appetite for another module.
+   than removed from it. What is left undone is in `notes/security.md` (see
+   #10).
 
    Any other media block enabled later — `media-list`, the lightbox pair —
    calls `$media->render()` the same way and will link originals again until
    given the same option.
-8. **The admin bar — links now follow the page, presentation does not.**
+7. **The admin bar — links now follow the page, presentation does not.**
    `e2cb3e5` fixed the stale View/Edit links and that part is confirmed
    working; `a7b2064`, the URL keeping the visitor's map extent rather than the
    item's, is confirmed too.
@@ -475,7 +469,7 @@ both.
      distinguishing. The bar sits in `#showresult`'s auto row — see the sticky
      footer comment in `_panes.scss` — so its height comes out of the browse
      pane.
-9. **Breadcrumb scroll depth — deferred, and not free.** "Return to …" returns
+8. **Breadcrumb scroll depth — deferred, and not free.** "Return to …" returns
    to the right page at the top, not to where the visitor was. htmx 2.0.4 keeps
    no scroll positions in its history cache, and the swap spec forces
    `scroll:#showresult:top` in two places — `layout.phtml` and the marker click
@@ -483,7 +477,7 @@ both.
    modifiers go, positions are saved per URL, and top becomes a default rather
    than a rule. That is why it was split off rather than shipped with the
    breadcrumb.
-10. **The backlog is in `notes/`, which is local only.** Prompts, wishes and
+9. **The backlog is in `notes/`, which is local only.** Prompts, wishes and
     brainstorming go there, one file per topic; settled decisions move into
     this file. The folder is **git-ignored** (`/notes/` in `.gitignore`), and
     was also removed from the history of `main` and `v5-persistent-shell`
@@ -496,16 +490,16 @@ both.
     behind the work above, and `notes/sql/copy_site_page.sql`, the
     page-copy script. The original shell prompts are elsewhere, in the
     separate `../layout/` repo (`layout_prompt.txt`, `overview._prompt.md`).
-11. **`asset/php/geosync copy.php`** — the untracked leftover, now deleted.
-12. **Dependabot — resolved.** All 15 alerts on `main` came from
-    `package-lock.json`; the merge deleted it and none remain open. Nothing in
-    the theme is installed from npm any more, so a new lockfile appearing is
-    worth questioning.
-13. **`main` is CDASH 5.** Merged as PR #1 (`cbecbad`; `b7a7e00` before the
-    notes were removed from history), then PR #2, after which
-    `v5-persistent-shell` was deleted. 4.1.1 is still reachable as the
-    `v4.1.1` tag and release, at `fa36a94`. Production is untouched by either
-    merge — it still runs `cdash_4.1.1`, which is why #1 above stands.
+10. **Open security items are in `notes/security.md`, not here.** This repo
+    is public, so anything describing a live weakness of the production site
+    goes in that git-ignored file. Read it before touching production,
+    `asset/php/`, or media access. A fresh clone lacks it, so ask the
+    maintainer. Two items are open as of 2026-11-05, one of them about
+    retiring the old theme on production. 4.1.1 stays recoverable as the
+    `v4.1.1` tag and release, at `fa36a94`.
+
+Nothing in the theme is installed from npm, so a `package-lock.json`
+appearing is worth questioning.
 
 ## Longer-term
 
