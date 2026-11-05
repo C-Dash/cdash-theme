@@ -228,7 +228,7 @@ return [
         'attribution'    => 'MapJunction / MapWarper',
         'attributionUrl' => 'https://mapwarper.net/layers/920',
         'source'         => 'MapJunction',
-        'sourceUrl'      => 'https://mapjunction.com/VIEWER/17810',
+        'sourceUrl'      => 'https://beta.mapjunction.com/s/ae80495a-50be-4fb7-b838-b43a3c23f994',
     ],
     
     [
