@@ -61,7 +61,12 @@ becomes `None`**. It needs `o-module-mapping:feature[0]["o-module-mapping:geogra
 sequencing:** upgrading the module there also breaks the `cdash_4.1.1` theme
 still installed (it has the 1.x override and the old SQL), and the theme copy
 and the module upgrade must ship together, after a database backup — the
-upgrade drops `mapping_marker` and cannot be undone. CSV Import has its own
+upgrade drops `mapping_marker` and cannot be undone. **Then run
+`asset/php/cdash_places_view-mapping2.sql` at once:** the database has two
+old views, `cdash_places_view` (over `mapping_marker`) and `cdash_docs_view`
+(over it), and a view over a dropped table makes `mysqldump` abort with
+error 1356 — every later backup fails. Found on dev when the first
+post-upgrade dump came out truncated. CSV Import has its own
 2.x column mapping (`csv-import/mapping.phtml`); re-check it at the next
 coordinate import.
 
