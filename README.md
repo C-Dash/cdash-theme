@@ -4,7 +4,7 @@ The Cambridge Digital Architecture Survey and History project extends Omeka-S wi
 
 This theme implements the map interface and various modifications to the standard Omeka-S Show and Browse pages. More information on the CDASH schema can be found in the [CDASH Documentation Repo](https://github.com/C-Dash/Documentation) which can also be [Viewed as HTML](https://c-dash.github.io/Documentation).  There is no CDASH Module, but the CDASH Omeka instance and routine administration function does rely on several other modules, as follows:
 
-* Mapping (version 1.1)
+* Mapping (version 2.3.0 or later; requires Omeka S 4.1.1 or later)
 * Custom Vocabulary
 * Metadata Browse
 * Value Suggest

@@ -23,9 +23,47 @@ own git worktree, `../cdash_5.0.0-omeka421/`, served by its own dev instance
 what went wrong with PRs #3 and #4. `main` stays what production runs on
 Omeka 4.1.1. Fixes for production go on `main` and are merged into
 `omeka-4.2.1` from time to time; when the upgrade ships, `omeka-4.2.1` merges
-into `main` and the worktree is removed (`git worktree remove`). Expect the
-branches to diverge in `asset/php/`: `placemarkers.php`, `geosync.php` and
-`geoaudit.php` query the Mapping module's `mapping_marker` table directly.
+into `main` and the worktree is removed (`git worktree remove`).
+
+**This branch runs Mapping 2.3.0; `main` and production run 1.10.0.** The two
+are not interchangeable, so a theme file touching Mapping cannot be merged
+across without thought. Upgraded 2026-11-11 (`cde4d21`..`e335ebe`); the
+plan is `~/.claude/plans/next-i-think-i-polymorphic-falcon.md`, and the
+pre-upgrade backup and baselines are in
+`../../docker-persist-421/pre-mapping-2.3/`. What 2.x changed:
+
+- **Storage.** `mapping_marker` (`lat`, `lng` columns) is dropped by the
+  upgrade. Features live in `mapping_feature.geography`, a `GEOMETRY` with
+  SRID 0, **x = longitude, y = latitude**. Read `ST_Y(geography) AS lat,
+  ST_X(geography) AS lng`; write `POINT(lng, lat)`. Filter on
+  `ST_GeometryType(geography) = 'POINT'`, since 2.x also stores polygons and
+  lines. `placemarkers.php`, `geosync.php` and `geoaudit.php` do all of this.
+- **API.** `mapping_markers` is now `mapping_features`. In item JSON-LD,
+  `o-module-mapping:marker[].lat/lng` became `o-module-mapping:feature[]`
+  with `geography-type` and `geography-coordinates` — **`[lng, lat]`**, the
+  reverse order. `../cdash_digester` still reads the old keys (below).
+- **Item-page template.** 2.x renders `common/mapping-resource-map` (var
+  `$resource`, for items *and* item sets), never `mapping/index/show`. The
+  theme's override, `view/common/mapping-resource-map.phtml`, writes the
+  hidden `.mapping-marker-popup-content` divs that `updateFeaturedMarker()`
+  reads, renders nothing on a Folder, and registers no assets. The resource
+  page block key is still `mapping`, so `theme_settings_cdash_5.0.0` is
+  unchanged. `#mapping-section` in `print.scss` is still the stock id.
+- **Assets.** Mapping's libraries moved from `asset/node_modules/` to
+  `asset/vendor/` (Leaflet 1.9.3 → 1.9.4); `layout.phtml` loads the new
+  paths. `control.fit-bounds.js` is no longer loaded.
+
+**Not done, outside this repo:** `../cdash_digester/src/cdash_digester/validator.py`
+(lines 117–139) reads `o-module-mapping:marker` → `lat`/`lng`. Under 2.x that
+key is absent and `_coord` swallows the error, so **every coordinate silently
+becomes `None`**. It needs `o-module-mapping:feature[0]["o-module-mapping:geography-coordinates"]`
+→ `[lng, lat]`, and `tests/test_validator.py` the same. **Production
+sequencing:** upgrading the module there also breaks the `cdash_4.1.1` theme
+still installed (it has the 1.x override and the old SQL), and the theme copy
+and the module upgrade must ship together, after a database backup — the
+upgrade drops `mapping_marker` and cannot be undone. CSV Import has its own
+2.x column mapping (`csv-import/mapping.phtml`); re-check it at the next
+coordinate import.
 
 ## What this theme is
 

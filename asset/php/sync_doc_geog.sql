@@ -1,4 +1,11 @@
-/* For each document item, set the following values using same from the Place Item 
+/* PREDATES MAPPING 2.x -- do not run as is. This scratch notebook targets
+   Mapping 1.x's mapping_marker table (lat, lng columns), which Mapping 2.x's
+   upgrade drops. Coordinates now live in mapping_feature.geography, a
+   GEOMETRY with SRID 0: read ST_Y(geography) AS lat, ST_X(geography) AS lng,
+   write POINT(lng, lat). geosync.php is the maintained version of this sync.
+*/
+
+/* For each document item, set the following values using same from the Place Item
    associated with the document
 */
 
