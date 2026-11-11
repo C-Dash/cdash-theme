@@ -52,11 +52,12 @@ d.value as placeName,
 c.value as streetAddress, 
 h.value as houseNum,
 CONCAT(g.value,'_', REPEAT('0',8 - IFNULL(char_length(REGEXP_SUBSTR(h.value,'^[0-9]+')), 0)),IFNULL(h.value, '')) as streetSort,
-lat, lng, 
-CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem 
+ST_Y(mapping_feature.geography) as lat, ST_X(mapping_feature.geography) as lng,
+CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem
 FROM resource
-LEFT OUTER JOIN mapping_marker
-  ON resource.id = mapping_marker.item_id
+LEFT OUTER JOIN mapping_feature
+  ON resource.id = mapping_feature.item_id
+  AND ST_GeometryType(mapping_feature.geography) = 'POINT'
 LEFT OUTER JOIN value
   on resource.id = resource_id
   AND property_id = (select id from property where local_name = 'placeType')
@@ -127,10 +128,16 @@ if ($count_docs) {
 
 echo "<br><b>Updates:</b> if there has been any update activity it will be listed below. <br>";
 
-// Update mapping_marker coordinates for documents.
-$update_docmarkers_sql = "update mapping_marker
-                          inner join tmp_docs on item_id = doc_id and tmp_docs.lat IS NOT NULL
-                          set mapping_marker.lat = coalesce(tmp_docs.lat,mapping_marker.lat), mapping_marker.lng = coalesce(tmp_docs.lng,mapping_marker.lng);";
+// Update marker coordinates for documents: each Document's point feature is
+// moved to its Place's point. Mapping 2.x stores a GEOMETRY, SRID 0, x = lng,
+// y = lat; POINT(x, y) builds one with SRID 0, matching what its upgrade wrote.
+// An unchanged point is byte-identical, so it does not count as affected.
+// A Document with no point feature is not given one -- geoaudit reports it.
+$update_docmarkers_sql = "update mapping_feature
+                          inner join tmp_docs on item_id = doc_id
+                            and tmp_docs.lat IS NOT NULL and tmp_docs.lng IS NOT NULL
+                          set mapping_feature.geography = POINT(tmp_docs.lng, tmp_docs.lat)
+                          where ST_GeometryType(mapping_feature.geography) = 'POINT';";
 $markers_updated = $conn->query($update_docmarkers_sql);
 $rows_affected = mysqli_affected_rows($conn);
 if ($markers_updated) {

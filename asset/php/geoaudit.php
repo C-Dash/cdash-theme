@@ -50,10 +50,11 @@ die("Connection failed: " . $conn->connect_error . "<br>");
 $makeplace_sql = "CREATE TEMPORARY TABLE tmp_places AS
 SELECT resource.id as place_id, resource.title, value.value as placetype, g.value as streetName, d.value as placeName, c.value as streetAddress, h.value as houseNum,
 CONCAT(g.value,'_', REPEAT('0',8 - IFNULL(char_length(REGEXP_SUBSTR(h.value,'^[0-9]+')), 0)),IFNULL(h.value, '')) as streetSort,
-lat, lng, CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem
+ST_Y(mapping_feature.geography) as lat, ST_X(mapping_feature.geography) as lng, CONCAT(IF(LENGTH(h.value) > 0, CONCAT(h.value, ' '), ''), g.value, IF(d.value IS NULL,'',CONCAT(' - ',d.value))) as placeItem
 FROM resource
-LEFT OUTER JOIN mapping_marker
-  ON resource.id = mapping_marker.item_id
+LEFT OUTER JOIN mapping_feature
+  ON resource.id = mapping_feature.item_id
+  AND ST_GeometryType(mapping_feature.geography) = 'POINT'
 LEFT OUTER JOIN value
   on resource.id = resource_id
   AND property_id = (select id from property where local_name = 'placeType')
@@ -161,10 +162,12 @@ if ($result) {
 }
 
 
-// Count Place Items without Markers
+// Count Place Items without Markers. A marker is a Mapping 2.x point feature;
+// an item whose only features are polygons or lines has no marker on the map.
 $count_Items_without_markers_sql = "select resource.title as Title, resource.id as resource_id from resource
-left outer join mapping_marker on resource.id = mapping_marker.item_id
-WHERE resource_template_id = (select id from resource_template where label = 'CDASH Place') and mapping_marker.lat IS NULL;";
+left outer join mapping_feature on resource.id = mapping_feature.item_id
+  and ST_GeometryType(mapping_feature.geography) = 'POINT'
+WHERE resource_template_id = (select id from resource_template where label = 'CDASH Place') and mapping_feature.id IS NULL;";
 
 $result = $conn->query($count_Items_without_markers_sql);
 if ($result) {
@@ -231,8 +234,9 @@ if ($result) {
 
 // Count Document Items without Markers
 $count_DocItems_without_markers_sql = "select resource.title as Title, resource.id as resource_id from resource
-left outer join mapping_marker on resource.id = mapping_marker.item_id
-WHERE resource_template_id = (select id from resource_template where label = 'CDASH Document') and mapping_marker.lat IS NULL;";
+left outer join mapping_feature on resource.id = mapping_feature.item_id
+  and ST_GeometryType(mapping_feature.geography) = 'POINT'
+WHERE resource_template_id = (select id from resource_template where label = 'CDASH Document') and mapping_feature.id IS NULL;";
 
 $result = $conn->query($count_DocItems_without_markers_sql);
 if ($result) {
