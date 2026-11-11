@@ -45,19 +45,20 @@ $this->headScript()->prependFile($this->assetUrl('vendor/jquery/jquery.min.js', 
 // default "screen": the printed page carries a copy of the map (see the
 // beforeprint handler in cdash-map.js), and without Leaflet's own positioning
 // rules its tiles, panes and markers print as a loose pile. HeadLink keeps only
-// the first registration of a given href, so view/mapping/index/show.phtml no
-// longer registers leaflet.css itself -- on item pages it renders before this
-// layout, and its screen-only copy would win.
-$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet/dist/leaflet.css', 'Mapping'), 'all');
-$this->headLink()->appendStylesheet($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.css', 'Mapping'));
+// the first registration of a given href, so view/common/mapping-resource-map.phtml
+// registers no assets itself -- on item pages it renders before this layout,
+// and its screen-only copy would win.
+//
+// Paths are Mapping 2.x's (asset/vendor/); 1.x kept them under
+// asset/node_modules/. control.fit-bounds.js is gone: only Mapping's own
+// mapping-show.js used it, and the theme never loads that.
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet/dist/leaflet.css', 'Mapping'), 'all');
+$this->headLink()->appendStylesheet($this->assetUrl('vendor/leaflet.fullscreen/Control.FullScreen.css', 'Mapping'));
 
-$this->headScript()->appendFile($this->assetUrl('node_modules/leaflet/dist/leaflet.js', 'Mapping'));
-$this->headScript()->appendFile($this->assetUrl('node_modules/leaflet.fullscreen/Control.FullScreen.js', 'Mapping'));
-$this->headScript()->appendFile($this->assetUrl('node_modules/leaflet-providers/leaflet-providers.js', 'Mapping'));
-
-//$this->headScript()->appendFile($this->assetUrl('js/mapping-show.js', 'Mapping'));
-$this->headScript()->appendFile($this->assetUrl('js/control.fit-bounds.js', 'Mapping'));
-// end from mapping module 
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet/dist/leaflet.js', 'Mapping'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet.fullscreen/Control.FullScreen.js', 'Mapping'));
+$this->headScript()->appendFile($this->assetUrl('vendor/leaflet-providers/leaflet-providers.js', 'Mapping'));
+// end from mapping module
 
 
 
