@@ -26,10 +26,17 @@ die("Connection failed: " . $conn->connect_error);
 // This query bypasses Omeka's own visibility rules by reading the database
 // directly, so it has to enforce is_public itself -- without that filter an
 // unpublished Place item would still appear on the map as a marker.
-$sql = "SELECT item_id, resource.title, value.value as placetype, lat, lng
-FROM mapping_marker
+//
+// Mapping 2.x stores each feature as a GEOMETRY (SRID 0, x = longitude,
+// y = latitude) in mapping_feature; 1.x's mapping_marker table, with lat and
+// lng columns, is dropped by its upgrade. Only points become markers --
+// a polygon or line has no single coordinate to put a pin on.
+$sql = "SELECT item_id, resource.title, value.value as placetype,
+  ST_Y(geography) AS lat, ST_X(geography) AS lng
+FROM mapping_feature
 JOIN resource
-  ON mapping_marker.item_id = resource.id
+  ON mapping_feature.item_id = resource.id
+  AND ST_GeometryType(mapping_feature.geography) = 'POINT'
   AND resource.is_public = 1
   AND resource_template_id = (select id from resource_template where label = 'CDASH Place')
 JOIN value
