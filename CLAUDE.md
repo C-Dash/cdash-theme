@@ -16,6 +16,17 @@ while another was checked out, which looked like a regression. Use a branch
 only for long or experimental work that might be abandoned, and say so first.
 The long-lived `v5-persistent-shell` branch was merged as PR #2 and deleted.
 
+**One long-lived branch is open: `omeka-4.2.1`**, created 2026-11-11 for the
+Omeka S 4.2.1 upgrade and the newer Mapping module. It is checked out in its
+own git worktree, `../cdash_5.0.0-omeka421/`, served by its own dev instance
+(see *Dev instances*), so it never displaces `main` on a dev site, which is
+what went wrong with PRs #3 and #4. `main` stays what production runs on
+Omeka 4.1.1. Fixes for production go on `main` and are merged into
+`omeka-4.2.1` from time to time; when the upgrade ships, `omeka-4.2.1` merges
+into `main` and the worktree is removed (`git worktree remove`). Expect the
+branches to diverge in `asset/php/`: `placemarkers.php`, `geosync.php` and
+`geoaudit.php` query the Mapping module's `mapping_marker` table directly.
+
 ## What this theme is
 
 A Leaflet map pane beside an Omeka browse pane. The defining property, and the
@@ -184,11 +195,24 @@ That is the class of bug to expect here. Four instances have already been fixed:
 Check this whenever adding a resource page block, template override or
 module, and after any Omeka upgrade.
 
-## Dev instance
+## Dev instances
 
-Docker compose project `cdash-dev-docker`, config at
-`../cdash-dev-docker/docker-compose.yml`, Omeka on port 80. Containers are
-`restart: always`.
+Two Docker compose projects, one per Omeka version. Each has its own database
+and persist volume (only `cdash-scans` is shared), and they use different
+ports, so both can run at once. Containers are `restart: always`.
+
+| compose project | config | Omeka | port | serves |
+|---|---|---|---|---|
+| `cdash-dev-docker` | `../cdash-dev-docker/` | 4.1.1, as production | 80 | `../cdash_5.0.0/`, branch `main` |
+| `cdash-dev-421` | `../cdash-dev-docker_dec_4.2.1/` | 4.2.1 | 8081 (Adminer 8082) | `../cdash_5.0.0-omeka421/`, branch `omeka-4.2.1` |
+
+**An instance serves a folder, not a branch.** Whatever is checked out in that
+folder is what the site shows, so never switch branches inside either
+folder; use the worktree. **Which instances are up varies — run
+`docker ps` before using a container name or port.** Container names follow
+the project: `cdash-dev-docker-omeka-1`, `cdash-dev-421-omeka-1`.
+
+Sites on both instances:
 
 | site | slug | theme |
 |---|---|---|
@@ -197,15 +221,18 @@ Docker compose project `cdash-dev-docker`, config at
 
 **The slugs have swapped once and may again — check, do not assume.**
 
-This directory is bind-mounted **read-only** into the container, so edits are
-served with no deploy step:
+Each instance bind-mounts its folder **read-only**, so edits are served with no
+deploy step:
 
 ```yaml
-- ../cdash_5.0.0:/var/www/html/persist/themes/cdash_5.0.0:ro
+- ../cdash_5.0.0:/var/www/html/persist/themes/cdash_5.0.0:ro            # 4.1.1
+- ../cdash_5.0.0-omeka421:/var/www/html/persist/themes/cdash_5.0.0:ro   # 4.2.1
 ```
 
-That line is the one unversioned artifact in the whole setup — its directory is
-a git repo owned by a different Windows SID, so git refuses it.
+The destination is `cdash_5.0.0` in both, even for the worktree, and must stay
+so: item-page blocks are keyed to the theme folder name (see the
+`theme_settings_` trap below). Those lines live in the compose files, outside
+this repo, so they are not versioned here.
 
 ### Traps that have each cost time
 
@@ -246,12 +273,16 @@ a git repo owned by a different Windows SID, so git refuses it.
 The map's health is measurable, so measure it:
 
 ```bash
-# hard reload, click ten markers, then:
+# hard reload, click ten markers, then (container per *Dev instances*):
 docker logs cdash-dev-docker-omeka-1 --since 5m 2>&1 | grep -c placemarkers
 # 1 = correct. ~10 = the map is being rebuilt; the swap is broken.
 ```
 
-PHP lints via `docker exec cdash-dev-docker-omeka-1 php -l <path>`. No test
+PHP lints via
+`MSYS_NO_PATHCONV=1 docker exec <container> php -l /var/www/html/persist/themes/cdash_5.0.0/<path>`.
+From Git Bash the prefix is required: without it the container path is
+rewritten to `C:/Program Files/Git/var/www/…` and the lint fails with
+"Could not open input file". No test
 suite exists.
 
 `asset/js/*.js` can be syntax-checked, using the Node below — worth doing after
