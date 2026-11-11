@@ -1,0 +1,64 @@
+<?php
+/**
+ * CDASH override of Mapping 2.x's resource map (the "Mapping" resource page
+ * block). It replaces view/mapping/index/show.phtml, Mapping 1.x's template,
+ * which 2.x never renders.
+ *
+ * The stock template draws a 700px Leaflet map in the browse pane, with its
+ * features loaded by AJAX, so it puts no coordinates in the HTML. CDASH needs
+ * the opposite: no second map (the map pane is the map), and coordinates in the
+ * HTML, because updateFeaturedMarker() in asset/js/cdash-map.js reads them from
+ * #content after every swap. So this writes the same hidden
+ * .mapping-marker-popup-content divs the 1.x override did, one per point
+ * feature. Each div is also the featured marker's popup, so its contents
+ * (label, media, item link) are kept as they were.
+ *
+ * Mapping 2.x stores a GEOMETRY; geographyCoordinates() of a Point is [x, y],
+ * which is [lng, lat] -- the reverse of the data attributes' order.
+ *
+ * Items only. The block also renders for item sets (Folder pages), where the
+ * stock template would map every feature in the set; a Folder has no single
+ * location, so it gets nothing. Non-point features (polygons etc.) are skipped:
+ * the featured marker is a point.
+ *
+ * No assets are registered here. Leaflet and its plugins are registered by
+ * view/layout/layout.phtml for every page -- a swap delivers #content only, so
+ * anything registered by a content template reaches full loads alone, and
+ * HeadLink keeps the first registration of an href, which would make
+ * leaflet.css screen-only (it must be media="all" for the printed map copy).
+ */
+
+if (!$resource instanceof \Omeka\Api\Representation\ItemRepresentation) {
+    return;
+}
+
+$features = $this->api()->search('mapping_features', ['item_id' => $resource->id()])->getContent();
+?>
+<?php foreach ($features as $feature): ?>
+<?php
+if ($feature->geographyType() !== 'Point') {
+    continue;
+}
+[$lng, $lat] = $feature->geographyCoordinates();
+$item = $feature->item();
+$media = $feature->media();
+?>
+<div class="mapping-marker-popup-content" style="display:none;"
+    data-marker-id="<?php echo $this->escapeHtml($feature->id()); ?>"
+    data-marker-lat="<?php echo $this->escapeHtml($lat); ?>"
+    data-marker-lng="<?php echo $this->escapeHtml($lng); ?>"
+>
+    <?php if ($feature->label()): ?>
+    <h3><?php echo $this->escapeHtml($feature->label()); ?></h3>
+    <?php endif; ?>
+    <?php if ($media): ?>
+    <?php echo $this->thumbnail($media, 'medium'); ?>
+    <div>
+        <?php echo sprintf($this->translate('Media: %s'), $media->link($media->displayTitle())); ?>
+    </div>
+    <?php endif; ?>
+    <div>
+        <?php echo sprintf($this->translate('Item: %s'), $item->link($item->displayTitle())); ?>
+    </div>
+</div>
+<?php endforeach; ?>
