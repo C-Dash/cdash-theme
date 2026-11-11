@@ -219,6 +219,20 @@ return [
 
 
     [
+        'key'            => 'bromley1903',
+        'group'          => 'basemap',
+        'label'          => '1903 Bromley',
+        'type'           => 'tileLayer',
+        'url'            => 'https://s3.us-east-2.wasabisys.com/urbanatlases/al8c0zee3/tiles/{z}/{x}/{y}.png',
+        'maxZoom'        => 20,
+        'attribution'    => 'Leventhal Map Center',
+        'attributionUrl' => 'https://collections.leventhalmap.org/search/commonwealth:tt44pw49q',
+        'source'         => 'Leventhal Map and Education Center at Boston Public Library',
+        'sourceUrl'      => 'https://collections.leventhalmap.org/search/commonwealth:tt44pw717#?xywh=-3281%2C-732%2C11298%2C7129',
+    ],
+
+
+    [
         'key'            => 'bromley1894',
         'group'          => 'basemap',
         'label'          => '1894 Bromley',
