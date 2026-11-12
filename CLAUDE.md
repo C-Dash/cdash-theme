@@ -132,8 +132,8 @@ it is dev-time only: nothing the browser loads is bundled or transpiled.
   `hx-select-oob` swaps run first — so logged in, it scrolled `#user-bar`, at
   the foot of the pane, into view, and every nav click opened at the bottom.
   Invisible when anonymous. **Back/Forward** take no swap spec at all:
-  `#showresult` keeps the old page's `scrollTop`, so a `historyRestore`
-  handler in `cdash-layout.js` resets it.
+  `#showresult` keeps the old page's `scrollTop`, so the scroll memory in
+  `cdash-layout.js` sets it on `historyRestore` (see *Still open* #8).
 - **Print has a frame, and the printed map is a copy.** The brief is in the
   local `notes/print_styles.md`. Every printed page carries a header,
   title left and URL right, each wrapping in its column, and a one-line footer. Both live in a real `<table>` inside
@@ -543,14 +543,28 @@ both.
      distinguishing. The bar sits in `#showresult`'s auto row — see the sticky
      footer comment in `_panes.scss` — so its height comes out of the browse
      pane.
-8. **Breadcrumb scroll depth — deferred, and not free.** "Return to …" returns
-   to the right page at the top, not to where the visitor was. htmx 2.0.4 keeps
-   no scroll positions in its history cache, and the swap spec forces
-   `scroll:#showresult:top` in two places — `layout.phtml` and the marker click
-   in `cdash-map.js`. Doing it means taking scrolling over entirely: both
-   modifiers go, positions are saved per URL, and top becomes a default rather
-   than a rule. That is why it was split off rather than shipped with the
-   breadcrumb.
+8. **Scroll depth on return — done.** Going forward opens at the top, as
+   before (`scroll:#showresult:top` in `layout.phtml` and the marker click).
+   Going *back* — Back/Forward, or "Return to …" — opens at the depth the
+   visitor left. It did not need scrolling taken over, as once assumed: the
+   scroll memory in `cdash-layout.js` saves `#showresult.scrollTop` per
+   `pageKey()` in `sessionStorage` (`cdash.scroll`), applies it on
+   `historyRestore`, and the breadcrumb link carries its own
+   `hx-swap="outerHTML"` (no scroll modifier) plus
+   `data-cdash-restore-scroll`, which the `afterSettle` handler looks for.
+   Recording pauses from `beforeRequest`/`popstate` until the next settle,
+   so the departing clamp and the swap's scroll-to-top are never saved
+   against the page being left. The position is re-applied as thumbnails
+   load, since the page is too short until they do.
+
+   Found on the way: the breadcrumb `render()` builds after a history restore
+   was never boosted — htmx had already processed the restored pane — so
+   clicking it reloaded the whole page and rebuilt the map. `render()` now
+   calls `htmx.process()` on the link.
+
+   Verified with headless Chrome over CDP: listing at 600 → card → Back (600)
+   → Forward (item's own 150) → breadcrumb (600) → nav link (0) → Back (600),
+   one `placemarkers` request throughout.
 9. **The backlog is in `notes/`, which is local only.** Prompts, wishes and
     brainstorming go there, one file per topic; settled decisions move into
     this file. The folder is **git-ignored** (`/notes/` in `.gitignore`), and

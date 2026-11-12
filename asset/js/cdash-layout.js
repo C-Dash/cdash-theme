@@ -455,6 +455,25 @@ document.addEventListener('alpine:init', () => {
 
 });
 
+// Which page a URL names, as one comparable string. Shared by the breadcrumb
+// and the scroll memory below.
+//
+// Comparing URLs directly does not work here, for two reasons that both bite.
+// show.phtml emits a PATH in data-place-url ("/s/cdash5/item/13333") while
+// what is stored is an absolute href, so string equality is false even for
+// the same page. And every URL in the browse pane carries the map hash, which
+// cdash-map.js rewrites continuously as the map moves -- so two hrefs for one
+// page rarely match either. Path and query identify the page; the hash is the
+// map's business, not the breadcrumb's.
+function pageKey(url) {
+  try {
+    const u = new URL(url, window.location.href);
+    return u.pathname + u.search;
+  } catch (err) {
+    return String(url);
+  }
+}
+
 // ---------------------------------------------------------------------------
 // "Return to ..." breadcrumb in the item header.
 //
@@ -496,24 +515,6 @@ document.addEventListener('alpine:init', () => {
       sessionStorage.setItem(RETURN_KEY, JSON.stringify(entry));
     } catch (err) {
       // No breadcrumb this session; everything else still works.
-    }
-  }
-
-  // Which page a URL names, as one comparable string.
-  //
-  // Comparing URLs directly does not work here, for two reasons that both bite.
-  // show.phtml emits a PATH in data-place-url ("/s/cdash5/item/13333") while
-  // what is stored is an absolute href, so string equality is false even for
-  // the same page. And every URL in the browse pane carries the map hash, which
-  // cdash-map.js rewrites continuously as the map moves -- so two hrefs for one
-  // page rarely match either. Path and query identify the page; the hash is the
-  // map's business, not the breadcrumb's.
-  function pageKey(url) {
-    try {
-      const u = new URL(url, window.location.href);
-      return u.pathname + u.search;
-    } catch (err) {
-      return String(url);
     }
   }
 
@@ -600,6 +601,10 @@ document.addEventListener('alpine:init', () => {
     link.className = 'cdash-breadcrumb';
     link.href = entry.url;
     link.textContent = 'Return to ' + entry.label;
+    // Returning means returning to where the visitor was, not to the top:
+    // no scroll modifier here, and the scroll memory below restores depth.
+    link.setAttribute('hx-swap', 'outerHTML');
+    link.dataset.cdashRestoreScroll = '';
 
     const lead = visit && !visit.hidden ? visit : null;
     if (lead) {
@@ -612,6 +617,10 @@ document.addEventListener('alpine:init', () => {
     } else {
       header.prepend(link);
     }
+    // Boost it. On a history restore htmx has already processed the restored
+    // pane by the time this runs, so an unprocessed link here would be a plain
+    // link -- a full reload that rebuilds the map.
+    if (window.htmx) htmx.process(link);
   }
 
   // Record the page being left, while it is still the page.
@@ -629,26 +638,140 @@ document.addEventListener('alpine:init', () => {
 })();
 
 // ---------------------------------------------------------------------------
-// Back and Forward land at the top of the browse pane, as every other
-// navigation does.
+// Scroll memory: going back returns to where the visitor was.
 //
-// A forward swap is told to, by `scroll:#showresult:top` in its swap spec
-// (layout.phtml, and the marker click in cdash-map.js). A history restore
-// takes no swap spec: htmx rewrites #showresult's innerHTML and leaves the
-// element -- and so its scrollTop -- as it was. The restored page then
-// inherits the offset of the page being left, and when it is the shorter of
-// the two the browser clamps that to its end: Back from the foot of a long
-// listing opened the site page at its bottom.
+// Going FORWARD opens at the top, told to by `scroll:#showresult:top` in the
+// swap spec (layout.phtml, and the marker click in cdash-map.js). Unchanged.
 //
-// Top, not the position the visitor left: htmx 2.0.4 keeps no per-pane
-// scroll in its history cache, and restoring depth is the deferred
-// "breadcrumb scroll depth" item in CLAUDE.md. When that lands, this is the
-// handler it replaces.
+// Going BACK -- the Back/Forward buttons, or the "Return to ..." breadcrumb --
+// opens at the depth the visitor left that page at. htmx 2.0.4 keeps no
+// scroll in its history cache, so it is kept here, per pageKey(), in
+// sessionStorage. A page with nothing saved opens at the top.
+//
+// A history restore takes no swap spec: htmx rewrites #showresult's innerHTML
+// and leaves its scrollTop as it was, so without this the restored page
+// inherited the departing page's offset (clamped to its end when shorter).
+//
+// Recording: currentKey names the page on screen and is null while a page is
+// being replaced -- from beforeRequest or popstate until the new page has
+// settled. The departing depth is taken exactly at that moment. Scroll events
+// are dispatched at the next frame, after that, so neither the clamp from
+// htmx's innerHTML rewrite nor the swap's own scroll to the top can be saved
+// under the page being left.
+//
+// Applying: the position is set at once, again a frame later, and again as
+// thumbnails load -- until they have their height the page is too short and
+// the browser clamps the position.
 // ---------------------------------------------------------------------------
-document.body.addEventListener('htmx:historyRestore', function () {
-  const pane = document.getElementById('showresult');
-  if (pane) pane.scrollTop = 0;
-});
+(function () {
+  const SCROLL_KEY = 'cdash.scroll';
+  const MAX_ENTRIES = 50;
+  const SETTLE_MS = 1500;
+
+  let positions = {};
+  try {
+    positions = JSON.parse(sessionStorage.getItem(SCROLL_KEY)) || {};
+  } catch (err) {
+    positions = {};
+  }
+  let currentKey = pageKey(window.location.href);
+  let pending = false;
+  let saveTimer = null;
+
+  const pane = () => document.getElementById('showresult');
+
+  function persist() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      try {
+        sessionStorage.setItem(SCROLL_KEY, JSON.stringify(positions));
+      } catch (err) {
+        // No scroll memory this session; navigation still works.
+      }
+    }, 250);
+  }
+
+  function remember(key, top) {
+    if (!key) return;
+    // Re-insert so key order is recency order and the oldest go first.
+    delete positions[key];
+    positions[key] = Math.round(top);
+    const keys = Object.keys(positions);
+    for (let i = 0; i < keys.length - MAX_ENTRIES; i++) delete positions[keys[i]];
+    persist();
+  }
+
+  // The page on screen is about to be replaced: take its depth now.
+  function leaving() {
+    const p = pane();
+    if (p && currentKey) remember(currentKey, p.scrollTop);
+    currentKey = null;
+  }
+
+  function restore() {
+    const p = pane();
+    if (!p) return;
+    const key = pageKey(window.location.href);
+    const top = positions[key] || 0;
+    const apply = () => { p.scrollTop = top; };
+    apply();
+    currentKey = key;
+    if (!top) return;
+    requestAnimationFrame(apply);
+    // Re-apply as images arrive, but stop as soon as the visitor scrolls --
+    // or after SETTLE_MS -- so nothing ever pulls the pane out from under them.
+    const imgs = [...p.querySelectorAll('img')].filter((img) => !img.complete);
+    if (!imgs.length) return;
+    const stop = () => {
+      imgs.forEach((img) => img.removeEventListener('load', apply));
+      p.removeEventListener('wheel', stop);
+      p.removeEventListener('touchstart', stop);
+      p.removeEventListener('keydown', stop);
+    };
+    imgs.forEach((img) => img.addEventListener('load', apply));
+    p.addEventListener('wheel', stop, { passive: true, once: true });
+    p.addEventListener('touchstart', stop, { passive: true, once: true });
+    p.addEventListener('keydown', stop, { once: true });
+    setTimeout(stop, SETTLE_MS);
+  }
+
+  // #showresult is part of the shell and never swapped, so one listener lasts
+  // the session.
+  const p = pane();
+  if (p) {
+    p.addEventListener('scroll', function () {
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(function () {
+        pending = false;
+        const el = pane();
+        if (el && currentKey) remember(currentKey, el.scrollTop);
+      });
+    }, { passive: true });
+  }
+
+  document.body.addEventListener('htmx:beforeRequest', leaving);
+  window.addEventListener('popstate', leaving);
+
+  document.body.addEventListener('htmx:historyRestore', restore);
+
+  // A request that fails never settles; the old page is still on screen.
+  ['htmx:responseError', 'htmx:sendError', 'htmx:timeout'].forEach(function (name) {
+    document.body.addEventListener(name, function () {
+      if (!currentKey) currentKey = pageKey(window.location.href);
+    });
+  });
+
+  document.body.addEventListener('htmx:afterSettle', function (evt) {
+    const cfg = evt.detail && evt.detail.requestConfig;
+    const src = cfg && cfg.elt;
+    if (src && src.matches && src.matches('[data-cdash-restore-scroll]')) {
+      restore();
+    } else {
+      currentKey = pageKey(window.location.href);
+    }
+  });
+})();
 
 // ---------------------------------------------------------------------------
 // The map hash is not an anchor: keep it out of htmx request paths.
