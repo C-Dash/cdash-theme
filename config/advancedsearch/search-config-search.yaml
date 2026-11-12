@@ -1,0 +1,130 @@
+# CDASH search page for the AdvancedSearch module (3.4.67), internal SQL engine.
+#
+# Import it on the page's edit screen: Admin > Search manager > (the page) >
+# Import. Import sets these settings only; the page's name, slug, engine and
+# sites are set on the page itself and are never imported:
+#   name "CDASH", slug "search", engine "Internal", form "Main",
+#   available on site cdash5 only.
+#
+# Started from the settings of the module's own "Default" page (slug "find"),
+# with the generic Dublin Core fields replaced by CDASH ones. Anything left out
+# is completed by the module's defaults on import, as a form save would.
+#
+# Facets are the properties CDASH items actually carry:
+#   Item type      resource template: CDASH Place / CDASH Document
+#   Place Type     cdash:placeType      (Places only)
+#   Document Type  dcterms:type         (Documents only)
+#   Neighborhood   cdash:Neighborhood   (both)
+#   Survey Area    cdash:chcDist        (both; "Research District" in the
+#                                        vocabulary, "Survey Area" in the theme)
+# Street Name is left out on purpose: only Places carry it, so choosing a
+# street would hide every Document.
+
+request:
+  default_results: default
+  default_query: ''
+  default_query_post: ''
+  hidden_query_filters: []
+  validate_form: false
+
+q:
+  label: Search
+  suggester: 1
+  suggest_fill_input: false
+  remove_diacritics: false
+  default_search_partial_word: false
+
+form:
+  button_submit: true
+  label_submit: Search
+  button_reset: false
+  label_reset: Reset
+  attribute_form: false
+  filters: {}
+
+results:
+  label_default: Search CDASH
+  label_results: Search results
+  label_no_results: No results
+  by_resource_type: false
+  breadcrumbs: false
+  search_filters: header
+  active_facets: none
+  total_results: header
+  search_form_simple: none
+  search_form_quick: none
+  paginator: header
+  per_page: header
+  sort: header
+  grid_list: header
+  grid_list_mode: auto
+  thumbnail_mode: default
+  thumbnail_type: medium
+  allow_html: false
+  pagination_per_page: 0
+  per_page_list:
+    '25': 'Results by 25'
+    '50': 'Results by 50'
+    '100': 'Results by 100'
+  label_sort: Sort
+  sort_list:
+    'cdash:streetSort asc': 'Street address'
+    'relevance desc': Relevance
+    'dcterms:title asc': Title
+    'dcterms:title desc': 'Title (z to a)'
+
+facet:
+  label: Refine
+  label_no_facets: 'No facets'
+  position: before
+  mode: button
+  list: available
+  display_active: true
+  label_active_facets: 'Active facets'
+  display_submit: above
+  label_submit: 'Apply facets'
+  display_reset: above
+  label_reset: 'Reset facets'
+  display_refine: true
+  label_refine: 'Refine search'
+  facets:
+    resource_template_id:
+      field: resource_template_id
+      label: 'Item type'
+      type: Checkbox
+      order: default
+      limit: 100
+      state: static
+      more: 10
+    'cdash:placeType':
+      field: 'cdash:placeType'
+      label: 'Place Type'
+      type: Checkbox
+      order: default
+      limit: 100
+      state: static
+      more: 10
+    'dcterms:type':
+      field: 'dcterms:type'
+      label: 'Document Type'
+      type: Checkbox
+      order: default
+      limit: 100
+      state: static
+      more: 10
+    'cdash:Neighborhood':
+      field: 'cdash:Neighborhood'
+      label: Neighborhood
+      type: Checkbox
+      order: default
+      limit: 100
+      state: static
+      more: 10
+    'cdash:chcDist':
+      field: 'cdash:chcDist'
+      label: 'Survey Area'
+      type: Checkbox
+      order: default
+      limit: 100
+      state: static
+      more: 10
