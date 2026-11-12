@@ -649,3 +649,30 @@ document.body.addEventListener('htmx:historyRestore', function () {
   const pane = document.getElementById('showresult');
   if (pane) pane.scrollTop = 0;
 });
+
+// ---------------------------------------------------------------------------
+// The map hash is not an anchor: keep it out of htmx request paths.
+//
+// A form with no action, or action="", submits to the page's own URL. htmx
+// fixes a boosted form's path when it processes the form, as
+// document.location.href -- and on any page that arrived by a swap, that URL
+// already carries the map hash (#zoom/lat/lng/layers, rewritten continuously
+// by cdash-map.js). htmx 2.0.4 then treats the hash as an anchor and, after
+// the swap, runs querySelector('#13.00/42.37/-71.10/...'): a SyntaxError,
+// thrown in the settle step, which also skips `scroll:#showresult:top`. So
+// re-sorting a listing threw and left the pane scrolled where it was; the
+// AdvancedSearch facets form (<form id="facets-form">) hit the same thing.
+//
+// htmx splits the anchor off *after* htmx:configRequest, so trimming the path
+// here is enough. Only a fragment shaped like the map hash (it contains "/")
+// is removed; a real #anchor in a link still scrolls. The map does not need
+// the hash in the request: the swap never touches it, and cdash-map.js keeps
+// writing it to the address bar.
+// ---------------------------------------------------------------------------
+document.body.addEventListener('htmx:configRequest', function (evt) {
+  const path = evt.detail.path;
+  const i = path.indexOf('#');
+  if (i >= 0 && path.indexOf('/', i) > i) {
+    evt.detail.path = path.slice(0, i);
+  }
+});
