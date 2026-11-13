@@ -459,7 +459,7 @@ document.addEventListener('alpine:init', () => {
 // and the scroll memory below.
 //
 // Comparing URLs directly does not work here, for two reasons that both bite.
-// show.phtml emits a PATH in data-place-url ("/s/cdash5/item/13333") while
+// The Place crumb's href is a PATH ("/s/cdash5/item/13333") while
 // what is stored is an absolute href, so string equality is false even for
 // the same page. And every URL in the browse pane carries the map hash, which
 // cdash-map.js rewrites continuously as the map moves -- so two hrefs for one
@@ -475,44 +475,58 @@ function pageKey(url) {
 }
 
 // ---------------------------------------------------------------------------
-// "Return to ..." breadcrumb in the item header.
+// Breadcrumbs in the sticky page header.
 //
-// Outside alpine:init on purpose: this is not an Alpine component, just a
-// listener pair, and it must run whether or not Alpine has booted.
+// Outside alpine:init on purpose: this is not an Alpine component, just a few
+// listeners, and it must run whether or not Alpine has booted.
 //
-// The server cannot render this. Omeka builds each page on its own, and
-// Referer is missing or stale on history navigation, so where the visitor came
-// from is only known in the browser. The line is inserted into the sticky
-// header, which was left with room above the title for it.
+// The crumb row above the title holds up to two links, answering different
+// questions:
 //
-// Every page that can be named is remembered, but what may be OFFERED depends
-// on the page doing the offering:
+//   Place: <title>      what this Document belongs to. A fact about the item,
+//                       server-rendered by cdash-page-header.phtml, so it holds
+//                       on a shared link and with JS off. Documents only.
+//   Return to: <...>    where the visitor came from. Session state, so only
+//                       known here, and inserted here.
 //
-//   on an item page      a listing or a Place -- never a Document
-//   on a listing page    any of them, a Document included
+// Each page offers a return only to certain kinds of page:
 //
-// The exclusion on item pages is deliberate. Documents never link to each
-// other, since every resource link in the data points at a Place, so the only
-// way a Document becomes "previous" there is Back from one Document to
-// another -- and "Return to Exterior View" is not something this should ever
-// say. A listing reached FROM a Document is different: "Return to <that
-// document>" is exactly the way back the visitor wants.
+//   on a Document        a Folder or Search Results
+//   on a Place           a Folder or Search Results
+//   on a Folder          a Place, a Document or Search Results
+//   on Search Results    a Place, a Document or a Folder
+//
+// The return target is the most recent page of an offered kind -- not simply
+// the previous page -- so a Document reached from a Folder by way of its Place
+// still says "Return to: <that folder>". A Document never offers its own Place
+// (the Place crumb already does), so the two links can never name one page.
+//
+// The server cannot render the return link. Omeka builds each page on its own,
+// and Referer is missing or stale on history navigation.
 // ---------------------------------------------------------------------------
 (function () {
-  const RETURN_KEY = 'cdash.returnTo';
+  const RECENT_KEY = 'cdash.recent';
+  const MAX_RECENT = 10;
 
-  function read() {
+  const OFFERS = {
+    document: ['folder', 'search'],
+    place: ['folder', 'search'],
+    folder: ['place', 'document', 'search'],
+    search: ['place', 'document', 'folder'],
+  };
+
+  function readRecent() {
     try {
-      const v = JSON.parse(sessionStorage.getItem(RETURN_KEY));
-      return v && v.url && v.label ? v : null;
+      const v = JSON.parse(sessionStorage.getItem(RECENT_KEY));
+      return Array.isArray(v) ? v.filter((e) => e && e.url && e.label && e.kind) : [];
     } catch (err) {
-      return null;
+      return [];
     }
   }
 
-  function write(entry) {
+  function writeRecent(list) {
     try {
-      sessionStorage.setItem(RETURN_KEY, JSON.stringify(entry));
+      sessionStorage.setItem(RECENT_KEY, JSON.stringify(list));
     } catch (err) {
       // No breadcrumb this session; everything else still works.
     }
@@ -525,94 +539,61 @@ function pageKey(url) {
     const path = window.location.pathname;
     const header = document.querySelector('.cdash-page-header');
     const title = header ? header.querySelector('h2') : null;
+    const name = title ? title.textContent.trim() : '';
 
-    // A folder is remembered by its own name -- "Return to Harvard Square
-    // Survey" says where that is; "Return to Folder Listing" does not.
+    // A folder is remembered by its own name -- "Return to: Harvard Square
+    // Survey" says where that is; "Return to: Folder Listing" does not.
     if (/\/item-set\/\d+/.test(path)) {
-      const name = title ? title.textContent.trim() : '';
-      return { url: window.location.href, label: name || 'Folder Listing', kind: 'listing' };
+      return { url: window.location.href, label: name || 'Folder Listing', kind: 'folder' };
     }
-    if (/\/item\/?$/.test(path)) {
-      return { url: window.location.href, label: 'Search Results', kind: 'listing' };
+    // /item is the theme's search results; /search is AdvancedSearch's page.
+    if (/\/(item|search)\/?$/.test(path)) {
+      return { url: window.location.href, label: 'Search Results', kind: 'search' };
     }
-    if (header) {
+    if (header && name) {
+      // The meta line already says which this is.
       const meta = header.querySelector('.cdash-page-meta');
-      if (!title) return null;
-      // The meta line already says which this is; no need to ask the server
-      // again or re-read the resource class here.
-      const isPlace = meta && /^\s*Place\b/.test(meta.textContent);
-      return {
-        url: window.location.href,
-        label: title.textContent.trim(),
-        kind: isPlace ? 'place' : 'document',
-      };
+      const kind = meta && /^\s*Place\b/.test(meta.textContent) ? 'place'
+        : meta && /^\s*Document\b/.test(meta.textContent) ? 'document'
+        : null;
+      if (kind) return { url: window.location.href, label: name, kind: kind };
     }
     return null;
   }
 
-  // Which return targets this page may offer. An item page will not offer a
-  // Document; a listing will offer anything.
-  function allows(page, entry) {
-    // Entries written before kinds existed were only ever listings or Places,
-    // both of which are allowed everywhere.
-    const kind = entry.kind || 'listing';
-    if (page && page.kind === 'listing') return true;
-    return kind !== 'document';
-  }
-
-  // The crumb row holds up to two links, answering different questions:
-  //
-  //   Visit <Place>       where this Document belongs. Server-rendered in
-  //                       show.phtml, so it survives a shared link and JS off.
-  //   Return to <...>     where the visitor came from. Only known here.
-  //
-  // Both, in that order, separated by a diamond. Never two links to the same
-  // Place: when the return entry names the Place the Visit link points at, the
-  // Visit link goes -- "Return to" is the better of the two words there, and
-  // the server cannot make that call, having no idea where anyone has been.
   function render() {
-    const stale = document.querySelectorAll('.cdash-breadcrumb, .cdash-crumb-sep');
-    stale.forEach((el) => el.remove());
+    document.querySelectorAll('.cdash-breadcrumb, .cdash-crumb-sep')
+      .forEach((el) => el.remove());
 
-    const page = currentPage();
-    // The crumb goes in the sticky header, which the item page and both
-    // listings render. Anything else -- a site page, the home page -- has none
-    // and gets no crumb.
+    // The crumbs go in the sticky header, which the item page and both
+    // listings render. A site page or the home page has none and gets none.
     const header = document.querySelector('.cdash-page-header');
-    if (!header) return;
+    const page = currentPage();
+    if (!header || !page) return;
 
-    const visit = header.querySelector('.cdash-visit-place');
-    const entry = read();
+    const offers = OFFERS[page.kind] || [];
     const here = pageKey(window.location.href);
-    // Never offer a return to the page already being shown, and never offer a
-    // kind this page will not have.
-    const useEntry = entry && pageKey(entry.url) !== here && allows(page, entry);
-
-    // Hidden, not removed. htmx caches the pane's HTML for Back and Forward,
-    // and a snapshot taken after a removal would be missing the link for good
-    // -- it is server-rendered, so nothing here could put it back.
-    if (visit) {
-      visit.hidden = !!(useEntry && pageKey(visit.dataset.placeUrl) === pageKey(entry.url));
-    }
-
-    if (!useEntry) return;
+    const place = header.querySelector('.cdash-crumb-place');
+    const placeKey = place ? pageKey(place.getAttribute('href')) : null;
+    const entry = readRecent().find((e) =>
+      offers.includes(e.kind) && pageKey(e.url) !== here && pageKey(e.url) !== placeKey);
+    if (!entry) return;
 
     const link = document.createElement('a');
     link.className = 'cdash-breadcrumb';
     link.href = entry.url;
-    link.textContent = 'Return to ' + entry.label;
+    link.textContent = 'Return to: ' + entry.label;
     // Returning means returning to where the visitor was, not to the top:
     // no scroll modifier here, and the scroll memory below restores depth.
     link.setAttribute('hx-swap', 'outerHTML');
     link.dataset.cdashRestoreScroll = '';
 
-    const lead = visit && !visit.hidden ? visit : null;
-    if (lead) {
+    if (place) {
       const sep = document.createElement('span');
       sep.className = 'cdash-crumb-sep';
       sep.setAttribute('aria-hidden', 'true');
       sep.textContent = '◆';
-      lead.after(sep);
+      place.after(sep);
       sep.after(link);
     } else {
       header.prepend(link);
@@ -623,10 +604,15 @@ function pageKey(url) {
     if (window.htmx) htmx.process(link);
   }
 
-  // Record the page being left, while it is still the page.
+  // Record the page being left, while it is still the page. Most recent
+  // first, one entry per page.
   document.body.addEventListener('htmx:beforeRequest', function () {
     const page = currentPage();
-    if (page) write(page);
+    if (!page) return;
+    const key = pageKey(page.url);
+    const list = readRecent().filter((e) => pageKey(e.url) !== key);
+    list.unshift(page);
+    writeRecent(list.slice(0, MAX_RECENT));
   });
 
   // afterSwap covers forward navigation; historyRestore covers Back and

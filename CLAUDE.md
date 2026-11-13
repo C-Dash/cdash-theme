@@ -145,18 +145,29 @@ one responsive lever and one rule about where state lives.
   paper with it. Every pixel of it is page that cannot be scrolled to, hence
   the tight type, and why pagination and the filter chips stay out of it.
 - **Two links above the title, from different places on purpose.**
-  `Visit [Place]` is a fact about the item (`cdash:placeItem`), so
-  `show.phtml` renders it — correct on a shared link and with JS off.
-  `Return to …` is session state, so `cdash-layout.js` inserts it. JS hides the
-  first when both would name the same Place; it *hides* rather than removes,
-  because htmx caches the pane for Back/Forward and a snapshot taken after a
-  removal would lose a server-rendered element for good.
-- **What the breadcrumb may offer depends on the page offering it**: an item
-  page will not offer a Document (only Back between two Documents could put one
-  there, and "Return to Exterior View" is noise), while a listing will. URLs are
-  compared through `pageKey()`, path and query only — every URL here carries the
-  map hash, which `cdash-map.js` rewrites continuously, so raw string equality
-  silently never matches.
+  `Place: [title]`, on Documents only, is a fact about the item
+  (`cdash:placeItem`), so `show.phtml` passes it to the page header — correct
+  on a shared link and with JS off. JS never touches it.
+  `Return to: […]` is session state, so `cdash-layout.js` inserts it. (This
+  replaced "Visit [Place]", which JS used to *hide* when the return link named
+  the same Place — fragile against htmx's history snapshots.)
+- **What "Return to:" may offer depends on the page offering it**, as a table,
+  `OFFERS` in `cdash-layout.js`:
+
+  | on | offers |
+  |---|---|
+  | Document | Folder, Search Results |
+  | Place | Folder, Search Results |
+  | Folder | Place, Document, Search Results |
+  | Search Results | Place, Document, Folder |
+
+  The target is the *most recent* page of an offered kind, from a short list
+  (`cdash.recent` in `sessionStorage`), not merely the previous page — so a
+  Document reached Folder → Place → Document still returns to the Folder, and a
+  Document can never be offered its own Place twice. URLs are compared through
+  `pageKey()`, path and query only — every URL here carries the map hash, which
+  `cdash-map.js` rewrites continuously, so raw string equality silently never
+  matches.
 - **The card grid is one card.** `view/common/cdash-card.phtml` renders both
   grids; `_cards.scss` holds the mixins both stylesheets include. Neither grid
   renders `ul.resource-list`: inherited rules for that class out-specify any
