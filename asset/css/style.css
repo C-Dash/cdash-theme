@@ -916,14 +916,10 @@ ul.resource-list > li > A > img {
 }
 
 #content .cdash-page-header > .cdash-breadcrumb,
-#content .cdash-page-header > .cdash-visit-place {
+#content .cdash-page-header > .cdash-crumb-place {
   display: inline;
   font-size: 11.25px;
   border-bottom: 0;
-}
-
-#content .cdash-page-header > .cdash-visit-place[hidden] {
-  display: none;
 }
 
 .cdash-crumb-sep {

@@ -84,7 +84,8 @@ $itemFooter = [
 /**
  * The Place a Document belongs to, as a link up to it.
  *
- * Server-rendered, unlike the "Return to ..." breadcrumb beside it, because
+ * Rendered as "Place: <title>" by the page header. Server-rendered, unlike
+ * the "Return to: ..." breadcrumb beside it, because
  * the two answer different questions from different sources: where this
  * Document belongs is a fact about the item, while where the visitor came from
  * is session state only the browser knows. Stating the fact here means it
@@ -92,9 +93,8 @@ $itemFooter = [
  * it covers the case the breadcrumb alone misses, a Document reached by
  * clicking a map marker, which otherwise offers no way up at all.
  *
- * cdash-layout.js removes this link when the return breadcrumb already points
- * at the same Place, so the row never reads "Visit X - Return to X". That
- * comparison needs the stored return URL, which is why it is not done here.
+ * A Document's return breadcrumb only ever names a Folder or Search Results,
+ * so it can never duplicate this link, and JS never touches it.
  */
 $placeLink = null;
 if ($isDocument) {
@@ -174,7 +174,7 @@ echo $this->partial('common/cdash-page-header', [
     'title' => $item->displayTitle(null, $valueLang),
     'kind' => $classLabel,
     'detail' => $classLabel !== '' ? $itemMeta : '',
-    'visit' => $placeLink,
+    'place' => $placeLink,
 ]);
 ?>
 <?php if ($isDocument): ?>

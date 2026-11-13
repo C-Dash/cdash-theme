@@ -944,24 +944,17 @@ order: 0;
     padding: 10px 30px base.$spacing-s 10px;
 }
 
-// The crumb row above the title: "Visit <Place>" from the partial, and
-// "Return to ..." inserted by cdash-layout.js. Small and quiet -- these are
+// The crumb row above the title: "Place: <title>" from the partial, and
+// "Return to: ..." inserted by cdash-layout.js. Small and quiet -- these are
 // ways out of the page, not part of its identity.
 //
 // inline, so the two sit on one line with the diamond between them, and the
 // row wraps rather than overflowing when a Place title is long.
 #content .cdash-page-header > .cdash-breadcrumb,
-#content .cdash-page-header > .cdash-visit-place {
+#content .cdash-page-header > .cdash-crumb-place {
     display: inline;
     font-size: .75 * base.$base-font-size;
     border-bottom: 0;
-}
-
-// Explicit, because the display above would otherwise beat the UA's [hidden].
-// cdash-layout.js hides this one rather than removing it when the return link
-// already names the same Place.
-#content .cdash-page-header > .cdash-visit-place[hidden] {
-    display: none;
 }
 
 .cdash-crumb-sep {
