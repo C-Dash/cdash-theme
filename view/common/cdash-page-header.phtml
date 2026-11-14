@@ -17,7 +17,8 @@
  *
  * The crumb row sits above the title: "Place: <title>" below, on Documents
  * only, and the "Return to: ..." breadcrumb that cdash-layout.js inserts
- * beside it. JS never alters this link; it only decides whether to add its own.
+ * beside it. JS never changes where this link goes or what it says; it only
+ * makes it restore scroll depth when the visitor came from that Place.
  */
 $escape = $this->plugin('escapeHtml');
 $translate = $this->plugin('translate');

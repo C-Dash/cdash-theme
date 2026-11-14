@@ -507,6 +507,12 @@ function pageKey(url) {
 (function () {
   const RECENT_KEY = 'cdash.recent';
   const MAX_RECENT = 10;
+  // Which page each page was reached from, by pageKey. Kept apart from the
+  // recent list because Back and Forward do not add to that list, while the
+  // page a Document was reached from is still true when Back returns to it.
+  const REFERRER_KEY = 'cdash.referrer';
+  const MAX_REFERRERS = 50;
+  let leavingKey = null;
 
   const OFFERS = {
     document: ['folder', 'search'],
@@ -529,6 +535,29 @@ function pageKey(url) {
       sessionStorage.setItem(RECENT_KEY, JSON.stringify(list));
     } catch (err) {
       // No breadcrumb this session; everything else still works.
+    }
+  }
+
+  function readReferrers() {
+    try {
+      const v = JSON.parse(sessionStorage.getItem(REFERRER_KEY));
+      return v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+    } catch (err) {
+      return {};
+    }
+  }
+
+  function writeReferrer(page, from) {
+    const map = readReferrers();
+    // Re-insert so key order is recency order and the oldest go first.
+    delete map[page];
+    map[page] = from;
+    const keys = Object.keys(map);
+    for (let i = 0; i < keys.length - MAX_REFERRERS; i++) delete map[keys[i]];
+    try {
+      sessionStorage.setItem(REFERRER_KEY, JSON.stringify(map));
+    } catch (err) {
+      // The Place crumb just opens at the top; nothing else depends on this.
     }
   }
 
@@ -575,6 +604,23 @@ function pageKey(url) {
     const here = pageKey(window.location.href);
     const place = header.querySelector('.cdash-crumb-place');
     const placeKey = place ? pageKey(place.getAttribute('href')) : null;
+
+    // The Place crumb always names the Document's Place. When the visitor
+    // came here FROM that Place, following it is going back, so it behaves
+    // like "Return to": no scroll to the top, and the scroll memory restores
+    // the depth they left the Place at. Otherwise it is an ordinary link and
+    // opens the Place at the top. Set or cleared on every render, because
+    // htmx snapshots the pane with whatever attributes it has.
+    if (place) {
+      if (placeKey === readReferrers()[here]) {
+        place.setAttribute('hx-swap', 'outerHTML');
+        place.dataset.cdashRestoreScroll = '';
+      } else {
+        place.removeAttribute('hx-swap');
+        delete place.dataset.cdashRestoreScroll;
+      }
+    }
+
     const entry = readRecent().find((e) =>
       offers.includes(e.kind) && pageKey(e.url) !== here && pageKey(e.url) !== placeKey);
     if (!entry) return;
@@ -607,6 +653,7 @@ function pageKey(url) {
   // Record the page being left, while it is still the page. Most recent
   // first, one entry per page.
   document.body.addEventListener('htmx:beforeRequest', function () {
+    leavingKey = pageKey(window.location.href);
     const page = currentPage();
     if (!page) return;
     const key = pageKey(page.url);
@@ -618,7 +665,13 @@ function pageKey(url) {
   // afterSwap covers forward navigation; historyRestore covers Back and
   // Forward, which do NOT fire afterSwap -- the recurring hazard in this
   // theme, where everything that once happened per page now happens per swap.
-  document.body.addEventListener('htmx:afterSwap', render);
+  document.body.addEventListener('htmx:afterSwap', function () {
+    // Note where this page was reached from -- before render(), which reads it.
+    const here = pageKey(window.location.href);
+    if (leavingKey && leavingKey !== here) writeReferrer(here, leavingKey);
+    leavingKey = null;
+    render();
+  });
   document.body.addEventListener('htmx:historyRestore', render);
   render();
 })();
