@@ -147,7 +147,10 @@ one responsive lever and one rule about where state lives.
 - **Two links above the title, from different places on purpose.**
   `Place: [title]`, on Documents only, is a fact about the item
   (`cdash:placeItem`), so `show.phtml` passes it to the page header — correct
-  on a shared link and with JS off. JS never touches it.
+  on a shared link and with JS off. JS changes only its scrolling: when the
+  Document was reached *from* that Place (`cdash.referrer`, per page, so it
+  survives Back), the link restores the Place's depth like "Return to:";
+  otherwise it opens the Place at the top.
   `Return to: […]` is session state, so `cdash-layout.js` inserts it. (This
   replaced "Visit [Place]", which JS used to *hide* when the return link named
   the same Place — fragile against htmx's history snapshots.)

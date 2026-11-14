@@ -94,7 +94,8 @@ $itemFooter = [
  * clicking a map marker, which otherwise offers no way up at all.
  *
  * A Document's return breadcrumb only ever names a Folder or Search Results,
- * so it can never duplicate this link, and JS never touches it.
+ * so it can never duplicate this link. cdash-layout.js only changes how it
+ * scrolls: reached from this Place, following it restores the Place's depth.
  */
 $placeLink = null;
 if ($isDocument) {
