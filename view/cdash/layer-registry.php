@@ -71,8 +71,8 @@ return [
         'label'     => 'All CDASH locations',
         'type'      => 'markerCluster',
         'defaultOn' => true,
-        // Markers are fetched from asset/php/placemarkers.php and clustered; see
-        // queryMarkers() in cdash-map-5.phtml. No url field -- the factory wires
+        // Markers are fetched from asset/php/places-geojson.php and clustered; see
+        // queryMarkers() in asset/js/cdash-map.js. No url field -- the factory wires
         // this one up specially.
     ],
     [

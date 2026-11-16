@@ -31,8 +31,10 @@ $cdashMapConfig = [
     // renaming a site silently pointed its markers at a different one.
     'siteUrl' => $this->currentSite()->url(),
 
-    // The marker feed. Queried once per session, not once per click.
-    'markersUrl' => $this->assetUrl('php/placemarkers.php'),
+    // The marker feed, GeoJSON. Queried once per session, not once per click.
+    // The slug scopes it to this site's item pool.
+    'markersUrl' => $this->assetUrl('php/places-geojson.php'),
+    'siteSlug' => $this->currentSite()->slug(),
 
     'icons' => [
         'featured'        => $this->assetUrl('img/redcircle.png'),

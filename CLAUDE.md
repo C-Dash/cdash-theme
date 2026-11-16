@@ -37,7 +37,7 @@ pre-upgrade backup and baselines are in
   SRID 0, **x = longitude, y = latitude**. Read `ST_Y(geography) AS lat,
   ST_X(geography) AS lng`; write `POINT(lng, lat)`. Filter on
   `ST_GeometryType(geography) = 'POINT'`, since 2.x also stores polygons and
-  lines. `placemarkers.php`, `geosync.php` and `geoaudit.php` do all of this.
+  lines. `places-geojson.php`, `geosync.php` and `geoaudit.php` do all of this.
 - **API.** `mapping_markers` is now `mapping_features`. In item JSON-LD,
   `o-module-mapping:marker[].lat/lng` became `o-module-mapping:feature[]`
   with `geography-type` and `geography-coordinates` — **`[lng, lat]`**, the
@@ -80,7 +80,49 @@ the browse pane's `#content`; the map, its 23 layers and its ~2000 clustered
 markers survive untouched.
 
 Verified by access log, not by inspection: 19 navigations produce exactly one
-`placemarkers.php` POST.
+marker-feed request (`placemarkers.php` POST on `main`; `places-geojson.php` GET
+on this branch -- see *The Places feed*).
+
+## The Places feed
+
+On this branch the map's markers come from `asset/php/places-geojson.php`,
+which replaced `placemarkers.php` (2026-11-16, phase 1 of the geography plan
+in `~/.claude/plans/would-it-be-easy-effervescent-castle.md`). It is also a
+**public** feed for GIS tools and other sites, so its format is a contract:
+add properties, never rename or remove them.
+
+- **Format.** An RFC 7946 FeatureCollection, `application/geo+json`. One
+  Point per public CDASH Place, `id` = item ID, coordinates **`[lng, lat]`**
+  to 6 decimals. Properties: `title`, `placetype` (same names as the old
+  feed), plus `url`, the absolute item URL. Top-level `metadata`:
+  `attribution` ("Cambridge Historical Commission, Digital Architectural
+  Survey"), `generated`, `count`. **The licence is undecided** — add
+  `license` to `metadata` once chosen.
+- **Scope.** Public, in the site's item pool (`item_site`) — which the old
+  feed did not check — and Point features only. One feature per Place even if
+  it has two points or two placeType values.
+- **Parameters**, all optional: `site=<slug>` (default: the site using this
+  theme folder; the theme always passes its own), `ids=1,2,3`,
+  `placetype=<text>`, `bbox=w,s,e,n`. They narrow the feed, never Omeka's
+  search results. Bad input is a 400 with a JSON `error`.
+- **HTTP.** GET/HEAD only (POST is 405). `Access-Control-Allow-Origin: *`.
+  `ETag` is an md5 of the features (not of `generated`), so an unchanged
+  feed answers 304; `Cache-Control: public, max-age=300`. Hashing the body
+  rather than using `resource.modified` is deliberate: `geosync.php` moves
+  points without touching `modified`.
+- **URL is provisional** — it sits under the theme folder, renamed on a version
+  bump. A stable route comes with the planned CDASH module; nothing in the
+  format changes then.
+- **In `cdash-map.js`**, `queryMarkers()` fetches it once and `pushMarkers()`
+  builds markers through `L.geoJSON`, filling `cdashMarkersById` (item ID as a
+  string → marker). That index is private to the file — the whole of
+  `cdash-map.js` runs inside `$(document).ready` — and is what phase 3, the
+  map following search results, will dim and restore markers through.
+  `marker.item_url` is still built from the theme's `siteUrl`, not the feed's
+  `url`, which is derived from the request's Host header.
+- **`main` still uses `placemarkers.php`**, against Mapping 1.x's
+  `mapping_marker`. This file cannot go to `main` until the Mapping upgrade
+  ships.
 
 ## How it fits together
 
@@ -331,7 +373,7 @@ The map's health is measurable, so measure it:
 
 ```bash
 # hard reload, click ten markers, then (container per *Dev instances*):
-docker logs cdash-dev-docker-omeka-1 --since 5m 2>&1 | grep -c placemarkers
+docker logs cdash-dev-docker-omeka-1 --since 5m 2>&1 | grep -cE "placemarkers|places-geojson"
 # 1 = correct. ~10 = the map is being rebuilt; the swap is broken.
 ```
 

@@ -6,7 +6,7 @@
  * `overlayMaps` object the map code has always used, just no longer hand-written.
  *
  * The one layer this file does not build is 'markerCluster' (allMarkers). Its
- * contents come from an async query against placemarkers.php, so cdash-map-5.phtml
+ * contents come from an async fetch of places-geojson.php, so cdash-map.js
  * constructs it and passes it in as a prebuilt layer.
  */
 

@@ -58,7 +58,7 @@ const CDASH_LAYERS = CDASH_CONFIG.layers;
 const CDASH_SITE_URL = CDASH_CONFIG.siteUrl;
 
 // The marker cluster is the one layer the factory cannot build by itself: its
-// contents arrive asynchronously from placemarkers.php, so it is constructed
+// contents arrive asynchronously from places-geojson.php, so it is constructed
 // here and handed to the factory below as a prebuilt layer.
   let allMarkers = L.markerClusterGroup({
     showCoverageOnHover: false,
@@ -960,41 +960,31 @@ document.body.addEventListener('htmx:historyRestore', function (evt) {
 });
 
 
-//This function uses a call to a php script that queries omeka's mysql database.
-//The result is a list of all of the CDASH Location items with their titles, 
-//coordinates and Item ID.  Maybe this should be done through the Omeka API or 
-//Doctrine or something.  
+// The marker feed: asset/php/places-geojson.php, a GeoJSON FeatureCollection
+// of every public Place in this site's item pool. Fetched once per session --
+// the map is never rebuilt, so neither is this. The feed is public and its
+// format a contract; see the header of places-geojson.php.
+//
+// Every Place marker, by item ID. Built once, with the markers; phase 3 of the
+// geography plan (the map following search results) dims and restores markers
+// through it rather than searching the cluster group.
+var cdashMarkersById = new Map();
+
 function queryMarkers(markerGroup) {
-  $.ajax({
-         url : CDASH_CONFIG.markersUrl,
-         type: "POST",
-         dataType: 'json',
-         //data: form.serialize(),
-        success:function(response) {
-        if(response.success == true ) {
-            console.log("Query succeeded.  SQL: " + response.sql + "<br> Searchterm: " + response.searchterm );
-            //printTable(response.resp)
-
-            pushMarkers(response.resp, markerGroup);
-            return (response.resp);
-          } 
-        //if(response.success == false ) {
-        //    msg.html("Query failed with:");
-        //   }
-        if(response.error == true ) {
-            console.log("Query failed SQL:" + response.sql + "<br> Searchterm: " + response.searchterm );
-          }else{console.log("No apparent error with markerquery: " + this.url);};
-        
-        }, //Ajax options
-
-        error:function(xhr,textStatus,errorThrown){
-            var str = "ERROR : SERVER error " + xhr + " " + 
-                       textStatus + " " + errorThrown ;
-             console.log(str);
-             //console.log("Help im a rock");
-          } // error callback function block
-        }); // ajax call ends
-} //closes querymarkers function
+  var url = new URL(CDASH_CONFIG.markersUrl, window.location.href);
+  url.searchParams.set('site', CDASH_CONFIG.siteSlug);
+  fetch(url, { headers: { Accept: 'application/geo+json' } })
+    .then(function (response) {
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+      return response.json();
+    })
+    .then(function (collection) {
+      pushMarkers(collection, markerGroup);
+    })
+    .catch(function (err) {
+      console.error('CDASH: the Place markers could not be loaded from ' + url + ': ' + err.message);
+    });
+}
 
 
 var sepiaBalloon = L.icon({
@@ -1010,31 +1000,32 @@ var sepiaBalloon_halo_y = L.icon({
 });
 
 
-// Takes the result from the SQL query and makes a marker for each.
-function pushMarkers(json_response, markerGroup){
-  var cambMarkerList = [];
-  for (i = 0; i < json_response.length; i++) {
-    var row = json_response[i];
-    var title = row['title'] ;
-    var item_id =  row['item_id'];
-    var marker = L.marker(L.latLng(row['lat'], row['lng']), { title: title });
-    marker.id = row['item_id'];
-    marker.item_url = CDASH_SITE_URL + "/item/" + item_id;
-    marker.title = row['title'];
-    marker.setIcon(sepiaBalloon);
-    if (row['placetype'] != "Address") {
-      marker.setIcon(sepiaBalloon_halo_y);
+// One marker per feature, through L.geoJSON so the coordinate order is
+// GeoJSON's own concern ([lng, lat]) and not re-implemented here.
+//
+// marker.id and marker.item_url are what onMarkerClick and the rest of this
+// file read. item_url is built from CDASH_SITE_URL, as before, rather than the
+// feed's absolute `url`: the site's own URL is right even behind a proxy that
+// the feed's Host-derived one might not see through.
+function pushMarkers(collection, markerGroup) {
+  var markers = L.geoJSON(collection, {
+    pointToLayer: function (feature, latlng) {
+      var props = feature.properties || {};
+      var marker = L.marker(latlng, {
+        title: props.title,
+        icon: props.placetype !== 'Address' ? sepiaBalloon_halo_y : sepiaBalloon
+      });
+      marker.id = String(feature.id);
+      marker.item_url = CDASH_SITE_URL + '/item/' + feature.id;
+      marker.title = props.title;
+      marker.on('click', onMarkerClick);
+      cdashMarkersById.set(marker.id, marker);
+      return marker;
     }
-    //marker.setZIndexOffset(1000);
+  }).getLayers();
 
-  // 'click' the new marker to call onMarkerClick function (Loads page )
-    marker.on('click', onMarkerClick);
-    cambMarkerList.push(marker);
-  }
-    //console.log('start clustering: ' + window.performance.now());
-    markerGroup.addLayers(cambMarkerList);
-    console.log('pushed cambridge markers')
-} // closes pushmarkers function
+  markerGroup.addLayers(markers);
+}
 
 
 
