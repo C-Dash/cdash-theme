@@ -2568,5 +2568,122 @@ html, body {
     max-width: none;
   }
 }
+.cdash-facets-loading,
+.cdash-facets-none {
+  color: var(--cdash-darkgray);
+  font-style: italic;
+}
+
+.cdash-facets-heading {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.cdash-facets-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  margin: 0.5rem 0;
+}
+
+.cdash-facets-apply {
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
+
+.cdash-facet {
+  margin: 0.5rem 0;
+}
+
+.cdash-facet-label {
+  display: block;
+  font-weight: bold;
+}
+
+summary.cdash-facet-label {
+  display: list-item;
+  cursor: pointer;
+}
+
+.cdash-facet input[type=text] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cdash-facet-values {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0 0 0 0.25rem;
+}
+
+.cdash-facet-values li {
+  display: flex;
+  align-items: baseline;
+  gap: 0.4rem;
+  margin: 0.15rem 0;
+}
+
+.cdash-facet-values label {
+  cursor: pointer;
+}
+
+.cdash-facet-count {
+  color: var(--cdash-darkgray);
+  font-size: 0.85em;
+}
+
+.cdash-search-controls {
+  margin: 0.5rem 0 1rem;
+}
+
+.cdash-search-controls .search-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0 0 0.5rem;
+  padding: 0;
+}
+
+.cdash-search-controls .search-filters .filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--cdash-divider);
+  border-radius: 1rem;
+  background: var(--cdash-page);
+}
+
+.cdash-search-controls .filter-label {
+  color: var(--cdash-darkgray);
+}
+
+.cdash-search-controls .filter-label::after {
+  content: ":";
+}
+
+.cdash-search-controls .filter-remove {
+  border-bottom: 0;
+  text-decoration: none;
+}
+
+.cdash-search-selects {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+}
+
+.cdash-search-selects .search-sort,
+.cdash-search-selects .search-pagination-per-page {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.cdash-search-noresults {
+  font-style: italic;
+}
 
 /*# sourceMappingURL=style.css.map */

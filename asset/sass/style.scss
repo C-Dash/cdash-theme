@@ -42,3 +42,6 @@
 // The card grid: search results, folder contents and the Linked Resources
 // block, which all render the same cards from view/common/cdash-card.phtml.
 @use "resource-list";
+
+// The AdvancedSearch results page and the facets in the Filters drawer.
+@use "search";

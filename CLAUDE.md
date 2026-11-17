@@ -124,6 +124,58 @@ add properties, never rename or remove them.
   `mapping_marker`. This file cannot go to `main` until the Mapping upgrade
   ships.
 
+## The search page and the Filters drawer
+
+On this branch, search is AdvancedSearch's page (slug `search`, config
+imported from `config/advancedsearch/search-config-search.yaml`), rendered by
+the theme's own `view/search/*.phtml` (phase 2 of the geography plan,
+2026-11-16). The banner box submits `q=` to it; the Filters drawer holds its
+facets. Without the module or that route, `layout.phtml` falls back to the
+old forms (banner: Places by Place Item, sorted by street; drawer: Omeka's
+advanced-search form).
+
+- **The facets live in `#content` and are shown in the drawer.**
+  `search.phtml` renders them into `<template id="cdash-facets-source">`;
+  `cdash-layout.js` copies that into `#cdash-facets` on every swap and every
+  `historyRestore`. That is the point: the drawer is outside `#content` and
+  outside htmx's history cache (`#showresult`), so only a copy taken from the
+  restored page can keep it right on Back/Forward. A page without the template
+  leaves the drawer alone — it keeps the last search's facets, as the map will
+  keep the last search's markers. A full load of a non-search page fetches the
+  whole collection's facets from the drawer's `data-src` (one request per full
+  load, never per swap).
+- **Nothing depends on the module's `search.js`**, and no template registers
+  it or `search.css` (a swap never brings `<head>`). `search.js` binds to
+  `#search-facets` once at load and navigates with `window.location` — a full
+  reload that rebuilds the map. So the facets are a plain GET form with an
+  explicit `action` (from the drawer the current page may be an item), the
+  filter chips and "Clear filters" are plain links, and the sort/per-page
+  selects — whose options carry `data-url` — are followed by a delegated
+  `change` handler in `cdash-layout.js` through `htmx.ajax`. Its `source` is
+  the controls block, **not the select**: htmx adds a source element's own
+  name/value to the request, which sent `sort=` twice.
+- **Active facet values**: `getFacetCounts()` has no active flag;
+  `getActiveFacets()` is `[name => [values]]` (or `from`/`to` for ranges).
+- **Facet value labels** go through `view/search/cdash-facet-value-label.phtml`,
+  in the drawer and in print alike. Item type shows "Place" / "Document"; the
+  submitted value stays the template name, "CDASH Place", which the module
+  filters on.
+- **No empty fields in search URLs.** A `configRequest` handler in
+  `cdash-layout.js` drops empty parameters from GET requests made by
+  `#search-form` and `.cdash-facets-form` — otherwise an untouched refine box
+  put `refine=` in every address.
+- **Results are CDASH cards** (`results.phtml` → `common/cdash-card`, with the
+  parent Place's title as prefix, as on the browse page). The page header is
+  `common/cdash-page-header`, so the breadcrumb treats `/search` as Search
+  Results.
+- **Print**: no cards (as for `/item` results); the query chips, plus a
+  print-only list of the ticked facets, since the drawer does not print.
+  Selects, pagination and chip remove buttons are hidden.
+- **AdvancedSearch's `map_display` stays off** — it loads Mapping 1.x asset
+  paths that 404 under 2.x, and would build a second map.
+- **Phase 3** (dim markers outside the results) will need every matching ID,
+  not one page: `$response->getAllResourceIds('items')` gives them.
+
 ## How it fits together
 
 | file | role |

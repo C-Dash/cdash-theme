@@ -1,0 +1,48 @@
+<?php
+/**
+ * CDASH search results as cards. Overrides the module's
+ * view/search/results.phtml.
+ *
+ * The same card as the theme's browse page and the Linked Resources block --
+ * common/cdash-card.phtml -- and, like the browse page, each card is prefixed
+ * with its parent Place's title, since search results mix Documents from many
+ * Places. See view/omeka/site/item/browse.phtml for why this is a
+ * .cdash-card-grid and not ul.resource-list.
+ *
+ * @var \Omeka\Api\Representation\SiteRepresentation|null $site
+ * @var \AdvancedSearch\Response $response
+ * @var string|null $resourceType
+ */
+
+// When the page is past the end, the resources may be empty despite a total.
+$resources = $response->getResources($resourceType);
+if (!$resources) {
+    return;
+}
+
+$translate = $this->plugin('translate');
+$filterLocale = (bool) $this->siteSetting('filter_locale_values');
+$valueLang = $filterLocale ? [$this->lang(), ''] : null;
+$bodyTerm = $this->siteSetting('browse_body_property_term');
+?>
+<div class="cdash-card-grid">
+<?php foreach ($resources as $resource):
+    // Only items become cards; the CDASH search page searches items alone.
+    if (!$resource instanceof \Omeka\Api\Representation\ItemRepresentation) {
+        continue;
+    }
+    $body = $bodyTerm
+        ? $resource->value($bodyTerm, ['lang' => $valueLang])
+        : $resource->displayDescription(null, $valueLang);
+    $placeValue = $resource->value('cdash:placeItem');
+    $placeTitle = ($placeValue && 'resource' === $placeValue->type())
+        ? $placeValue->valueResource()->displayTitle()
+        : '';
+    echo $this->partial('common/cdash-card', [
+        'resource' => $resource,
+        'titlePrefix' => $placeTitle,
+        'description' => $body,
+        'valueLang' => $valueLang,
+    ]);
+endforeach; ?>
+</div>

@@ -1,56 +1,46 @@
 <?php
-   $translate = $this->plugin('translate');
-// This is the CDASH custom search bar.  It appears on the navigation bar of the 
-// CDASH layout
-
-// This is all commented out because we know that there are no item sets or site pages involved.
-// $searchType = $this->siteSetting('search_type', 'sitewide');
-// switch ($searchType) {
-//     case 'cross-site':
-//         $searchAction = $this->url('site/cross-site-search', ['action' => 'results'], true);
-//         break;
-//     case 'sitewide':
-//     default:
-//         //$searchAction = $this->url('site/resource', ['controller' => 'index', 'action' => 'search'], true);
-
-         $searchAction = $this->url('site/resource', ['controller' => 'item', 'action' => 'browse'], true);
-// }
-
-$searchValue = $this->escapeHtml($this->params()->fromQuery('property[0][text]', ''));
+/**
+ * The CDASH search box in the navigation bar.
+ *
+ * With AdvancedSearch: a keyword search of the whole collection, Places and
+ * Documents alike, on the search page that layout.phtml resolves and passes
+ * in as $cdashSearchUrl. Results land in the browse pane (the form is boosted
+ * like every other in the shell) and their facets in the Filters drawer.
+ *
+ * Without it ($cdashSearchUrl null): the original search, Places only, whose
+ * Place Item value contains the words, sorted by street address -- built from
+ * hidden fields against Omeka's own item browse.
+ *
+ * Its value is the current search's on a full load only: the banner sits
+ * outside #content and is not swapped.
+ */
+$translate = $this->plugin('translate');
+$escape = $this->plugin('escapeHtml');
+$cdashSearchUrl = $cdashSearchUrl ?? null;
 ?>
-
-<script>
-function foo(string) {
-   //alert("Submit button clicked! we got: " + string);
-   document.getElementById('alt-term').value = string;
-   return true;
-}
-</script>
-
-<!-- Here we build a query predominantly of hard-coded values in hidden form fields. -->
-<!-- for more info, see the Omeka developer API Docs                                 -->
-
-<form action="<?php echo $this->escapeHtml($searchAction); ?>" id="search-form">
-    <input id="searchterm" type="text" name="property[0][text]" value="<?php echo $searchValue; ?>" 
-        placeholder="<?php echo $translate('Place Name or Address Contains'); ?>"
-        aria-label="<?php echo $translate('Place Name or Address Contains'); ?>">
-     
-     <!-- Make sure that the Sort_By field is listed  in th Item Browse --> 
-     <input type="hidden"  name="sort_by" data-name="sort_by" value="cdash:streetSort">
-     <input type="hidden"  name="sort_order" data-name="sort_order" value="asc">
-     <!-- in the next line the value should be resource_template.id where label = 'CDASH Place'-->
-     <input type="hidden"  name='resource_template_id[]' value='4'>
-     <input type="hidden"  name='property[0][joiner]' value='and' >
-     <input type="hidden"  name='property[0][property]' value='290' >
-     <input type="hidden"  name='property[0][type]' value='in'>
-     
- 
-     <!-- input type="hidden"  name='property[1][joiner]' value='or' >
-     <input type="hidden"  name='property[1][property]' value='281' >
-     <input type="hidden"  name='property[1][type]' value='in'>
-     <input id="alt-term" type="hidden"  name='property[1][text]' value="" -->
-
-
-     <button class="fa fa-camera-retro" onclick="foo(getElementById('searchterm').value)" type="submit"><?php echo $translate('CDASHSearch'); ?></button>
+<?php if ($cdashSearchUrl): ?>
+<form action="<?php echo $escape($cdashSearchUrl); ?>" id="search-form" method="get" role="search">
+    <input id="searchterm" type="search" name="q"
+        value="<?php echo $escape((string) $this->params()->fromQuery('q', '')); ?>"
+        placeholder="<?php echo $escape($translate('Search CDASH')); ?>"
+        aria-label="<?php echo $escape($translate('Search CDASH')); ?>">
+    <button class="fa fa-camera-retro" type="submit"><?php echo $translate('CDASHSearch'); ?></button>
 </form>
-
+<?php else:
+    $searchAction = $this->url('site/resource', ['controller' => 'item', 'action' => 'browse'], true);
+?>
+<form action="<?php echo $escape($searchAction); ?>" id="search-form">
+    <input id="searchterm" type="text" name="property[0][text]"
+        value="<?php echo $escape((string) $this->params()->fromQuery('property[0][text]', '')); ?>"
+        placeholder="<?php echo $escape($translate('Place Name or Address Contains')); ?>"
+        aria-label="<?php echo $escape($translate('Place Name or Address Contains')); ?>">
+    <input type="hidden" name="sort_by" value="cdash:streetSort">
+    <input type="hidden" name="sort_order" value="asc">
+    <?php // resource_template.id of 'CDASH Place'; property.id of cdash:placeItem. ?>
+    <input type="hidden" name="resource_template_id[]" value="4">
+    <input type="hidden" name="property[0][joiner]" value="and">
+    <input type="hidden" name="property[0][property]" value="290">
+    <input type="hidden" name="property[0][type]" value="in">
+    <button class="fa fa-camera-retro" type="submit"><?php echo $translate('CDASHSearch'); ?></button>
+</form>
+<?php endif; ?>

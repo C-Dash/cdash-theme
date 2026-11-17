@@ -1,0 +1,111 @@
+<?php
+/**
+ * The search facets, as the Filters drawer shows them. Overrides the module's
+ * view/search/facets-list.phtml.
+ *
+ * Rendered by view/search/search.phtml into a <template>, which
+ * cdash-layout.js copies into the Filters drawer (#cdash-facets). The drawer
+ * lies outside #content and stays put across navigation, so:
+ *
+ * - The form names its action. The module's form has none and submits to the
+ *   current page; from the drawer, the current page may be an item.
+ * - Every link is an absolute path to the search page, for the same reason.
+ * - Nothing depends on the module's search.js, which is not loaded (see
+ *   search.phtml). A GET form with checkboxes and an Apply button; htmx
+ *   boosts it into the browse pane, so applying filters never reloads the map.
+ *
+ * Each facet lists every value it has, with its count. The module's "See
+ * more" button needs search.js, and CDASH facets are short enough to list.
+ *
+ * @var \Omeka\Api\Representation\SiteRepresentation|null $site
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
+ * @var \AdvancedSearch\Query $query
+ * @var \AdvancedSearch\Response $response
+ */
+
+if (!isset($response) || !$site) {
+    return;
+}
+
+$searchFacets = $searchConfig->subSetting('facet', 'facets', []);
+if (!count($searchFacets)) {
+    return;
+}
+
+$escape = $this->plugin('escapeHtml');
+$escapeAttr = $this->plugin('escapeHtmlAttr');
+$translate = $this->plugin('translate');
+
+$facets = array_filter($response->getFacetCounts());
+$activeFacets = $response->getActiveFacets();
+
+$searchUrl = $this->url('search-page-' . $searchConfig->slug(), ['site-slug' => $site->slug()]);
+
+// The search as it stands, without its facets: what "Clear filters" leads to.
+$params = $this->params()->fromQuery();
+unset($params['facet'], $params['refine'], $params['page']);
+$clearUrl = $searchUrl . ($params ? '?' . http_build_query($params) : '');
+
+$hasActive = (bool) array_filter($activeFacets);
+
+// getFacetCounts() says nothing about which values are ticked; the module's
+// own facet templates work it out from the active facets, and so does this.
+// Each is a list of values (a range facet's is from/to, which CDASH has none
+// of), compared as strings.
+$isActive = function (string $name, $value) use ($activeFacets): bool {
+    $active = $activeFacets[$name] ?? [];
+    return is_array($active)
+        && in_array((string) $value, array_map(fn ($v) => is_scalar($v) ? (string) $v : '', $active), true);
+};
+$refine = trim((string) $query->getQueryRefine());
+?>
+<div class="cdash-facets-panel">
+    <h3 class="cdash-facets-heading"><?= $escape($translate('Filter the results')) ?></h3>
+
+    <form class="cdash-facets-form" action="<?= $escapeAttr($searchUrl) ?>" method="get">
+        <?= $this->hiddenInputsFromFilteredQuery(null, ['facet', 'refine', 'page', 'limit', 'offset', 'per_page']) ?>
+
+        <div class="cdash-facets-actions">
+            <button type="submit" class="cdash-facets-apply"><?= $escape($translate('Apply filters')) ?></button>
+            <?php if ($hasActive || $refine !== ''): ?>
+            <a class="cdash-facets-clear" href="<?= $escapeAttr($clearUrl) ?>"><?= $escape($translate('Clear filters')) ?></a>
+            <?php endif; ?>
+        </div>
+
+        <div class="cdash-facet">
+            <label class="cdash-facet-label" for="cdash-facets-refine"><?= $escape($translate('Words in the results')) ?></label>
+            <input type="text" id="cdash-facets-refine" name="refine" value="<?= $escapeAttr($refine) ?>">
+        </div>
+
+        <?php if (!$facets): ?>
+        <p class="cdash-facets-none"><?= $escape($translate('No filters apply to these results.')) ?></p>
+        <?php endif; ?>
+
+        <?php foreach ($facets as $name => $values):
+            $params = $searchFacets[$name] ?? [];
+            $label = $translate($params['label'] ?? $name);
+            $isOpen = !empty($activeFacets[$name]) || count($values) <= 12;
+        ?>
+        <details class="cdash-facet"<?= $isOpen ? ' open' : '' ?>>
+            <summary class="cdash-facet-label"><?= $escape($label) ?></summary>
+            <ul class="cdash-facet-values">
+                <?php foreach ($values as $i => $value):
+                    $id = 'cdash-facet-' . preg_replace('/[^a-z0-9]+/i', '-', $name) . '-' . $i;
+                ?>
+                <li>
+                    <input type="checkbox" id="<?= $escapeAttr($id) ?>"
+                           name="<?= $escapeAttr('facet[' . $name . '][]') ?>"
+                           value="<?= $escapeAttr((string) $value['value']) ?>"<?= $isActive($name, $value['value']) ? ' checked' : '' ?>>
+                    <label for="<?= $escapeAttr($id) ?>"><?= $escape($this->partial('search/cdash-facet-value-label', ['name' => $name, 'label' => (string) ($value['label'] ?? $value['value'])])) ?>
+                        <span class="cdash-facet-count">(<?= (int) ($value['count'] ?? 0) ?>)</span></label>
+                </li>
+                <?php endforeach; ?>
+            </ul>
+        </details>
+        <?php endforeach; ?>
+
+        <div class="cdash-facets-actions">
+            <button type="submit" class="cdash-facets-apply"><?= $escape($translate('Apply filters')) ?></button>
+        </div>
+    </form>
+</div>

@@ -1,0 +1,111 @@
+<?php
+/**
+ * The AdvancedSearch results page, as CDASH shows it. Overrides the module's
+ * view/search/search.phtml.
+ *
+ * What changes from the module's page, and why:
+ *
+ * - The sticky page header (common/cdash-page-header) instead of the module's
+ *   title and breadcrumbs, so a search looks like the theme's other listings
+ *   and the "Return to:" breadcrumb (cdash-layout.js) works on it.
+ * - Results are CDASH cards (view/search/results.phtml), not the module's list.
+ * - The facets are NOT shown here. They are rendered into a <template> that
+ *   cdash-layout.js copies into the Filters drawer, which lies outside
+ *   #content. Rendering them inside #content is what keeps them right on
+ *   Back/Forward: htmx's history cache holds #showresult only, so the drawer
+ *   is refilled from whichever page is restored.
+ * - No assets are registered. The module adds search.css, chosen and
+ *   search.js to <head>, but a swap never delivers <head>, and search.js
+ *   binds to the facets once, at load, and navigates with window.location --
+ *   a full reload that rebuilds the map. Everything here works as plain links
+ *   and GET forms, which htmx boosts.
+ * - No map view. The map pane is the results map; see the geography plan.
+ * - No main search form in the page: the banner search box is that form.
+ *
+ * @var \Omeka\Api\Representation\SiteRepresentation|null $site
+ * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
+ * @var \Omeka\Api\Representation\ItemSetRepresentation|null $itemSet
+ * @var \AdvancedSearch\Query $query
+ * @var \AdvancedSearch\Response $response
+ */
+
+$plugins = $this->getHelperPluginManager();
+$partial = $plugins->get('partial');
+$escape = $plugins->get('escapeHtml');
+$translate = $plugins->get('translate');
+
+$variables = $this->vars()->getArrayCopy();
+
+$this->htmlElement('body')->appendAttribute('class', 'search-page resource browse');
+
+$total = (int) $response->getTotalResults();
+$countLabel = $total
+    ? sprintf($translate($total === 1 ? '%d item' : '%d items'), $total)
+    : $translate('No items');
+
+echo $partial('common/cdash-page-header', [
+    'title' => $translate('Search Results'),
+    'detail' => $countLabel,
+]);
+?>
+
+<div class="cdash-search-results">
+
+    <div class="cdash-search-controls">
+        <?= $partial('search/results-header-footer', $variables + ['resultPart' => 'header']) ?>
+    </div>
+
+    <?php
+    // Print-only: the ticked filters. On screen they are in the drawer, which
+    // does not print, and a printed search must say what it searched for.
+    // Marked up like the filter chips above, so print.scss styles both alike.
+    $searchFacets = $searchConfig->subSetting('facet', 'facets', []);
+    $printFacets = [];
+    foreach ($response->getActiveFacets() as $name => $values) {
+        $values = is_array($values) ? array_filter($values, 'is_scalar') : [];
+        if ($values && !isset($values['from']) && !isset($values['to'])) {
+            $printFacets[$name] = $values;
+        }
+    }
+    ?>
+    <?php if ($printFacets): ?>
+    <ul class="search-filters cdash-print-only">
+        <?php foreach ($printFacets as $name => $values): ?>
+        <li class="filter">
+            <span class="filter-label"><?= $escape($translate($searchFacets[$name]['label'] ?? $name)) ?></span>
+            <?php foreach ($values as $value): ?>
+            <span class="filter-value"><?= $escape($this->partial('search/cdash-facet-value-label', ['name' => $name, 'label' => (string) $value])) ?></span>
+            <?php endforeach; ?>
+        </li>
+        <?php endforeach; ?>
+    </ul>
+    <?php endif; ?>
+
+    <?php // Print-only, as on the theme's own browse page: no cards. ?>
+    <p class="cdash-print-only cdash-print-advisory">
+        <?= $escape($countLabel) ?>.
+        <?= $escape($translate('CDASH does not print thumbnails for search results.')) ?>
+    </p>
+
+    <?php $this->trigger('view.browse.before'); ?>
+
+    <?php if ($total): ?>
+    <?php foreach (array_keys(array_filter($response->getResourceTotalResults())) as $resourceType): ?>
+    <?= $partial('search/results', $variables + ['resourceType' => $resourceType]) ?>
+    <?php endforeach; ?>
+    <?php else: ?>
+    <p class="cdash-search-noresults"><?= $escape($translate('Nothing matches this search. Try fewer words or clear some filters.')) ?></p>
+    <?php endif; ?>
+
+    <?php $this->trigger('view.browse.after'); ?>
+
+    <?php if ($total): ?>
+    <?= $this->paginationSearch() ?>
+    <?php endif; ?>
+
+</div>
+
+<?php // Copied into the Filters drawer by cdash-layout.js; see above. ?>
+<template id="cdash-facets-source">
+    <?= $partial('search/facets-list') ?>
+</template>

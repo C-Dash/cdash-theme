@@ -1,0 +1,19 @@
+<?php
+/**
+ * How a facet value is labelled, wherever the theme shows one: the drawer's
+ * checkboxes (facets-list.phtml) and the printed list of ticked filters
+ * (search.phtml). Returns plain text; callers escape it.
+ *
+ * Item type values are resource template names, "CDASH Place" and "CDASH
+ * Document". Shown as "Place" and "Document": every item here is CDASH's.
+ * Only the label changes -- the value submitted stays the template name, which
+ * is what the module filters on.
+ *
+ * @var string $name  the facet's field, e.g. "resource_template_id"
+ * @var string $label the value's label as the module gives it
+ */
+
+if ($name === 'resource_template_id') {
+    $label = preg_replace('/^CDASH\s+/', '', $label);
+}
+echo $label;

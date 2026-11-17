@@ -838,3 +838,120 @@ document.body.addEventListener('htmx:configRequest', function (evt) {
     evt.detail.path = path.slice(0, i);
   }
 });
+
+// ---------------------------------------------------------------------------
+// Search facets in the Filters drawer.
+//
+// A search results page (view/search/search.phtml) renders its facets into a
+// <template id="cdash-facets-source"> inside #content. This copies them into
+// the drawer, #cdash-facets, which lies outside #content and so is never
+// swapped by htmx. Copied on every swap and on every Back/Forward -- the
+// template is inside #content, so htmx's history cache restores it with the
+// page, and the drawer follows whichever search is showing.
+//
+// A page with no template (an item, a site page) leaves the drawer alone: it
+// keeps offering the last search's facets, as the map keeps the last search's
+// markers. A full load of such a page has no last search, so the drawer
+// fetches the facets of the whole collection from its data-src, the search
+// page with no query: one request per full load, never per swap.
+//
+// The facets are a plain GET form and plain links (view/search/
+// facets-list.phtml); htmx.process() boosts them like the rest of the shell,
+// so applying filters swaps the browse pane and never reloads the map.
+// ---------------------------------------------------------------------------
+(function () {
+  let filled = false;
+
+  function install(fragment) {
+    const box = document.getElementById('cdash-facets');
+    if (!box) return;
+    box.replaceChildren(fragment);
+    filled = true;
+    if (window.htmx) htmx.process(box);
+  }
+
+  function fromPage() {
+    const tpl = document.querySelector('#content template#cdash-facets-source');
+    if (!tpl) return false;
+    install(tpl.content.cloneNode(true));
+    return true;
+  }
+
+  function fetchDefault() {
+    const box = document.getElementById('cdash-facets');
+    if (!box || filled || !box.dataset.src) return;
+    fetch(box.dataset.src, { credentials: 'same-origin' })
+      .then(function (response) {
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        return response.text();
+      })
+      .then(function (html) {
+        if (filled) return;   // a search arrived first; it wins
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const tpl = doc.querySelector('template#cdash-facets-source');
+        if (tpl) install(document.importNode(tpl.content, true));
+      })
+      .catch(function (err) {
+        console.error('CDASH: the search filters could not be loaded: ' + err.message);
+        if (!filled) box.textContent = 'The filters could not be loaded.';
+      });
+  }
+
+  document.body.addEventListener('htmx:afterSwap', fromPage);
+  document.body.addEventListener('htmx:historyRestore', fromPage);
+  if (!fromPage()) fetchDefault();
+})();
+
+// ---------------------------------------------------------------------------
+// Sort and per-page selects on the search results page.
+//
+// AdvancedSearch renders them "as URL": each option carries its destination
+// in data-url, and the module's search.js follows it with window.location --
+// a full reload that rebuilds the map. search.js is not loaded in this theme
+// (view/search/search.phtml), so this follows it through htmx instead, with
+// the same swap spec as the shell. Delegated, so it survives every swap.
+// ---------------------------------------------------------------------------
+document.addEventListener('change', function (evt) {
+  const select = evt.target.closest && evt.target.closest('.cdash-search-controls .as-url select');
+  if (!select) return;
+  const option = select.selectedOptions[0];
+  const url = option && option.dataset.url;
+  if (!url) return;
+  if (!window.htmx) {
+    window.location.assign(url);
+    return;
+  }
+  // The source is the controls block, not the select: htmx adds a source
+  // element's own name and value to the request, and the URL already carries
+  // the new sort -- the select as source sent it twice.
+  htmx.ajax('GET', url, {
+    source: select.closest('.cdash-search-controls'),
+    target: '#content',
+    select: '#content',
+    swap: 'outerHTML scroll:#showresult:top'
+  });
+});
+
+// ---------------------------------------------------------------------------
+// No empty fields in search URLs.
+//
+// A GET form sends every field, filled or not, so an untouched "Words in the
+// results" box put "refine=" in the address and in every link shared from it.
+// The search page treats an absent field and an empty one alike, so empty
+// ones are dropped here, before htmx builds the URL -- for the banner search
+// and the facets form only, the two forms this theme owns. `parameters` is
+// htmx's proxy over FormData, so keys(), getAll() and delete() are FormData's.
+// ---------------------------------------------------------------------------
+document.body.addEventListener('htmx:configRequest', function (evt) {
+  const form = evt.detail.elt;
+  if (evt.detail.verb !== 'get' || !form || !form.matches ||
+      !form.matches('#search-form, .cdash-facets-form')) {
+    return;
+  }
+  const params = evt.detail.parameters;
+  Array.from(params.keys()).forEach(function (key) {
+    if (params.getAll(key).every(function (v) { return v === ''; })) {
+      params.delete(key);
+    }
+  });
+});

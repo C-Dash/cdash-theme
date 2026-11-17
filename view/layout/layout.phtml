@@ -1,6 +1,17 @@
 <?php
 $escape = $this->plugin('escapeHtml');
 $siteTitle = $site->title();
+
+// The AdvancedSearch page the banner search box and the Filters drawer use:
+// the search config with slug "search" (Admin > Search manager), which must be
+// available on this site. If the module or the route is missing, both fall
+// back to Omeka's own item search, as before.
+$cdashSearchUrl = null;
+try {
+    $cdashSearchUrl = $this->url('search-page-search', ['site-slug' => $site->slug()]);
+} catch (\Throwable $e) {
+    $cdashSearchUrl = null;
+}
 $this->htmlElement('html')->setAttribute('lang', $this->lang());
 $this->headMeta()->setCharset('utf-8');
 $this->headMeta()->appendName('viewport', 'width=device-width, initial-scale=1');
@@ -355,7 +366,7 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
       </div>
       <?php echo $site->publicNav()->menu()->renderMenu(null, $navOptions); ?>
       <div id="search" class="left">
-        <?php echo $this->partial('common/search-form'); ?>
+        <?php echo $this->partial('common/search-form', ['cdashSearchUrl' => $cdashSearchUrl]); ?>
       </div>
     </nav>
   </div>
@@ -520,13 +531,33 @@ if (preg_match('/\bclass="([^"]*)"/', (string) $this->htmlElement('body'), $m)) 
              :class="{ 'cdash-pullout-collapsed': collapsed }">
           <div class="cdash-pullout-content" :inert="collapsed">
             <div class="cdash-pullout-content-inner">
-              <?php // Rendered on every request, htmx swaps included, so
+              <?php if ($cdashSearchUrl): ?>
+              <?php
+              /**
+               * The search facets. Empty here: cdash-layout.js fills it from
+               * the <template id="cdash-facets-source"> that a search results
+               * page carries inside #content (view/search/search.phtml), on
+               * every swap and every Back/Forward. A page with no template
+               * leaves the last search's facets in place -- the drawer, like
+               * the map, keeps showing the last search. On a full load of a
+               * page that is not a search, it fetches the facets of the whole
+               * collection from data-src instead.
+               */
+              ?>
+              <div id="cdash-facets" class="cdash-facets"
+                   data-src="<?php echo $escape($cdashSearchUrl); ?>">
+                <p class="cdash-facets-loading"><?php echo $escape($this->translate('Loading filters…')); ?></p>
+              </div>
+              <?php else: ?>
+              <?php // Fallback when AdvancedSearch is absent: Omeka's own form.
+                    // Rendered on every request, htmx swaps included, so
                     // anything costly in this form is paid on every click.
                     // See view/common/advanced-search/resource-class.phtml. ?>
               <form action="<?php echo $escape($site->url() . '/item'); ?>" method="GET">
                 <?php echo $this->partial('common/advanced-search', ['resourceType' => 'item']); ?>
                 <button type="submit"><?php echo $this->translate('Search'); ?></button>
               </form>
+              <?php endif; ?>
             </div>
           </div>
           <div class="cdash-pullout-edge" style="display: none" x-show="!collapsed"
