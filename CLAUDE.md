@@ -94,7 +94,10 @@ add properties, never rename or remove them.
 - **Format.** An RFC 7946 FeatureCollection, `application/geo+json`. One
   Point per public CDASH Place, `id` = item ID, coordinates **`[lng, lat]`**
   to 6 decimals. Properties: `title`, `placetype` (same names as the old
-  feed), plus `url`, the absolute item URL. Top-level `metadata`:
+  feed), plus `url`, the absolute item URL, and `documents`, the IDs of the
+  Place's public Documents in the site pool (those whose `cdash:placeItem`
+  links to it; possibly empty) — the map needs them to light a Document's
+  Place (see *The map follows the search*). Top-level `metadata`:
   `attribution` ("Cambridge Historical Commission, Digital Architectural
   Survey"), `generated`, `count`. **The licence is undecided** — add
   `license` to `metadata` once chosen.
@@ -173,8 +176,38 @@ advanced-search form).
   Selects, pagination and chip remove buttons are hidden.
 - **AdvancedSearch's `map_display` stays off** — it loads Mapping 1.x asset
   paths that 404 under 2.x, and would build a second map.
-- **Phase 3** (dim markers outside the results) will need every matching ID,
-  not one page: `$response->getAllResourceIds('items')` gives them.
+
+## The map follows the search
+
+Phase 3 of the geography plan (2026-11-16). A search dims the Places it does
+not match, until the visitor presses "Show all".
+
+- **Server.** `view/search/search.phtml` writes
+  `<script type="application/json" id="cdash-search-map">` into `#content`:
+  `browse` (nothing narrows the search), `url`, `total`, and `items` — every
+  matching item ID, **all pages**, from `$response->getAllResourceIds('items')`
+  (keyed by ID, hence `array_values`). Sent empty when `browse`.
+- **Client** (`cdash-map.js`, "The map follows the search"). `followSearch()`
+  runs from `refreshFromBrowsePane()`, so on every swap and history restore.
+  Matching items become Places directly (`cdashMarkersById`) or through the
+  feed's `documents` (`cdashPlaceOfDocument`); everything else gets
+  `setOpacity(DIMMED_OPACITY)` (0.5; 0.3 vanished into the basemap), and
+  `iconCreateFunction` counts only lit markers and dims a cluster with none.
+  A Leaflet control, top right, says "Search: N of M places" with a "Show
+  all" button; print hides it with the other controls.
+- **It persists.** A page without the island leaves the dimming alone; it is
+  in `sessionStorage` (`cdash.mapSearch`), so a reload keeps it. It ends with
+  "Show all" or a search that narrows nothing.
+- **Framing.** A *new* search (a different URL) with no lit Place in view
+  fits the map to its Places (`maxZoom: 17`); a shared hash on first load
+  wins, as for an item. Back to the same search, a re-sort, or another page of
+  it never re-frames.
+- **Ordering trap.** The first `refreshFromBrowsePane()` call sits at the
+  *end* of that block, not beside the function: `followSearch()` needs the
+  block's `var`s assigned, and hoisting declares them earlier as undefined
+  (`SEARCH_FILTER_KEY` undefined wrote a sessionStorage key named
+  "undefined"). The markers arrive asynchronously, so `pushMarkers()` applies
+  any filter that was set before they did.
 
 ## How it fits together
 

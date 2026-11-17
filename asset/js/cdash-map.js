@@ -69,16 +69,29 @@ const CDASH_SITE_URL = CDASH_CONFIG.siteUrl;
                  return 32;
                }
             },
+            // While the map follows a search (cdashSearchFilter, below), a
+            // cluster counts only its matching Places, and one with none is
+            // dimmed like the markers inside it, showing how many it holds.
             iconCreateFunction: function(cluster) {
+                var count = cluster.getChildCount();
+                var dim = false;
+                if (cdashSearchFilter) {
+                    var lit = cluster.getAllChildMarkers().filter(function (m) { return !m.cdashDimmed; }).length;
+                    if (lit > 0) {
+                        count = lit;
+                    } else {
+                        dim = true;
+                    }
+                }
                 var clusterSize = "small";
                 var iconsize = 35
-                if (cluster.getChildCount() >= 3) {
+                if (count >= 3) {
                     clusterSize = "medium";
                     iconsize = 40
                   }
                 return new L.DivIcon({
-                    html: '<div><span>' + cluster.getChildCount() + '</span></div>',
-                    className: 'marker-cluster marker-cluster-' + clusterSize,
+                    html: '<div><span>' + count + '</span></div>',
+                    className: 'marker-cluster marker-cluster-' + clusterSize + (dim ? ' cdash-cluster-dim' : ''),
                     iconSize: new L.Point(iconsize, iconsize)
                 });
             }
@@ -937,6 +950,7 @@ function updateFeaturedMarker() {
 // no fixup at all.
 function refreshFromBrowsePane() {
   updateFeaturedMarker();
+  followSearch();
   // Cleared here rather than inside updateFeaturedMarker, which returns early
   // on a page with no coordinates. Left to that function, a first load on a
   // site page would leave the flag standing and the next item visited would be
@@ -944,7 +958,8 @@ function refreshFromBrowsePane() {
   cdashFirstRefresh = false;
 }
 
-refreshFromBrowsePane();
+// The first pass over the browse pane is made further down, after the search
+// filter's state is declared -- see the end of "The map follows the search".
 
 // A forward navigation -- marker click, boosted link, search -- fires afterSwap.
 document.body.addEventListener('htmx:afterSwap', function (evt) {
@@ -1020,12 +1035,184 @@ function pushMarkers(collection, markerGroup) {
       marker.title = props.title;
       marker.on('click', onMarkerClick);
       cdashMarkersById.set(marker.id, marker);
+      (props.documents || []).forEach(function (docId) {
+        cdashPlaceOfDocument.set(String(docId), marker.id);
+      });
       return marker;
     }
   }).getLayers();
 
   markerGroup.addLayers(markers);
+  cdashMarkersLoaded = true;
+  // A search may have been shown -- or restored from sessionStorage -- before
+  // the markers arrived; it can only be drawn now.
+  applySearchFilter(cdashPendingFit);
+  cdashPendingFit = false;
 }
+
+
+// ---------------------------------------------------------------------------
+// The map follows the search.
+//
+// A search results page carries every matching item ID in
+// <script type="application/json" id="cdash-search-map"> (view/search/
+// search.phtml). On every swap and Back/Forward that brings one, the Places
+// that match -- or whose Documents match, via each feature's `documents` list
+// in the feed -- stay bright and the rest are dimmed, clusters included. A
+// control says how many match and offers "Show all".
+//
+// The dimming outlasts the results page: opening an item, a site page, even a
+// reload keeps it (it is in sessionStorage), until the visitor presses "Show
+// all" or runs a search that narrows nothing (the island's browse flag).
+//
+// When a new search arrives and none of its Places is in view, the map fits
+// to them -- the same rule updateFeaturedMarker() uses for a single item: a
+// shared hash on first load wins, and a view that already shows a match is
+// left alone, so the visitor's own extent stays in the URL.
+// ---------------------------------------------------------------------------
+var SEARCH_FILTER_KEY = 'cdash.mapSearch';
+var DIMMED_OPACITY = 0.5;   // the dimmed-cluster opacity in _map-controls.scss matches
+var cdashPlaceOfDocument = new Map();   // Document ID -> Place ID, both strings
+var cdashMarkersLoaded = false;
+var cdashPendingFit = false;
+var cdashSearchFilter = readSearchFilter();   // { items, url, total } or null
+var cdashSearchControl = null;
+
+function readSearchFilter() {
+  try {
+    var v = JSON.parse(sessionStorage.getItem(SEARCH_FILTER_KEY));
+    return v && Array.isArray(v.items) ? v : null;
+  } catch (err) {
+    return null;
+  }
+}
+
+function setSearchFilter(filter, wantFit) {
+  var same = filter && cdashSearchFilter && filter.url === cdashSearchFilter.url;
+  cdashSearchFilter = filter;
+  try {
+    if (filter) {
+      sessionStorage.setItem(SEARCH_FILTER_KEY, JSON.stringify(filter));
+    } else {
+      sessionStorage.removeItem(SEARCH_FILTER_KEY);
+    }
+  } catch (err) {
+    // The dimming just will not survive a reload.
+  }
+  // The same search again (Back to it, a re-sort, another page of it) needs
+  // no re-framing; a new one may.
+  wantFit = wantFit && !same;
+  if (cdashMarkersLoaded) {
+    applySearchFilter(wantFit);
+  } else {
+    cdashPendingFit = cdashPendingFit || wantFit;
+  }
+}
+
+// The Places this search lights: matching Places, and the Places of matching
+// Documents. IDs of anything else (an unlocated Place, a Document with no
+// Place) light nothing.
+function litPlaces() {
+  if (!cdashSearchFilter) return null;
+  var lit = new Set();
+  cdashSearchFilter.items.forEach(function (id) {
+    id = String(id);
+    if (cdashMarkersById.has(id)) {
+      lit.add(id);
+    } else if (cdashPlaceOfDocument.has(id)) {
+      lit.add(cdashPlaceOfDocument.get(id));
+    }
+  });
+  return lit;
+}
+
+function applySearchFilter(wantFit) {
+  var lit = litPlaces();
+  cdashMarkersById.forEach(function (marker, id) {
+    var on = !lit || lit.has(id);
+    marker.cdashDimmed = !on;
+    // setOpacity also holds for markers currently inside a cluster: Leaflet
+    // applies options.opacity when the marker is next drawn.
+    marker.setOpacity(on ? 1 : DIMMED_OPACITY);
+  });
+  allMarkers.refreshClusters();
+  updateSearchControl(lit);
+  if (wantFit && lit && lit.size) fitToPlaces(lit);
+}
+
+function fitToPlaces(lit) {
+  var view = map.getBounds();
+  var points = [];
+  var inView = false;
+  lit.forEach(function (id) {
+    var ll = cdashMarkersById.get(id).getLatLng();
+    points.push(ll);
+    if (view.contains(ll)) inView = true;
+  });
+  if (inView) return;
+  map.fitBounds(L.latLngBounds(points), { padding: [40, 40], maxZoom: 17 });
+}
+
+var SearchFilterControl = L.Control.extend({
+  options: { position: 'topright' },
+  onAdd: function () {
+    var box = L.DomUtil.create('div', 'leaflet-bar cdash-search-filter');
+    box.setAttribute('role', 'status');
+    this._text = L.DomUtil.create('span', 'cdash-search-filter-text', box);
+    var button = L.DomUtil.create('button', 'cdash-search-filter-clear', box);
+    button.type = 'button';
+    button.textContent = 'Show all';
+    L.DomEvent.disableClickPropagation(box);
+    L.DomEvent.on(button, 'click', function () { setSearchFilter(null, false); });
+    return box;
+  },
+  setText: function (text) {
+    this._text.textContent = text;
+  }
+});
+
+function updateSearchControl(lit) {
+  if (!lit) {
+    if (cdashSearchControl) {
+      map.removeControl(cdashSearchControl);
+      cdashSearchControl = null;
+    }
+    return;
+  }
+  if (!cdashSearchControl) {
+    cdashSearchControl = new SearchFilterControl();
+    map.addControl(cdashSearchControl);
+  }
+  var total = cdashMarkersById.size;
+  cdashSearchControl.setText(lit.size
+    ? 'Search: ' + lit.size.toLocaleString() + ' of ' + total.toLocaleString() + (total === 1 ? ' place' : ' places')
+    : 'Search: no places on the map');
+}
+
+// Called on every swap and history restore, from refreshFromBrowsePane().
+function followSearch() {
+  var island = document.querySelector('#content script#cdash-search-map');
+  if (!island) return;   // not a search page: the last search's dimming stays
+  var data;
+  try {
+    data = JSON.parse(island.textContent);
+  } catch (err) {
+    return;
+  }
+  if (data.browse) {
+    setSearchFilter(null, false);
+    return;
+  }
+  // On first load with a shared hash, the shared view wins, as for an item.
+  var wantFit = !(cdashFirstRefresh && cdashInitialState);
+  setSearchFilter({ items: data.items || [], url: data.url, total: data.total }, wantFit);
+}
+
+// The first pass over the browse pane: the featured marker, and the search
+// the page may carry. Made here, not beside refreshFromBrowsePane(), because
+// followSearch() needs the `var`s above to have been assigned -- hoisting
+// declares them earlier, but as undefined.
+refreshFromBrowsePane();
 
 
 

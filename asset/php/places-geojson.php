@@ -10,9 +10,14 @@
  *     "features": [
  *       { "type": "Feature", "id": 13333,
  *         "geometry": { "type": "Point", "coordinates": [-71.0897, 42.3712] },
- *         "properties": { "title": "...", "placetype": "...", "url": "https://..." } }
+ *         "properties": { "title": "...", "placetype": "...", "url": "https://...",
+ *                         "documents": [13343, 13344] } }
  *     ]
  *   }
+ *
+ * `documents` lists the item IDs of the Place's public Documents (those whose
+ * cdash:placeItem links to it), possibly empty. The theme's map uses it to
+ * light up the Places of Documents a search matched.
  *
  * Coordinates are [longitude, latitude], as GeoJSON requires -- the reverse of
  * Leaflet's L.latLng. The format is a contract with outside users (GIS tools,
@@ -171,6 +176,26 @@ try {
     $stmt->bind_param($types, ...$args);
     $stmt->execute();
     $result = $stmt->get_result();
+
+    // Each Place's Documents: the public items in this site's pool whose
+    // cdash:placeItem links to it. The map needs them to light up the Place
+    // of a Document that a search matched, since only Places have markers.
+    $docStmt = $conn->prepare(
+        "SELECT value.value_resource_id AS place_id, value.resource_id AS doc_id
+         FROM value
+         JOIN resource ON resource.id = value.resource_id AND resource.is_public = 1
+         JOIN item_site ON item_site.item_id = resource.id AND item_site.site_id = ?
+         WHERE value.property_id = (SELECT id FROM property WHERE local_name = 'placeItem')
+           AND value.value_resource_id IS NOT NULL
+         ORDER BY value.value_resource_id, value.resource_id"
+    );
+    $siteId = (int) $site['id'];
+    $docStmt->bind_param('i', $siteId);
+    $docStmt->execute();
+    $documentsByPlace = [];
+    foreach ($docStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $doc) {
+        $documentsByPlace[(int) $doc['place_id']][] = (int) $doc['doc_id'];
+    }
 } catch (mysqli_sql_exception $e) {
     error_log('places-geojson.php: ' . $e->getMessage());
     fail(500, 'Database error.');
@@ -210,6 +235,7 @@ while ($row = $result->fetch_assoc()) {
             'title' => $row['title'],
             'placetype' => $row['placetype'],
             'url' => $siteUrl . '/item/' . $id,
+            'documents' => array_values(array_unique($documentsByPlace[$id] ?? [])),
         ],
     ];
 }

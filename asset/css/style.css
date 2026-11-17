@@ -2412,6 +2412,36 @@ html, body {
   cursor: pointer;
 }
 
+/* ---- The map follows the search (cdash-map.js) ----
+   A status line with a "Show all" button, top right, while a search dims
+   the Places it does not match. Clusters holding no match dim like the
+   markers inside them; dimmed markers get their opacity from Leaflet. */
+.cdash-search-filter {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.5rem;
+  background: #fff;
+  font-size: 0.85rem;
+}
+
+.cdash-search-filter-clear {
+  padding: 0.15rem 0.6rem;
+  border: 1px solid var(--cdash-divider);
+  border-radius: 3px;
+  background: var(--cdash-grip-bg);
+  cursor: pointer;
+}
+
+.cdash-search-filter-clear:hover,
+.cdash-search-filter-clear:focus-visible {
+  border-color: var(--cdash-link);
+}
+
+.marker-cluster.cdash-cluster-dim {
+  opacity: 0.5;
+}
+
 /* Wide: as many 200px columns as fit, filling the width.
    min() rather than a bare $width: the browse pane is resizable and can be
    narrower than one column, where a fixed minimum would overflow it. */
