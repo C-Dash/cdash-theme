@@ -732,11 +732,59 @@ appearing is worth questioning.
 
 ## Longer-term
 
-The four scripts in `asset/php/` open their own mysqli connection and issue raw
-SQL against Omeka's EAV schema, bypassing its ACL and site scoping entirely.
-That is why `is_public` had to be filtered by hand. They belong in an Omeka S
-module with admin-only routes and a Doctrine handle. Separate project; do not
-start it inside the styling work.
+The scripts in `asset/php/` issue raw SQL against Omeka's EAV schema,
+bypassing its ACL and site scoping entirely. That is why `is_public` had to be
+filtered by hand. They belong in an Omeka S module with admin-only routes.
+Separate project; do not start it inside the styling work.
+
+### The geo tools' shared library (`asset/php/lib/`, this branch)
+
+GeoSync, GeoAudit and the Places feed share one library, built (2026-11-18)
+to move into that module with little change. It keeps three concerns apart
+that the scripts used to mix in every block:
+
+- **The SQL**, in `lib/Cdash/`: `Schema` resolves property IDs **by term**
+  (`prefix:local_name`) and templates by label. Local names alone are
+  ambiguous here (`dcterms:title` and `foaf:title`), and the old repeated
+  `(SELECT id FROM property WHERE local_name = …)` subqueries break the
+  moment a second vocabulary shares a name. `WorkingTables` is the **one**
+  definition of `tmp_places`/`tmp_docs` (the two scripts' copies had
+  drifted), optionally scoped to some Place IDs. `Sync` and `Audit` describe
+  the sync steps and the audit checks as data.
+- **Running it**: the `Db` interface (`query`, `scalar`, `execute`,
+  `transactional`, `?` placeholders). `MysqliDb` implements it now; the module
+  writes a DBAL one over `Omeka\Connection`. No class touches mysqli.
+- **HTML**: only in `geosync.php` and `geoaudit.php`, which are now guard,
+  call and render. Module routes and views replace them.
+
+`lib/bootstrap.php` (autoloader, `cdash_db()`) answers 404 if requested; the
+class files only define classes and print nothing.
+
+What changed in behaviour, deliberately:
+
+- **GeoSync is one transaction**: a failure changes nothing.
+- **Inherited values are synced by difference**, not delete-all/insert-all:
+  a Document value is removed only if its Place lacks an identical one (type,
+  value, lang, uri, linked resource), added only if missing. So an unchanged
+  collection reports **0 changes** and value IDs stop churning. Copies keep
+  the source value's type, language and visibility; the old script wrote
+  `literal`, `lang NULL`, public, which is why its first run rewrote the
+  copies of two Places whose values have `lang ''`.
+- **A NULL derivation is not written** (a Place with no streetName, an
+  orphan Document): the old script blanked the title.
+- **GeoSync queues Omeka's full-text re-index** (`Omeka\Job\IndexFulltextSearch`,
+  via `$cdashApp` from `_require-admin.php`) when anything changed. Direct SQL
+  never reached keyword search: titles geosync had rewritten were still
+  indexed under their old text.
+- **GeoAudit** resolves the folder template by label (was `8`), links to
+  admin pages relatively (was `http://host/s/cdash/…`, a dead slug), escapes
+  titles, and its "more than one Place" check counts distinct Places, not
+  rows (a Document with two `dcterms:type` values was a false positive).
+
+Verified by replaying a controlled change to Place 13340 (renumber, rename,
+move, a second Neighborhood) through the old script and the new library:
+identical data, then 0 changes on a second run. Both tools run from the CLI
+for tests: `require 'lib/bootstrap.php'; Cdash\Sync::run(cdash_db(), …)`.
 
 ## Also
 

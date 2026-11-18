@@ -111,59 +111,54 @@ $siteSlug = isset($_GET['site']) && $_GET['site'] !== '' ? (string) $_GET['site'
 
 // --- Database ---------------------------------------------------------------
 
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+// The shared library (lib/): the connection, and property and template IDs
+// resolved by term (Cdash\Schema) rather than by local name alone.
+require __DIR__ . '/lib/bootstrap.php';
+
 try {
-    $ini = parse_ini_file('/var/www/html/persist/config/database.ini');
-    $conn = new mysqli($ini['host'], $ini['user'], $ini['password'], $ini['dbname']);
-    $conn->set_charset('utf8mb4');
+    $db = cdash_db();
+    $schema = new Cdash\Schema($db);
 
     // Which site: the one named, else the one wearing this theme folder.
-    if ($siteSlug !== null) {
-        $stmt = $conn->prepare('SELECT id, slug FROM site WHERE slug = ?');
-        $stmt->bind_param('s', $siteSlug);
-    } else {
-        $themeFolder = basename(dirname(__DIR__, 2));
-        $stmt = $conn->prepare('SELECT id, slug FROM site WHERE theme = ? ORDER BY id LIMIT 1');
-        $stmt->bind_param('s', $themeFolder);
-    }
-    $stmt->execute();
-    $site = $stmt->get_result()->fetch_assoc();
+    $site = $siteSlug !== null
+        ? ($db->query('SELECT id, slug FROM site WHERE slug = ?', [$siteSlug])[0] ?? null)
+        : ($db->query('SELECT id, slug FROM site WHERE theme = ? ORDER BY id LIMIT 1', [basename(dirname(__DIR__, 2))])[0] ?? null);
     if (!$site) {
         fail(404, 'No such site.');
     }
+    $siteId = (int) $site['id'];
 
-    $sql = "SELECT resource.id AS item_id, resource.title, value.value AS placetype,
-              ST_Y(mapping_feature.geography) AS lat, ST_X(mapping_feature.geography) AS lng
-            FROM mapping_feature
-            JOIN resource
-              ON mapping_feature.item_id = resource.id
-              AND ST_GeometryType(mapping_feature.geography) = 'POINT'
-              AND resource.is_public = 1
-              AND resource.resource_template_id =
-                (SELECT id FROM resource_template WHERE label = 'CDASH Place')
-            JOIN item_site
-              ON item_site.item_id = resource.id AND item_site.site_id = ?
-            JOIN value
-              ON value.resource_id = resource.id
-              AND value.property_id = (SELECT id FROM property WHERE local_name = 'placeType')";
-    $types = 'i';
-    $args = [(int) $site['id']];
+    $sql = sprintf(
+        "SELECT resource.id AS item_id, resource.title, value.value AS placetype,
+           ST_Y(mapping_feature.geography) AS lat, ST_X(mapping_feature.geography) AS lng
+         FROM mapping_feature
+         JOIN resource
+           ON mapping_feature.item_id = resource.id
+           AND ST_GeometryType(mapping_feature.geography) = 'POINT'
+           AND resource.is_public = 1
+           AND resource.resource_template_id = %d
+         JOIN item_site
+           ON item_site.item_id = resource.id AND item_site.site_id = ?
+         JOIN value
+           ON value.resource_id = resource.id
+           AND value.property_id = %d",
+        $schema->template('place'),
+        $schema->property('cdash:placeType')
+    );
+    $args = [$siteId];
     $where = [];
 
     if ($ids !== null) {
         $where[] = 'resource.id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')';
-        $types .= str_repeat('i', count($ids));
         array_push($args, ...$ids);
     }
     if ($placetype !== null) {
         $where[] = 'value.value = ?';
-        $types .= 's';
         $args[] = $placetype;
     }
     if ($bbox !== null) {
         $where[] = 'ST_X(mapping_feature.geography) BETWEEN ? AND ?
                     AND ST_Y(mapping_feature.geography) BETWEEN ? AND ?';
-        $types .= 'dddd';
         array_push($args, $bbox[0], $bbox[2], $bbox[1], $bbox[3]);
     }
     if ($where) {
@@ -171,32 +166,27 @@ try {
     }
     // Stable order, so an unchanged database gives an identical body and ETag.
     $sql .= ' ORDER BY resource.id, mapping_feature.id, value.id';
-
-    $stmt = $conn->prepare($sql);
-    $stmt->bind_param($types, ...$args);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    $rows = $db->query($sql, $args);
 
     // Each Place's Documents: the public items in this site's pool whose
     // cdash:placeItem links to it. The map needs them to light up the Place
     // of a Document that a search matched, since only Places have markers.
-    $docStmt = $conn->prepare(
-        "SELECT value.value_resource_id AS place_id, value.resource_id AS doc_id
-         FROM value
-         JOIN resource ON resource.id = value.resource_id AND resource.is_public = 1
-         JOIN item_site ON item_site.item_id = resource.id AND item_site.site_id = ?
-         WHERE value.property_id = (SELECT id FROM property WHERE local_name = 'placeItem')
-           AND value.value_resource_id IS NOT NULL
-         ORDER BY value.value_resource_id, value.resource_id"
-    );
-    $siteId = (int) $site['id'];
-    $docStmt->bind_param('i', $siteId);
-    $docStmt->execute();
     $documentsByPlace = [];
-    foreach ($docStmt->get_result()->fetch_all(MYSQLI_ASSOC) as $doc) {
+    foreach ($db->query(
+        sprintf(
+            "SELECT value.value_resource_id AS place_id, value.resource_id AS doc_id
+             FROM value
+             JOIN resource ON resource.id = value.resource_id AND resource.is_public = 1
+             JOIN item_site ON item_site.item_id = resource.id AND item_site.site_id = ?
+             WHERE value.property_id = %d AND value.value_resource_id IS NOT NULL
+             ORDER BY value.value_resource_id, value.resource_id",
+            $schema->property('cdash:placeItem')
+        ),
+        [$siteId]
+    ) as $doc) {
         $documentsByPlace[(int) $doc['place_id']][] = (int) $doc['doc_id'];
     }
-} catch (mysqli_sql_exception $e) {
+} catch (\Throwable $e) {
     error_log('places-geojson.php: ' . $e->getMessage());
     fail(500, 'Database error.');
 }
@@ -216,7 +206,7 @@ $siteUrl = ($https ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'loca
 
 $features = [];
 $seen = [];
-while ($row = $result->fetch_assoc()) {
+foreach ($rows as $row) {
     $id = (int) $row['item_id'];
     // One feature per Place: a second point, or a second placeType value,
     // would otherwise repeat the id, which GeoJSON consumers expect unique.
@@ -239,7 +229,6 @@ while ($row = $result->fetch_assoc()) {
         ],
     ];
 }
-$conn->close();
 
 $flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION;
 $etag = '"' . md5(json_encode($features, $flags)) . '"';
