@@ -33,10 +33,16 @@ namespace Cdash;
  */
 class Sync
 {
-    /** Properties every Document copies from its Place, by term. */
+    /**
+     * Properties every Document copies from its Place, by term. The copies
+     * are what let search facets on these properties select Documents too:
+     * a facet counts values on the items themselves, and cannot follow the
+     * cdash:placeItem link. Adding a property here is all it takes.
+     */
     public const DOCUMENT_INHERITS = [
         'cdash:Neighborhood' => 'Neighborhood',
         'cdash:chcDist' => 'Survey Area',
+        'cdash:placeType' => 'Place Type',
     ];
 
     /**

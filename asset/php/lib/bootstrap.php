@@ -27,6 +27,30 @@ spl_autoload_register(function (string $class): void {
     }
 });
 
+/**
+ * Now, for the top of a report, in Omeka's own time zone (Admin > Settings >
+ * Time zone). The container's PHP runs in UTC, which read five hours off in
+ * Cambridge. $app is the Omeka application _require-admin.php boots; without
+ * one (a CLI test) it falls back to UTC, and says so.
+ */
+function cdash_report_time($app = null): string
+{
+    $zone = 'UTC';
+    if ($app) {
+        try {
+            $zone = $app->getServiceManager()->get('Omeka\Settings')->get('time_zone') ?: 'UTC';
+        } catch (\Throwable $e) {
+            $zone = 'UTC';
+        }
+    }
+    try {
+        $tz = new \DateTimeZone($zone);
+    } catch (\Throwable $e) {
+        $tz = new \DateTimeZone('UTC');
+    }
+    return (new \DateTime('now', $tz))->format('l, F j, Y H:i:s T');
+}
+
 /** The database Omeka uses, as a Cdash\Db. */
 function cdash_db(): \Cdash\Db
 {

@@ -12,7 +12,9 @@
 #
 # Facets are the properties CDASH items actually carry:
 #   Item type      resource template: CDASH Place / CDASH Document
-#   Place Type     cdash:placeType      (Places only)
+#   Place Type     cdash:placeType      (both; GeoSync copies each Place's type
+#                                        onto its Documents, so "Building" also
+#                                        finds the Documents of Buildings)
 #   Document Type  dcterms:type         (Documents only)
 #   Neighborhood   cdash:Neighborhood   (both)
 #   Survey Area    cdash:chcDist        (both; "Research District" in the

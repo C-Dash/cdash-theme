@@ -781,6 +781,14 @@ What changed in behaviour, deliberately:
   titles, and its "more than one Place" check counts distinct Places, not
   rows (a Document with two `dcterms:type` values was a false positive).
 
+**Documents inherit** `Sync::DOCUMENT_INHERITS` from their Place:
+Neighborhood, Survey Area (`chcDist`) and, since 2026-11-18, **Place Type**.
+That is what lets those facets select Documents — a facet counts values on
+the items themselves and cannot follow `cdash:placeItem`. (AdvancedSearch's
+`resq` query type *can* follow it, "Documents whose Place is a Building", but
+only in expert query syntax, never as a facet.) The theme hides `placeType`
+among an item's values, so the copy shows nowhere on screen.
+
 Verified by replaying a controlled change to Place 13340 (renumber, rename,
 move, a second Neighborhood) through the old script and the new library:
 identical data, then 0 changes on a second run. Both tools run from the CLI

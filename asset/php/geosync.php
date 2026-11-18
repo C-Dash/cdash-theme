@@ -20,6 +20,7 @@ $h = fn ($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
 echo '<!doctype html><html><head><meta charset="utf-8"><title>GeoSync</title></head><body>';
 echo '<h1>GeoSync: Synchronize Place updates to Documents</h1>';
+echo '<p><b>Run: ' . $h(cdash_report_time($cdashApp)) . '</b></p>';
 
 try {
     $db = cdash_db();

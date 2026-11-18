@@ -29,7 +29,8 @@ try {
     exit('</body></html>');
 }
 
-$when = date('l, F j, Y H:i:s');
+$when = cdash_report_time($cdashApp);
+echo '<p><b>Run: ' . $h($when) . '</b></p>';
 
 echo '<hr><b>Integrity Audit:</b> CDASH-specific integrity issues are listed below.<br>';
 foreach ($audit['checks'] as $check) {
