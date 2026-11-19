@@ -107,25 +107,65 @@ echo $partial('common/cdash-page-header', [
 
 <?php
 /**
- * What the map needs to follow this search: every matching item's ID -- all
- * pages, not just this one -- read by cdash-map.js on every swap and history
- * restore. It dims the Places that neither match nor have a matching
- * Document, until the visitor presses "Show all".
+ * What the map needs to follow this search: the IDs of the Places it lights
+ * -- matching Places, and the Places of matching Documents, across all pages,
+ * not just this one -- read by cdash-map.js on every swap and history
+ * restore. It dims every other Place until the visitor presses "Show all".
+ *
+ * Places, not items, because Documents outnumber them about ten to one on
+ * production (~200,000 items): a broad search would otherwise put tens of
+ * thousands of IDs into every page of its results. Resolving a Document to
+ * its Place here, through cdash:placeItem, bounds the list by the number of
+ * markers. IDs of Places with no marker (unlocated, private) light nothing.
  *
  * "browse" is true when nothing narrows the search (no words, no filters):
- * the whole collection matches, so the map shows everything and the ID list
- * is not sent. JSON_HEX_* keep the island from closing its own script tag.
+ * the whole collection matches, so the map shows everything and no list is
+ * sent. If the lookup fails, no island is written and the map keeps its last
+ * state. JSON_HEX_* keep the island from closing its own script tag.
  */
 $isBrowse = $query->isBrowse();
+$mapPlaces = [];
+$mapOk = true;
+if (!$isBrowse) {
+    try {
+        require_once dirname(__DIR__, 2) . '/asset/php/lib/bootstrap.php';
+        $db = cdash_db();
+        $schema = new Cdash\Schema($db);
+        // Keyed by ID as the module returns it.
+        $ids = array_map('intval', array_values($response->getAllResourceIds('items')));
+        $places = [];
+        foreach (array_chunk($ids, 5000) as $chunk) {
+            $in = implode(',', $chunk);
+            $sql = sprintf(
+                'SELECT id FROM resource WHERE id IN (%1$s) AND resource_template_id = %2$d
+                 UNION
+                 SELECT value_resource_id FROM value
+                 WHERE resource_id IN (%1$s) AND property_id = %3$d AND value_resource_id IS NOT NULL',
+                $in,
+                $schema->template('place'),
+                $schema->property('cdash:placeItem')
+            );
+            foreach ($db->query($sql) as $row) {
+                $places[(int) reset($row)] = true;
+            }
+        }
+        $mapPlaces = array_keys($places);
+        sort($mapPlaces);
+    } catch (\Throwable $e) {
+        error_log('search.phtml map places: ' . $e->getMessage());
+        $mapOk = false;
+    }
+}
 $mapSearch = [
     'browse' => $isBrowse,
     'url' => $this->serverUrl(true),
     'total' => $total,
-    // Keyed by ID as the module returns it, which would encode as an object.
-    'items' => $isBrowse ? [] : array_values(array_map('intval', $response->getAllResourceIds('items'))),
+    'places' => $mapPlaces,
 ];
 ?>
+<?php if ($mapOk): ?>
 <script type="application/json" id="cdash-search-map"><?= json_encode($mapSearch, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES) ?></script>
+<?php endif; ?>
 
 <?php // Copied into the Filters drawer by cdash-layout.js; see above. ?>
 <template id="cdash-facets-source">

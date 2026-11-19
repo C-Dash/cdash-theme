@@ -1035,9 +1035,6 @@ function pushMarkers(collection, markerGroup) {
       marker.title = props.title;
       marker.on('click', onMarkerClick);
       cdashMarkersById.set(marker.id, marker);
-      (props.documents || []).forEach(function (docId) {
-        cdashPlaceOfDocument.set(String(docId), marker.id);
-      });
       return marker;
     }
   }).getLayers();
@@ -1054,11 +1051,11 @@ function pushMarkers(collection, markerGroup) {
 // ---------------------------------------------------------------------------
 // The map follows the search.
 //
-// A search results page carries every matching item ID in
+// A search results page carries the IDs of the Places it lights -- matching
+// Places and the Places of matching Documents, resolved on the server -- in
 // <script type="application/json" id="cdash-search-map"> (view/search/
-// search.phtml). On every swap and Back/Forward that brings one, the Places
-// that match -- or whose Documents match, via each feature's `documents` list
-// in the feed -- stay bright and the rest are dimmed, clusters included. A
+// search.phtml). On every swap and Back/Forward that brings one, those Places
+// stay bright and the rest are dimmed, clusters included. A
 // control says how many match and offers "Show all".
 //
 // The dimming outlasts the results page: opening an item, a site page, even a
@@ -1072,16 +1069,15 @@ function pushMarkers(collection, markerGroup) {
 // ---------------------------------------------------------------------------
 var SEARCH_FILTER_KEY = 'cdash.mapSearch';
 var DIMMED_OPACITY = 0.5;   // the dimmed-cluster opacity in _map-controls.scss matches
-var cdashPlaceOfDocument = new Map();   // Document ID -> Place ID, both strings
 var cdashMarkersLoaded = false;
 var cdashPendingFit = false;
-var cdashSearchFilter = readSearchFilter();   // { items, url, total } or null
+var cdashSearchFilter = readSearchFilter();   // { places, url, total } or null
 var cdashSearchControl = null;
 
 function readSearchFilter() {
   try {
     var v = JSON.parse(sessionStorage.getItem(SEARCH_FILTER_KEY));
-    return v && Array.isArray(v.items) ? v : null;
+    return v && Array.isArray(v.places) ? v : null;
   } catch (err) {
     return null;
   }
@@ -1109,19 +1105,14 @@ function setSearchFilter(filter, wantFit) {
   }
 }
 
-// The Places this search lights: matching Places, and the Places of matching
-// Documents. IDs of anything else (an unlocated Place, a Document with no
-// Place) light nothing.
+// The Places this search lights, of those with a marker. A Place with none
+// (unlocated, private) lights nothing.
 function litPlaces() {
   if (!cdashSearchFilter) return null;
   var lit = new Set();
-  cdashSearchFilter.items.forEach(function (id) {
+  cdashSearchFilter.places.forEach(function (id) {
     id = String(id);
-    if (cdashMarkersById.has(id)) {
-      lit.add(id);
-    } else if (cdashPlaceOfDocument.has(id)) {
-      lit.add(cdashPlaceOfDocument.get(id));
-    }
+    if (cdashMarkersById.has(id)) lit.add(id);
   });
   return lit;
 }
@@ -1205,7 +1196,7 @@ function followSearch() {
   }
   // On first load with a shared hash, the shared view wins, as for an item.
   var wantFit = !(cdashFirstRefresh && cdashInitialState);
-  setSearchFilter({ items: data.items || [], url: data.url, total: data.total }, wantFit);
+  setSearchFilter({ places: data.places || [], url: data.url, total: data.total }, wantFit);
 }
 
 // The first pass over the browse pane: the featured marker, and the search

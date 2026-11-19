@@ -94,13 +94,14 @@ add properties, never rename or remove them.
 - **Format.** An RFC 7946 FeatureCollection, `application/geo+json`. One
   Point per public CDASH Place, `id` = item ID, coordinates **`[lng, lat]`**
   to 6 decimals. Properties: `title`, `placetype` (same names as the old
-  feed), plus `url`, the absolute item URL, and `documents`, the IDs of the
-  Place's public Documents in the site pool (those whose `cdash:placeItem`
-  links to it; possibly empty) — the map needs them to light a Document's
-  Place (see *The map follows the search*). Top-level `metadata`:
+  feed), plus `url`, the absolute item URL. Top-level `metadata`:
   `attribution` ("Cambridge Historical Commission, Digital Architectural
   Survey"), `generated`, `count`. **The licence is undecided** — add
-  `license` to `metadata` once chosen.
+  `license` to `metadata` once chosen. Features are Places only: production
+  has ~200,000 items but under 20,000 Places. A `documents` list per Place
+  (2026-11-16) was removed on 2026-11-19, before production saw it — at that
+  scale it was most of the body. The search page resolves Documents to
+  Places itself (see *The map follows the search*).
 - **Scope.** Public, in the site's item pool (`item_site`) — which the old
   feed did not check — and Point features only. One feature per Place even if
   it has two points or two placeType values.
@@ -184,13 +185,16 @@ not match, until the visitor presses "Show all".
 
 - **Server.** `view/search/search.phtml` writes
   `<script type="application/json" id="cdash-search-map">` into `#content`:
-  `browse` (nothing narrows the search), `url`, `total`, and `items` — every
-  matching item ID, **all pages**, from `$response->getAllResourceIds('items')`
-  (keyed by ID, hence `array_values`). Sent empty when `browse`.
+  `browse` (nothing narrows the search), `url`, `total`, and `places` — the
+  Place IDs the search lights, **all pages**: matching Places, plus the
+  `cdash:placeItem` targets of matching Documents. Built from
+  `$response->getAllResourceIds('items')` by SQL through `lib/bootstrap.php`,
+  in chunks of 5,000 IDs, so the island is bounded by the number of Places,
+  not items (~200,000 on production). Sent empty when `browse`; not written
+  at all if the lookup fails, so the map keeps its last state.
 - **Client** (`cdash-map.js`, "The map follows the search"). `followSearch()`
   runs from `refreshFromBrowsePane()`, so on every swap and history restore.
-  Matching items become Places directly (`cdashMarkersById`) or through the
-  feed's `documents` (`cdashPlaceOfDocument`); everything else gets
+  Listed Places with a marker (`cdashMarkersById`) stay lit; everything else gets
   `setOpacity(DIMMED_OPACITY)` (0.5; 0.3 vanished into the basemap), and
   `iconCreateFunction` counts only lit markers and dims a cluster with none.
   A Leaflet control, top right, says "Search: N of M places" with a "Show

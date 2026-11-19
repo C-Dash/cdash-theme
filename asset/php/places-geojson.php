@@ -10,18 +10,16 @@
  *     "features": [
  *       { "type": "Feature", "id": 13333,
  *         "geometry": { "type": "Point", "coordinates": [-71.0897, 42.3712] },
- *         "properties": { "title": "...", "placetype": "...", "url": "https://...",
- *                         "documents": [13343, 13344] } }
+ *         "properties": { "title": "...", "placetype": "...", "url": "https://..." } }
  *     ]
  *   }
  *
- * `documents` lists the item IDs of the Place's public Documents (those whose
- * cdash:placeItem links to it), possibly empty. The theme's map uses it to
- * light up the Places of Documents a search matched.
- *
  * Coordinates are [longitude, latitude], as GeoJSON requires -- the reverse of
  * Leaflet's L.latLng. The format is a contract with outside users (GIS tools,
- * other sites): add properties, never rename or remove them.
+ * other sites): add properties, never rename or remove them. (`documents`, the
+ * IDs of each Place's Documents, was removed on 2026-11-19 before it reached
+ * production: on ~200,000 items it was most of the body. The search page now
+ * sends the map Place IDs itself.)
  *
  * Query parameters, all optional; each narrows the feed, never Omeka's own
  * search results:
@@ -51,7 +49,7 @@
 
 const ATTRIBUTION = 'Cambridge Historical Commission, Digital Architectural Survey';
 // The licence is still to be decided; add 'license' to the metadata then.
-const MAX_IDS = 10000;
+const MAX_IDS = 100000;
 
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Expose-Headers: ETag');
@@ -167,25 +165,6 @@ try {
     // Stable order, so an unchanged database gives an identical body and ETag.
     $sql .= ' ORDER BY resource.id, mapping_feature.id, value.id';
     $rows = $db->query($sql, $args);
-
-    // Each Place's Documents: the public items in this site's pool whose
-    // cdash:placeItem links to it. The map needs them to light up the Place
-    // of a Document that a search matched, since only Places have markers.
-    $documentsByPlace = [];
-    foreach ($db->query(
-        sprintf(
-            "SELECT value.value_resource_id AS place_id, value.resource_id AS doc_id
-             FROM value
-             JOIN resource ON resource.id = value.resource_id AND resource.is_public = 1
-             JOIN item_site ON item_site.item_id = resource.id AND item_site.site_id = ?
-             WHERE value.property_id = %d AND value.value_resource_id IS NOT NULL
-             ORDER BY value.value_resource_id, value.resource_id",
-            $schema->property('cdash:placeItem')
-        ),
-        [$siteId]
-    ) as $doc) {
-        $documentsByPlace[(int) $doc['place_id']][] = (int) $doc['doc_id'];
-    }
 } catch (\Throwable $e) {
     error_log('places-geojson.php: ' . $e->getMessage());
     fail(500, 'Database error.');
@@ -225,7 +204,6 @@ foreach ($rows as $row) {
             'title' => $row['title'],
             'placetype' => $row['placetype'],
             'url' => $siteUrl . '/item/' . $id,
-            'documents' => array_values(array_unique($documentsByPlace[$id] ?? [])),
         ],
     ];
 }
