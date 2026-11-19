@@ -2438,8 +2438,27 @@ html, body {
   border-color: var(--cdash-link);
 }
 
+.leaflet-container .leaflet-cdashDimmed-pane img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
 .marker-cluster.cdash-cluster-dim {
   opacity: 0.5;
+  border-radius: 50%;
+}
+.marker-cluster.cdash-cluster-dim div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  margin: 3px;
+  border-radius: 50%;
+  font-size: 10px;
+}
+.marker-cluster.cdash-cluster-dim span {
+  line-height: 1;
 }
 
 /* Wide: as many 200px columns as fit, filling the width.

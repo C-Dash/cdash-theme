@@ -186,6 +186,34 @@
   border-color: var(--cdash-link);
 }
 
+// The pane for markers and clusters a search dimmed (cdash-map.js). leaflet.css
+// exempts images in its own panes from a page's img { max-width: 100% }, but
+// not in a pane it did not create -- and a pane has no width, so every dimmed
+// marker drew 0px wide: present in the DOM, invisible on the map.
+.leaflet-container .leaflet-cdashDimmed-pane img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
+// A cluster of Places the search did not match: faded, and smaller than
+// MarkerCluster.Default.css draws one. Its box is 26 or 30px (cdash-map.js,
+// makeClusterGroup), so the inner disc is sized from it, not fixed at 30px.
 .marker-cluster.cdash-cluster-dim {
   opacity: 0.5;  // = DIMMED_OPACITY in cdash-map.js
+  border-radius: 50%;
+
+  div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: calc(100% - 6px);
+    height: calc(100% - 6px);
+    margin: 3px;
+    border-radius: 50%;
+    font-size: 10px;
+  }
+
+  span {
+    line-height: 1;
+  }
 }

@@ -194,9 +194,17 @@ not match, until the visitor presses "Show all".
   at all if the lookup fails, so the map keeps its last state.
 - **Client** (`cdash-map.js`, "The map follows the search"). `followSearch()`
   runs from `refreshFromBrowsePane()`, so on every swap and history restore.
-  Listed Places with a marker (`cdashMarkersById`) stay lit; everything else gets
-  `setOpacity(DIMMED_OPACITY)` (0.5; 0.3 vanished into the basemap), and
-  `iconCreateFunction` counts only lit markers and dims a cluster with none.
+  Listed Places with a marker (`cdashMarkersById`) stay lit; everything else is
+  dimmed: `setOpacity(DIMMED_OPACITY)` (0.5; 0.3 vanished into the basemap)
+  and a ~60% icon (`cdashIconDim`). **Lit and dimmed never share a cluster**:
+  `allMarkers` is an `L.layerGroup` of two cluster groups from
+  `makeClusterGroup()`, `litMarkers` and `dimMarkers`, so the overlay menu and
+  the hash still toggle one `allMarkers` layer. `dimMarkers` draws its markers
+  and smaller, faded clusters in the `cdashDimmed` pane (z-index 590, under
+  the marker pane), so lit markers sit on top. `applySearchFilter()` moves
+  only markers whose state changed, with the bulk `removeLayers`/`addLayers`,
+  setting icon, opacity and `options.pane` while they are out of both groups:
+  19,000 of 20,000 synthetic markers move in ~130 ms.
   A Leaflet control, top right, says "Search: N of M places" with a "Show
   all" button; print hides it with the other controls.
 - **It persists.** A page without the island leaves the dimming alone; it is

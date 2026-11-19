@@ -60,43 +60,36 @@ const CDASH_SITE_URL = CDASH_CONFIG.siteUrl;
 // The marker cluster is the one layer the factory cannot build by itself: its
 // contents arrive asynchronously from places-geojson.php, so it is constructed
 // here and handed to the factory below as a prebuilt layer.
-  let allMarkers = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    maxClusterRadius: function (mapZoom) {
-              if (mapZoom > 17) {
-                 return 18;
-               } else {
-                 return 32;
-               }
-            },
-            // While the map follows a search (cdashSearchFilter, below), a
-            // cluster counts only its matching Places, and one with none is
-            // dimmed like the markers inside it, showing how many it holds.
-            iconCreateFunction: function(cluster) {
-                var count = cluster.getChildCount();
-                var dim = false;
-                if (cdashSearchFilter) {
-                    var lit = cluster.getAllChildMarkers().filter(function (m) { return !m.cdashDimmed; }).length;
-                    if (lit > 0) {
-                        count = lit;
-                    } else {
-                        dim = true;
-                    }
-                }
-                var clusterSize = "small";
-                var iconsize = 35
-                if (count >= 3) {
-                    clusterSize = "medium";
-                    iconsize = 40
-                  }
-                return new L.DivIcon({
-                    html: '<div><span>' + count + '</span></div>',
-                    className: 'marker-cluster marker-cluster-' + clusterSize + (dim ? ' cdash-cluster-dim' : ''),
-                    iconSize: new L.Point(iconsize, iconsize)
-                });
-            }
-  });
-    queryMarkers(allMarkers);
+  // Two cluster groups, so a cluster never mixes Places a search matched with
+  // ones it did not (see "The map follows the search"): lit markers cluster
+  // in litMarkers, dimmed ones in dimMarkers, which draws its clusters and
+  // markers in the 'cdashDimmed' pane beneath the lit ones. With no search,
+  // dimMarkers is empty. One layer, allMarkers, holds both, so the overlay
+  // menu's "All CDASH locations" and the hash's allMarkers key toggle both.
+  function makeClusterGroup(dim) {
+    return L.markerClusterGroup({
+      showCoverageOnHover: false,
+      clusterPane: dim ? 'cdashDimmed' : L.Marker.prototype.options.pane,
+      maxClusterRadius: function (mapZoom) {
+        return mapZoom > 17 ? 18 : 32;
+      },
+      iconCreateFunction: function (cluster) {
+        var count = cluster.getChildCount();
+        var medium = count >= 3;
+        // Dimmed clusters are smaller as well as faded, like their markers.
+        var size = dim ? (medium ? 30 : 26) : (medium ? 40 : 35);
+        return new L.DivIcon({
+          html: '<div><span>' + count + '</span></div>',
+          className: 'marker-cluster marker-cluster-' + (medium ? 'medium' : 'small') + (dim ? ' cdash-cluster-dim' : ''),
+          iconSize: new L.Point(size, size)
+        });
+      }
+    });
+  }
+  let litMarkers = makeClusterGroup(false);
+  let dimMarkers = makeClusterGroup(true);
+  let allMarkers = L.layerGroup([litMarkers, dimMarkers]);
+    queryMarkers(litMarkers);
 
 // Every other layer is built from the registry.
   let overlayMaps = cdashBuildLayers(CDASH_LAYERS, { allMarkers: allMarkers });
@@ -178,6 +171,8 @@ const mapDiv = document.getElementById("drawmap");
 // to break camBase. Nothing is lost: the ResizeObserver below sees every
 // window resize too, since the pane resizes with the window.
 const map = L.map(mapDiv, { center: mapCenter, zoom: mapZoom, maxZoom: 19, trackResize: false });
+// Beneath the marker pane (600), for the markers and clusters a search dimmed.
+map.createPane('cdashDimmed').style.zIndex = 590;
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
 
 // Everything in this file lives inside a $(document).ready closure, so none of
@@ -1014,6 +1009,19 @@ var sepiaBalloon_halo_y = L.icon({
    iconAnchor: [14,26]
 });
 
+// The same at about 60%, for Places a search did not match.
+var sepiaBalloonDim = L.icon({
+  iconUrl: CDASH_CONFIG.icons.marker,
+  iconSize: [18, 18],
+  iconAnchor: [8, 16]
+});
+
+var sepiaBalloon_halo_yDim = L.icon({
+  iconUrl: CDASH_CONFIG.icons.markerHighlight,
+  iconSize: [17, 17],
+  iconAnchor: [8, 16]
+});
+
 
 // One marker per feature, through L.geoJSON so the coordinate order is
 // GeoJSON's own concern ([lng, lat]) and not re-implemented here.
@@ -1026,10 +1034,14 @@ function pushMarkers(collection, markerGroup) {
   var markers = L.geoJSON(collection, {
     pointToLayer: function (feature, latlng) {
       var props = feature.properties || {};
+      var halo = props.placetype !== 'Address';
       var marker = L.marker(latlng, {
         title: props.title,
-        icon: props.placetype !== 'Address' ? sepiaBalloon_halo_y : sepiaBalloon
+        icon: halo ? sepiaBalloon_halo_y : sepiaBalloon
       });
+      marker.cdashIcon = marker.options.icon;
+      marker.cdashIconDim = halo ? sepiaBalloon_halo_yDim : sepiaBalloonDim;
+      marker.cdashDimmed = false;
       marker.id = String(feature.id);
       marker.item_url = CDASH_SITE_URL + '/item/' + feature.id;
       marker.title = props.title;
@@ -1119,16 +1131,39 @@ function litPlaces() {
 
 function applySearchFilter(wantFit) {
   var lit = litPlaces();
+  var litList = [];
+  var dimList = [];
+  var changed = false;
   cdashMarkersById.forEach(function (marker, id) {
-    var on = !lit || lit.has(id);
-    marker.cdashDimmed = !on;
-    // setOpacity also holds for markers currently inside a cluster: Leaflet
-    // applies options.opacity when the marker is next drawn.
-    marker.setOpacity(on ? 1 : DIMMED_OPACITY);
+    var dim = !!lit && !lit.has(id);
+    (dim ? dimList : litList).push(marker);
+    if (dim !== marker.cdashDimmed) changed = true;
   });
-  allMarkers.refreshClusters();
+  // Both groups are emptied and refilled, rather than only the markers that
+  // changed being moved: MarkerClusterGroup.removeLayers() throws ("reading
+  // 'getLatLng'") when a batch empties nested clusters, as a new search
+  // often does. clearLayers() has no such path, and addLayers() is fast:
+  // 20,000 synthetic markers re-cluster in ~90 ms. The icon, opacity and pane
+  // are set while the markers are out of both groups, so each group lays its
+  // clusters out with the size the marker will have.
+  if (changed) {
+    litMarkers.clearLayers();
+    dimMarkers.clearLayers();
+    dimList.forEach(function (marker) { styleMarker(marker, true); });
+    litList.forEach(function (marker) { styleMarker(marker, false); });
+    litMarkers.addLayers(litList);
+    dimMarkers.addLayers(dimList);
+  }
   updateSearchControl(lit);
   if (wantFit && lit && lit.size) fitToPlaces(lit);
+}
+
+function styleMarker(marker, dim) {
+  if (marker.cdashDimmed === dim) return;
+  marker.cdashDimmed = dim;
+  marker.options.pane = dim ? 'cdashDimmed' : L.Marker.prototype.options.pane;
+  marker.setIcon(dim ? marker.cdashIconDim : marker.cdashIcon);
+  marker.setOpacity(dim ? DIMMED_OPACITY : 1);
 }
 
 function fitToPlaces(lit) {
