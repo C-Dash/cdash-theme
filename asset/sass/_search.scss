@@ -108,19 +108,6 @@ summary.cdash-facet-label {
   text-decoration: none;
 }
 
-.cdash-search-selects {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.5rem;
-}
-
-.cdash-search-selects .search-sort,
-.cdash-search-selects .search-pagination-per-page {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
 .cdash-search-noresults {
   font-style: italic;
 }

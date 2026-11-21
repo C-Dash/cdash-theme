@@ -3,16 +3,12 @@
  * The controls above the CDASH search results. Overrides the module's
  * view/search/results-header-footer.phtml.
  *
- * Kept: the active search filters (each a plain remove link) and the sort and
- * per-page selects. Dropped: the total (the page header states it), the
- * paginator (it sits under the cards, as on the theme's browse page), the
- * module's own search forms, and the list/grid/map switch (CDASH shows cards,
- * and the map pane is the map).
- *
- * The selects are the module's, rendered "as URL": each option carries the
- * URL it leads to in data-url. The module's search.js would follow it with
- * window.location, a full reload; cdash-layout.js follows it with htmx instead
- * (a delegated change handler on .cdash-search-controls), so the map stays.
+ * Kept: the active search filters (each a plain remove link). Dropped: the
+ * sort and per-page selects (2026-11-21, by choice: results keep the
+ * config's default order and page size), the total (the page header states
+ * it), the paginator (it sits under the cards, as on the theme's browse
+ * page), the module's own search forms, and the list/grid/map switch (CDASH
+ * shows cards, and the map pane is the map).
  *
  * @var \AdvancedSearch\Api\Representation\SearchConfigRepresentation $searchConfig
  * @var \AdvancedSearch\Query $query
@@ -26,19 +22,6 @@ if (($resultPart ?? 'header') !== 'header') {
 
 $filtersMode = $searchConfig->subSetting('results', 'search_filters_mode', 'link_remove');
 $showFiltersFieldLabel = (bool) $searchConfig->subSetting('results', 'search_filters_field_label', true);
-$perPages = $searchConfig->subSetting('results', 'per_page_list') ?: [];
-$sortFields = $searchConfig->subSetting('results', 'sort_list') ?: [];
 ?>
 
 <?= $searchConfig->renderSearchFilters($query, ['show_field_label' => $showFiltersFieldLabel, 'mode' => $filtersMode]) ?>
-
-<?php if ($response->getTotalResults() && (count($perPages) > 1 || count($sortFields) > 1)): ?>
-<div class="cdash-search-selects">
-    <?php if (count($sortFields) > 1): ?>
-    <?= $this->searchSortSelector($query, $sortFields, ['as_url' => true, 'label' => $searchConfig->subSetting('results', 'label_sort')]) ?>
-    <?php endif; ?>
-    <?php if (count($perPages) > 1): ?>
-    <?= $this->searchPaginationPerPageSelector($query, $perPages, true) ?>
-    <?php endif; ?>
-</div>
-<?php endif; ?>

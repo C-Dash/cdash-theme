@@ -153,11 +153,11 @@ advanced-search form).
   `#search-facets` once at load and navigates with `window.location` — a full
   reload that rebuilds the map. So the facets are a plain GET form with an
   explicit `action` (from the drawer the current page may be an item), the
-  filter chips and "Clear filters" are plain links, and the sort/per-page
-  selects — whose options carry `data-url` — are followed by a delegated
-  `change` handler in `cdash-layout.js` through `htmx.ajax`. Its `source` is
-  the controls block, **not the select**: htmx adds a source element's own
-  name/value to the request, which sent `sort=` twice.
+  filter chips and "Clear filters" are plain links. There are no sort or
+  per-page selects (removed 2026-11-21, by choice); if they return, their
+  options carry `data-url`, to be followed through `htmx.ajax` with the
+  controls block as `source` -- **not the select**, whose own name/value htmx
+  adds to the request, which sent `sort=` twice.
 - **Active facet values**: `getFacetCounts()` has no active flag;
   `getActiveFacets()` is `[name => [values]]` (or `from`/`to` for ranges).
 - **Facet value labels** go through `view/search/cdash-facet-value-label.phtml`,
@@ -174,7 +174,7 @@ advanced-search form).
   Results.
 - **Print**: no cards (as for `/item` results); the query chips, plus a
   print-only list of the ticked facets, since the drawer does not print.
-  Selects, pagination and chip remove buttons are hidden.
+  Pagination and chip remove buttons are hidden.
 - **AdvancedSearch's `map_display` stays off** — it loads Mapping 1.x asset
   paths that 404 under 2.x, and would build a second map.
 

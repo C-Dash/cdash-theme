@@ -56,8 +56,12 @@ results:
   search_form_simple: none
   search_form_quick: none
   paginator: header
-  per_page: header
-  sort: header
+  # No sort or per-page selects (removed 2026-11-21). The theme's
+  # view/search/results-header-footer.phtml renders neither, whatever these
+  # say; sort_list and per_page_list below still set the default order (the
+  # first entry) and the page sizes a ?per_page= URL may ask for.
+  per_page: none
+  sort: none
   grid_list: header
   grid_list_mode: auto
   thumbnail_mode: default

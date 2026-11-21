@@ -903,36 +903,6 @@ document.body.addEventListener('htmx:configRequest', function (evt) {
 })();
 
 // ---------------------------------------------------------------------------
-// Sort and per-page selects on the search results page.
-//
-// AdvancedSearch renders them "as URL": each option carries its destination
-// in data-url, and the module's search.js follows it with window.location --
-// a full reload that rebuilds the map. search.js is not loaded in this theme
-// (view/search/search.phtml), so this follows it through htmx instead, with
-// the same swap spec as the shell. Delegated, so it survives every swap.
-// ---------------------------------------------------------------------------
-document.addEventListener('change', function (evt) {
-  const select = evt.target.closest && evt.target.closest('.cdash-search-controls .as-url select');
-  if (!select) return;
-  const option = select.selectedOptions[0];
-  const url = option && option.dataset.url;
-  if (!url) return;
-  if (!window.htmx) {
-    window.location.assign(url);
-    return;
-  }
-  // The source is the controls block, not the select: htmx adds a source
-  // element's own name and value to the request, and the URL already carries
-  // the new sort -- the select as source sent it twice.
-  htmx.ajax('GET', url, {
-    source: select.closest('.cdash-search-controls'),
-    target: '#content',
-    select: '#content',
-    swap: 'outerHTML scroll:#showresult:top'
-  });
-});
-
-// ---------------------------------------------------------------------------
 // No empty fields in search URLs.
 //
 // A GET form sends every field, filled or not, so an untouched "Words in the
